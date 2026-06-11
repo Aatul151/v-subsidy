@@ -1,0 +1,174 @@
+{
+  "exportedAt": "2026-02-17T08:52:29.664Z",
+  "count": 4,
+  "forms": [
+    {
+      "_id": "694b7155e9afb14489fd6502",
+      "title": "Roles",
+      "name": "roles",
+      "module": {
+        "_id": "6942940606394b3b1da68084",
+        "name": "default",
+        "description": "Default System Module",
+        "isActive": true
+      },
+      "sections": [
+        {
+          "title": "Detail",
+          "fields": [
+            {
+              "type": "text",
+              "label": "Role Name",
+              "name": "name",
+              "required": true,
+              "placeholder": "Enter role name",
+              "allowFilter": true
+            },
+            {
+              "type": "text",
+              "label": "Description",
+              "name": "description",
+              "required": false
+            }
+          ],
+          "id": "section_1766551863360"
+        }
+      ],
+      "formType": "system",
+      "settings": {
+        "formIcon": "AccountCircle",
+        "isPublic": false,
+        "isSingleRecordForm": false
+      }
+    },
+    {
+      "_id": "69429ffb06394b3b1da683db",
+      "title": "Settings",
+      "name": "settings",
+      "module": {
+        "_id": "69429fc106394b3b1da683b3",
+        "name": "settings",
+        "description": "Default System Setting Module",
+        "isActive": true
+      },
+      "sections": [
+        {
+          "title": "Setup",
+          "fields": [
+            {
+              "type": "toggle",
+              "label": "Allow Theme Change",
+              "name": "allow_theme_change",
+              "required": false
+            },
+            {
+              "type": "toggle",
+              "label": "Allow Notification",
+              "name": "allow_notification",
+              "required": false
+            }
+          ],
+          "id": "section_1765973969086"
+        }
+      ],
+      "formType": "system",
+      "settings": {
+        "formIcon": "Security",
+        "isPublic": false
+      }
+    },
+    {
+      "_id": "69423a75c363fc57b8b9d8e6",
+      "title": "User",
+      "name": "user",
+      "module": {
+        "_id": "6942940606394b3b1da68084",
+        "name": "default",
+        "description": "Default System Module",
+        "isActive": true
+      },
+      "sections": [
+        {
+          "title": "Details",
+          "fields": [
+            {
+              "type": "text",
+              "label": "Name",
+              "name": "name",
+              "required": true,
+              "placeholder": "Enter name"
+            },
+            {
+              "type": "email",
+              "label": "Email",
+              "name": "email",
+              "required": true,
+              "placeholder": "Enter email"
+            },
+            {
+              "type": "apiReference",
+              "label": "Role",
+              "name": "role",
+              "required": true,
+              "apiEndpoint": "/roles",
+              "apiLabelField": "name",
+              "apiValueField": "name",
+              "allowMultiple": false
+            },
+            {
+              "type": "toggle",
+              "label": "Active",
+              "name": "isActive",
+              "required": false
+            }
+          ],
+          "id": "section_1765947930539"
+        }
+      ],
+      "formType": "system",
+      "settings": {
+        "formIcon": "",
+        "isPublic": false
+      }
+    },
+    {
+      "_id": "695dea84366c0cd3f16765df",
+      "title": "Collections",
+      "name": "collections",
+      "module": {
+        "_id": "69429fc106394b3b1da683b3",
+        "name": "settings",
+        "description": "Default System Setting Module",
+        "isActive": true
+      },
+      "sections": [
+        {
+          "title": "Detail",
+          "fields": [
+            {
+              "type": "text",
+              "label": "Collection Name",
+              "name": "collection",
+              "required": true,
+              "allowFilter": false
+            },
+            {
+              "type": "text",
+              "label": "Description",
+              "name": "description",
+              "required": false
+            }
+          ],
+          "id": "section_1767762518346"
+        }
+      ],
+      "formType": "system",
+      "settings": {
+        "formIcon": "",
+        "isPublic": false,
+        "isSingleRecordForm": false,
+        "allowManageFromEntryPage": false
+      }
+    }
+  ]
+}

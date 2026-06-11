@@ -1,0 +1,11 @@
+{
+  "name": "saas-core",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "api": "npm run dev --prefix api",
+    "build-api-win": "npm run build:api-win --prefix api",
+    "build-api-lin": "npm run build:api-lin --prefix api",
+    "admin": "npm run dev --prefix admin"
+  }
+}

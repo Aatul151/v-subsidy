@@ -1,0 +1,920 @@
+{
+	"info": {
+		"_postman_id": "saas-core-api-collection",
+		"name": "SaaS Core API",
+		"description": "Postman collection for SaaS Core API with JWT authentication, Dynamic Form System, Modules, Roles, Users, Form Definitions, Form Access Rules, Form Entries, File Upload, and Settings",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Health Check",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/",
+							"host": ["{{base_url}}"],
+							"path": [""]
+						},
+						"description": "Check if the API server is running"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Register",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    if (response.success && response.token) {",
+									"        pm.collectionVariables.set('auth_token', response.token);",
+									"        pm.collectionVariables.set('user_id', response.user._id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"John Doe\",\n    \"email\": \"john.doe@example.com\",\n    \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/register",
+							"host": ["{{base_url}}"],
+							"path": ["api", "auth", "register"]
+						},
+						"description": "Register a new user account. Returns user data and JWT token."
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    if (response.success && response.token) {",
+									"        pm.collectionVariables.set('auth_token', response.token);",
+									"        pm.collectionVariables.set('user_id', response.user._id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"john.doe@example.com\",\n    \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/login",
+							"host": ["{{base_url}}"],
+							"path": ["api", "auth", "login"]
+						},
+						"description": "Authenticate user and get JWT token"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Guest Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    if (response.success && response.data && response.data.token) {",
+									"        pm.collectionVariables.set('auth_token', response.data.token);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/auth/public/session",
+							"host": ["{{base_url}}"],
+							"path": ["api", "auth", "public", "session"],
+							"query": [
+								{"key": "key", "value": "", "description": "Optional: GUEST_TOKEN_KEY for additional security", "disabled": true}
+							]
+						},
+						"description": "Get a guest token for public web portal access. Guest users have read-only access to custom forms."
+					},
+					"response": []
+				},
+				{
+					"name": "Forgot Password",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    if (response.success && response.resetToken) {",
+									"        pm.collectionVariables.set('reset_token', response.resetToken);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"john.doe@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/forgotpassword",
+							"host": ["{{base_url}}"],
+							"path": ["api", "auth", "forgotpassword"]
+						},
+						"description": "Request a password reset token. Token returned in response (dev only)."
+					},
+					"response": []
+				},
+				{
+					"name": "Reset Password",
+					"request": {
+						"method": "PUT",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"password\": \"newpassword123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/resetpassword/{{reset_token}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "auth", "resetpassword", "{{reset_token}}"]
+						},
+						"description": "Reset password using the reset token. Token expires after 10 minutes."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Users",
+			"item": [
+				{
+					"name": "Get Current User",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}", "type": "string"}]},
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{base_url}}/api/users/me", "host": ["{{base_url}}"], "path": ["api", "users", "me"]},
+						"description": "Get the currently authenticated user's profile."
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Users",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}", "type": "string"}]},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/users?page=1&limit=10",
+							"host": ["{{base_url}}"],
+							"path": ["api", "users"],
+							"query": [
+								{"key": "page", "value": "1", "description": "Page number (default: 1)"},
+								{"key": "limit", "value": "10", "description": "Items per page (default: 10)"}
+							]
+						},
+						"description": "Get all users with pagination. Requires admin role."
+					},
+					"response": []
+				},
+				{
+					"name": "Get User By ID",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}", "type": "string"}]},
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{base_url}}/api/users/{{user_id}}", "host": ["{{base_url}}"], "path": ["api", "users", "{{user_id}}"]},
+						"description": "Get user details by ID."
+					},
+					"response": []
+				},
+				{
+					"name": "Create User",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}", "type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"John Doe\",\n    \"email\": \"john.doe@example.com\",\n    \"password\": \"password123\",\n    \"role\": \"user\",\n    \"isActive\": true\n}"
+						},
+						"url": {"raw": "{{base_url}}/api/users", "host": ["{{base_url}}"], "path": ["api", "users"]},
+						"description": "Create a new user. Requires admin role."
+					},
+					"response": []
+				},
+				{
+					"name": "Update User",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}", "type": "string"}]},
+						"method": "PUT",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"John Doe Updated\",\n    \"email\": \"john.updated@example.com\",\n    \"role\": \"admin\",\n    \"isActive\": true\n}"
+						},
+						"url": {"raw": "{{base_url}}/api/users/{{user_id}}", "host": ["{{base_url}}"], "path": ["api", "users", "{{user_id}}"]},
+						"description": "Update user details. Requires admin role."
+					},
+					"response": []
+				},
+				{
+					"name": "Change User Password",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}", "type": "string"}]},
+						"method": "PUT",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {"mode": "raw", "raw": "{\n    \"password\": \"newPassword123\"\n}"},
+						"url": {"raw": "{{base_url}}/api/users/{{user_id}}/password", "host": ["{{base_url}}"], "path": ["api", "users", "{{user_id}}", "password"]},
+						"description": "Change user password. Requires admin or superadmin role."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Roles",
+			"description": "Role management (Superadmin only for create/update/delete)",
+			"item": [
+				{
+					"name": "Get All Roles",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}", "type": "string"}]},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/roles?page=1&limit=10",
+							"host": ["{{base_url}}"],
+							"path": ["api", "roles"],
+							"query": [
+								{"key": "page", "value": "1"},
+								{"key": "limit", "value": "10"}
+							]
+						},
+						"description": "Get all roles with pagination."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Role By ID",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}", "type": "string"}]},
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{base_url}}/api/roles/{{role_id}}", "host": ["{{base_url}}"], "path": ["api", "roles", "{{role_id}}"]},
+						"description": "Get role details by ID."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Role",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    if (response.success && response.data && response.data._id) {",
+									"        pm.collectionVariables.set('role_id', response.data._id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}", "type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {"mode": "raw", "raw": "{\n    \"name\": \"manager\"\n}"},
+						"url": {"raw": "{{base_url}}/api/roles", "host": ["{{base_url}}"], "path": ["api", "roles"]},
+						"description": "Create a new role. Requires superadmin role."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Role",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}", "type": "string"}]},
+						"method": "PUT",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {"mode": "raw", "raw": "{\n    \"name\": \"updated-role-name\"\n}"},
+						"url": {"raw": "{{base_url}}/api/roles/{{role_id}}", "host": ["{{base_url}}"], "path": ["api", "roles", "{{role_id}}"]},
+						"description": "Update role. Requires superadmin role."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Role",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}", "type": "string"}]},
+						"method": "DELETE",
+						"header": [],
+						"url": {"raw": "{{base_url}}/api/roles/{{role_id}}", "host": ["{{base_url}}"], "path": ["api", "roles", "{{role_id}}"]},
+						"description": "Delete role. Requires superadmin role."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Modules",
+			"description": "Module management (Admin only for create/update/delete)",
+			"item": [
+				{
+					"name": "Create Module",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    if (response.success && response.data._id) {",
+									"        pm.collectionVariables.set('module_id', response.data._id);",
+									"        pm.collectionVariables.set('module_name', response.data.name);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}", "type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"student\",\n    \"description\": \"Module for managing student records\",\n    \"isActive\": true\n}"
+						},
+						"url": {"raw": "{{base_url}}/api/modules", "host": ["{{base_url}}"], "path": ["api", "modules"]},
+						"description": "Create a new module. Requires admin role."
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Modules",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}", "type": "string"}]},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/modules?isActive=true",
+							"host": ["{{base_url}}"],
+							"path": ["api", "modules"],
+							"query": [{"key": "isActive", "value": "true", "description": "Filter by active status (optional)", "disabled": true}]
+						},
+						"description": "Get all modules."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Module By ID",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}", "type": "string"}]},
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{base_url}}/api/modules/{{module_id}}", "host": ["{{base_url}}"], "path": ["api", "modules", "{{module_id}}"]},
+						"description": "Get module by ID."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Module By Name",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}", "type": "string"}]},
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{base_url}}/api/modules/name/{{module_name}}", "host": ["{{base_url}}"], "path": ["api", "modules", "name", "{{module_name}}"]},
+						"description": "Get module by name."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Module",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}", "type": "string"}]},
+						"method": "PUT",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"description\": \"Updated description\",\n    \"isActive\": true\n}"
+						},
+						"url": {"raw": "{{base_url}}/api/modules/{{module_id}}", "host": ["{{base_url}}"], "path": ["api", "modules", "{{module_id}}"]},
+						"description": "Update module. Requires admin role."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Module",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}", "type": "string"}]},
+						"method": "DELETE",
+						"header": [],
+						"url": {"raw": "{{base_url}}/api/modules/{{module_id}}", "host": ["{{base_url}}"], "path": ["api", "modules", "{{module_id}}"]},
+						"description": "Delete module. Requires admin role."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Form Definitions",
+			"description": "Form definition management (Admin only for create/update/delete)",
+			"item": [
+				{
+					"name": "Create Form Definition",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    if (response.success && response.data._id) {",
+									"        pm.collectionVariables.set('form_definition_id', response.data._id);",
+									"        pm.collectionVariables.set('form_name', response.data.name);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}", "type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Student Admission Form 2025\",\n    \"name\": \"admission2025\",\n    \"module\": \"{{module_id}}\",\n    \"sections\": [\n        {\n            \"sectionTitle\": \"Personal Information\",\n            \"fields\": [\n                {\n                    \"name\": \"studentName\",\n                    \"label\": \"Student Name\",\n                    \"type\": \"text\",\n                    \"required\": true\n                },\n                {\n                    \"name\": \"dateOfBirth\",\n                    \"label\": \"Date of Birth\",\n                    \"type\": \"date\",\n                    \"required\": true\n                }\n            ]\n        }\n    ]\n}"
+						},
+						"url": {"raw": "{{base_url}}/api/form-definitions", "host": ["{{base_url}}"], "path": ["api", "form-definitions"]},
+						"description": "Create a new form definition. Module can be ID or name. Requires admin role."
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Form Definitions",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}", "type": "string"}]},
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{base_url}}/api/form-definitions", "host": ["{{base_url}}"], "path": ["api", "form-definitions"]},
+						"description": "Get all form definitions."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Form Definition By ID",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}", "type": "string"}]},
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{base_url}}/api/form-definitions/{{form_definition_id}}", "host": ["{{base_url}}"], "path": ["api", "form-definitions", "{{form_definition_id}}"]},
+						"description": "Get form definition by ID."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Form Definition By Name",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}", "type": "string"}]},
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{base_url}}/api/form-definitions/name/{{form_name}}", "host": ["{{base_url}}"], "path": ["api", "form-definitions", "name", "{{form_name}}"]},
+						"description": "Get form definition by name."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Form Definitions By Module",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}", "type": "string"}]},
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{base_url}}/api/form-definitions/module/{{module_name}}", "host": ["{{base_url}}"], "path": ["api", "form-definitions", "module", "{{module_name}}"]},
+						"description": "Get all form definitions for a module. Module can be ID or name."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Form Definition",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}", "type": "string"}]},
+						"method": "PUT",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Updated Form Title\",\n    \"sections\": [\n        {\n            \"sectionTitle\": \"Updated Section\",\n            \"fields\": []\n        }\n    ]\n}"
+						},
+						"url": {"raw": "{{base_url}}/api/form-definitions/{{form_definition_id}}", "host": ["{{base_url}}"], "path": ["api", "form-definitions", "{{form_definition_id}}"]},
+						"description": "Update form definition. Requires admin role."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Form Definition",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}", "type": "string"}]},
+						"method": "DELETE",
+						"header": [],
+						"url": {"raw": "{{base_url}}/api/form-definitions/{{form_definition_id}}", "host": ["{{base_url}}"], "path": ["api", "form-definitions", "{{form_definition_id}}"]},
+						"description": "Delete form definition. Requires admin role."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Form Access Rules",
+			"description": "Form access rules management (Admin only)",
+			"item": [
+				{
+					"name": "Create Access Rule",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}", "type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"module\": \"{{module_id}}\",\n    \"rolesAllowed\": [\"admin\", \"teacher\"],\n    \"actions\": {\n        \"create\": [\"admin\", \"teacher\"],\n        \"read\": [\"admin\", \"teacher\", \"parent\"],\n        \"update\": [\"admin\", \"teacher\"],\n        \"delete\": [\"admin\"]\n    }\n}"
+						},
+						"url": {"raw": "{{base_url}}/api/form-access-rules", "host": ["{{base_url}}"], "path": ["api", "form-access-rules"]},
+						"description": "Create access rule for a module. Module can be ID or name. Requires admin role."
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Access Rules",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}", "type": "string"}]},
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{base_url}}/api/form-access-rules", "host": ["{{base_url}}"], "path": ["api", "form-access-rules"]},
+						"description": "Get all access rules."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Access Rule By Module",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}", "type": "string"}]},
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{base_url}}/api/form-access-rules/{{module_name}}", "host": ["{{base_url}}"], "path": ["api", "form-access-rules", "{{module_name}}"]},
+						"description": "Get access rule for a module. Module can be ID or name."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Access Rule",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}", "type": "string"}]},
+						"method": "PUT",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"rolesAllowed\": [\"admin\", \"teacher\", \"staff\"],\n    \"actions\": {\n        \"create\": [\"admin\", \"teacher\"],\n        \"read\": [\"admin\", \"teacher\", \"staff\", \"parent\"],\n        \"update\": [\"admin\", \"teacher\"],\n        \"delete\": [\"admin\"]\n    }\n}"
+						},
+						"url": {"raw": "{{base_url}}/api/form-access-rules/{{module_name}}", "host": ["{{base_url}}"], "path": ["api", "form-access-rules", "{{module_name}}"]},
+						"description": "Update access rule for a module. Requires admin role."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Access Rule",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}", "type": "string"}]},
+						"method": "DELETE",
+						"header": [],
+						"url": {"raw": "{{base_url}}/api/form-access-rules/{{module_name}}", "host": ["{{base_url}}"], "path": ["api", "form-access-rules", "{{module_name}}"]},
+						"description": "Delete access rule for a module. Requires admin role."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Form Entries",
+			"description": "Form entry management (role-based access)",
+			"item": [
+				{
+					"name": "Create Form Entry",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    if (response.success && response.data._id) {",
+									"        pm.collectionVariables.set('form_entry_id', response.data._id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}", "type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"formName\": \"{{form_name}}\",\n    \"payload\": {\n        \"studentName\": \"John Doe\",\n        \"email\": \"john.doe@example.com\",\n        \"dateOfBirth\": \"2010-05-15\",\n        \"phone\": \"1234567890\"\n    }\n}"
+						},
+						"url": {"raw": "{{base_url}}/api/form-entries", "host": ["{{base_url}}"], "path": ["api", "form-entries"]},
+						"description": "Create a new form entry. Body requires formName and payload object."
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Form Entries",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}", "type": "string"}]},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/form-entries?formName={{form_name}}&page=1&limit=10",
+							"host": ["{{base_url}}"],
+							"path": ["api", "form-entries"],
+							"query": [
+								{"key": "formName", "value": "{{form_name}}", "description": "Form name (required)"},
+								{"key": "page", "value": "1"},
+								{"key": "limit", "value": "10"},
+								{"key": "fields", "value": "", "description": "Optional: comma-separated fields to select", "disabled": true},
+								{"key": "filters", "value": "", "description": "Optional: JSON filter object", "disabled": true}
+							]
+						},
+						"description": "Get form entries with pagination. formName is required."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Form Entries Grouped",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}", "type": "string"}]},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/form-entries/group?formName={{form_name}}&groupBy=category",
+							"host": ["{{base_url}}"],
+							"path": ["api", "form-entries", "group"],
+							"query": [
+								{"key": "formName", "value": "{{form_name}}", "description": "Form name (required)"},
+								{"key": "groupBy", "value": "category", "description": "Field to group by (required)"},
+								{"key": "filters", "value": "", "description": "Optional: JSON filter object", "disabled": true}
+							]
+						},
+						"description": "Get grouped form entries by field with counts."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Form Entry By ID",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}", "type": "string"}]},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/form-entries/{{form_entry_id}}?formName={{form_name}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "form-entries", "{{form_entry_id}}"],
+							"query": [{"key": "formName", "value": "{{form_name}}", "description": "Form name (required)"}]
+						},
+						"description": "Get form entry by ID. formName query param required."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Form Entry",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}", "type": "string"}]},
+						"method": "PUT",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"formName\": \"{{form_name}}\",\n    \"payload\": {\n        \"studentName\": \"Jane Doe\",\n        \"email\": \"jane.doe@example.com\"\n    }\n}"
+						},
+						"url": {"raw": "{{base_url}}/api/form-entries/{{form_entry_id}}", "host": ["{{base_url}}"], "path": ["api", "form-entries", "{{form_entry_id}}"]},
+						"description": "Update form entry. Body requires formName and payload object."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Form Entry",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}", "type": "string"}]},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/form-entries/{{form_entry_id}}?formName={{form_name}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "form-entries", "{{form_entry_id}}"],
+							"query": [{"key": "formName", "value": "{{form_name}}", "description": "Form name (required)"}]
+						},
+						"description": "Delete form entry. formName query param required. Guest users cannot delete."
+					},
+					"response": []
+				},
+				{
+					"name": "Export Form Entries to CSV",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}", "type": "string"}]},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/form-entries/export/csv?formName={{form_name}}&limit=10000",
+							"host": ["{{base_url}}"],
+							"path": ["api", "form-entries", "export", "csv"],
+							"query": [
+								{"key": "formName", "value": "{{form_name}}", "description": "Form name (required)"},
+								{"key": "filters", "value": "", "description": "Optional: JSON filter object", "disabled": true},
+								{"key": "limit", "value": "10000", "description": "Max entries to export (default: 10000, max: 50000)"}
+							]
+						},
+						"description": "Export form entries to CSV format."
+					},
+					"response": []
+				},
+				{
+					"name": "Import Form Entries from CSV",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}", "type": "string"}]},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{"key": "formName", "value": "{{form_name}}", "type": "text", "description": "Form name (required)"},
+								{"key": "file", "type": "file", "src": [], "description": "CSV file to import"},
+								{"key": "options", "value": "{\"skipErrors\": false, \"updateExisting\": false, \"dryRun\": false}", "type": "text", "description": "Optional import options", "disabled": true}
+							]
+						},
+						"url": {"raw": "{{base_url}}/api/form-entries/import/csv", "host": ["{{base_url}}"], "path": ["api", "form-entries", "import", "csv"]},
+						"description": "Import form entries from CSV. CSV format should match export format."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "File Upload",
+			"description": "File upload for form entries (stores in Forms/{formName}/{fieldName}/. List/Delete use formRecordId.)",
+			"item": [
+				{
+					"name": "Upload Files",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    if (response.success && response.data && response.data.length > 0) {",
+									"        pm.collectionVariables.set('uploaded_file_name', response.data[0].fileName);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}", "type": "string"}]},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{"key": "formName", "value": "{{form_name}}", "type": "text", "description": "Form name (required)"},
+								{"key": "fieldName", "value": "default_documents", "type": "text", "description": "Field/folder name (optional, defaults to default_documents)"},
+								{"key": "files", "type": "file", "src": [], "description": "File(s) to upload. Use 'files' field. Max 10 files."}
+							]
+						},
+						"url": {"raw": "{{base_url}}/api/file-upload", "host": ["{{base_url}}"], "path": ["api", "file-upload"]},
+						"description": "Upload files. Requires formName. Files stored in Forms/{formName}/{fieldName}/. Note: List/Delete use formRecordId path."
+					},
+					"response": []
+				},
+				{
+					"name": "List Files",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}", "type": "string"}]},
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{base_url}}/api/file-upload/{{form_name}}/{{form_entry_id}}", "host": ["{{base_url}}"], "path": ["api", "file-upload", "{{form_name}}", "{{form_entry_id}}"]},
+						"description": "List all files for a form entry. Uses formRecordId (form entry _id) in path."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete File",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}", "type": "string"}]},
+						"method": "DELETE",
+						"header": [],
+						"url": {"raw": "{{base_url}}/api/file-upload/{{form_name}}/{{form_entry_id}}/{{uploaded_file_name}}", "host": ["{{base_url}}"], "path": ["api", "file-upload", "{{form_name}}", "{{form_entry_id}}", "{{uploaded_file_name}}"]},
+						"description": "Delete a file from a form entry. File name must match exact name from upload/list."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Settings",
+			"description": "User settings (for logged-in user)",
+			"item": [
+				{
+					"name": "Get Settings",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}", "type": "string"}]},
+						"method": "GET",
+						"header": [],
+						"url": {"raw": "{{base_url}}/api/settings", "host": ["{{base_url}}"], "path": ["api", "settings"]},
+						"description": "Get current user's settings."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Settings",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{auth_token}}", "type": "string"}]},
+						"method": "PUT",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"themeSettings\": {\n        \"primaryColor\": \"#1976d2\",\n        \"secondaryColor\": \"#dc004e\",\n        \"mode\": \"dark\"\n    },\n    \"systemSettings\": {}\n}"
+						},
+						"url": {"raw": "{{base_url}}/api/settings", "host": ["{{base_url}}"], "path": ["api", "settings"]},
+						"description": "Update current user's settings. themeSettings and systemSettings are optional."
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{"listen": "prerequest", "script": {"type": "text/javascript", "exec": [""]}},
+		{"listen": "test", "script": {"type": "text/javascript", "exec": [""]}}
+	],
+	"variable": [
+		{"key": "base_url", "value": "http://localhost:3000", "type": "string"},
+		{"key": "auth_token", "value": "", "type": "string"},
+		{"key": "user_id", "value": "", "type": "string"},
+		{"key": "reset_token", "value": "", "type": "string"},
+		{"key": "module_id", "value": "", "type": "string"},
+		{"key": "module_name", "value": "student", "type": "string"},
+		{"key": "form_definition_id", "value": "", "type": "string"},
+		{"key": "form_name", "value": "admission2025", "type": "string"},
+		{"key": "form_entry_id", "value": "", "type": "string"},
+		{"key": "role_id", "value": "", "type": "string"},
+		{"key": "uploaded_file_name", "value": "", "type": "string"}
+	]
+}

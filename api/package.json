@@ -1,0 +1,43 @@
+{
+  "name": "saas-core-api",
+  "version": "1.0.0",
+  "description": "Node.js saas-core-api with Express JWT authentication",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "build:bundle": "node scripts/build-bundle.js",
+    "build:api-win": "npm run build:bundle && node --experimental-sea-config sea-config.json && powershell -Command \"Remove-Item sasscoreapi_win.exe -ErrorAction SilentlyContinue; Copy-Item (Get-Command node).Source sasscoreapi_win.exe\" && npx postject sasscoreapi_win.exe NODE_SEA_BLOB sasscoreapi.blob --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2",
+    "build:api-lin": "npm run build:bundle && node --experimental-sea-config sea-config.json && cp $(command -v node) sasscoreapi_lin && npx postject sasscoreapi_lin NODE_SEA_BLOB sasscoreapi.blob --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2 --overwrite && chmod +x sasscoreapi_lin"
+  },
+  "keywords": [
+    "nodejs",
+    "express",
+    "mongodb",
+    "jwt",
+    "authentication"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.958.0",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "csv-parser": "^3.0.0",
+    "csv-writer": "^1.6.0",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.1.5",
+    "express-validator": "^7.0.1",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.0.3",
+    "multer": "^2.0.2",
+    "socket.io": "^4.8.3",
+    "winston": "^3.11.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.2",
+    "nodemon": "^3.0.2"
+  }
+}
