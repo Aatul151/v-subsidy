@@ -133,7 +133,7 @@ export const FormContainer = ({
       return;
     }
     // Prevent closing on backdrop click if loading
-    if (reason === 'backdropClick' && overallLoading) {
+    if (reason === 'backdropClick' || reason === 'escapeKeyDown') {
       return;
     }
     onClose();

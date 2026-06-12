@@ -19,21 +19,36 @@ interface AppDrawerProps {
   anchor?: Anchor;
 }
 
-export const AppDrawer = ({ 
-  open, 
-  onClose, 
-  title, 
-  children, 
+export const AppDrawer = ({
+  open,
+  onClose,
+  title,
+  children,
   width = 400,
   anchor = 'right'
 }: AppDrawerProps) => {
   const theme = useTheme();
 
+  const handleClose = (_event?: {}, reason?: string) => {
+
+    // No close handler for plain variant
+    if (!onClose) {
+      return;
+    }
+
+    // Prevent closing on backdrop click if loading
+    if (reason === 'backdropClick' || reason === 'escapeKeyDown') {
+      return;
+    }
+
+    onClose?.();
+  };
+
   return (
     <MuiDrawer
       anchor={anchor}
       open={open}
-      onClose={onClose}
+      onClose={handleClose}
       sx={{
         zIndex: (theme) => theme.zIndex.drawer + 2,
       }}
