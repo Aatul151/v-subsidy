@@ -42,7 +42,7 @@ export const AuthLayout = ({ children, title, subtitle }: AuthLayoutProps) => {
             background: `linear-gradient(135deg, ${theme.palette.primary.main}CC 0%, ${theme.palette.primary.dark}CC 100%)`,
           }}
         />
-        
+
         {/* Content */}
         <Box
           sx={{
@@ -62,7 +62,7 @@ export const AuthLayout = ({ children, title, subtitle }: AuthLayoutProps) => {
               textShadow: '0 2px 10px rgba(0,0,0,0.3)',
             }}
           >
-            Admin Panel
+            Subsidy Desk
           </Typography>
           <Typography
             variant="h6"
@@ -74,52 +74,18 @@ export const AuthLayout = ({ children, title, subtitle }: AuthLayoutProps) => {
               textShadow: '0 1px 5px rgba(0,0,0,0.2)',
             }}
           >
-            Manage your business with our powerful admin dashboard
+            Manage all your subsidy applications in one secure and organized platform.
           </Typography>
-          
-          {/* Decorative Elements */}
-          <Box
-            sx={{
-              mt: 4,
-              display: 'flex',
-              justifyContent: 'center',
-              gap: 2,
-            }}
-          >
-            {[1, 2, 3].map((i) => (
-              <Box
-                key={i}
-                sx={{
-                  width: 12,
-                  height: 12,
-                  borderRadius: '50%',
-                  backgroundColor: 'rgba(255,255,255,0.4)',
-                  animation: 'pulse 2s infinite',
-                  '@keyframes pulse': {
-                    '0%, 100%': {
-                      opacity: 0.4,
-                      transform: 'scale(1)',
-                    },
-                    '50%': {
-                      opacity: 0.9,
-                      transform: 'scale(1.2)',
-                    },
-                  },
-                  animationDelay: `${i * 0.3}s`,
-                }}
-              />
-            ))}
-          </Box>
         </Box>
 
         {/* Decorative Shapes */}
         <Box
           sx={{
             position: 'absolute',
-            top: -50,
-            right: -50,
-            width: 200,
-            height: 200,
+            top: -100,
+            right: -100,
+            width: 300,
+            height: 300,
             borderRadius: '50%',
             backgroundColor: 'rgba(255,255,255,0.1)',
           }}
@@ -135,6 +101,7 @@ export const AuthLayout = ({ children, title, subtitle }: AuthLayoutProps) => {
             backgroundColor: 'rgba(255,255,255,0.1)',
           }}
         />
+ 
       </Box>
 
       {/* RIGHT SIDE - Form Section */}

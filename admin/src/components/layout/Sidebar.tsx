@@ -656,7 +656,7 @@ export const Sidebar = ({ open, onClose, collapsed }: SidebarProps) => {
                 fontSize: '1.125rem',
               }}
             >
-              Admin Panel
+              Subsidy Desk
             </Typography>
           </Box>
         )}

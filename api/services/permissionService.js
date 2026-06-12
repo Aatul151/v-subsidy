@@ -192,14 +192,14 @@ export const checkFormAccessMiddleware = (moduleName, action) => {
   return async (req, res, next) => {
     try {
       if (!isValidAction(action)) {
-        return res.status(400).json({
+        return res.status(403).json({
           success: false,
           message: `Invalid action: ${action}. Must be one of: ${VALID_ACTIONS.join(', ')}`,
         });
       }
       if (!req.user || !req.user.role) {
         logger.warn('Access check failed: User not authenticated');
-        return res.status(401).json({
+        return res.status(403).json({
           success: false,
           message: 'Authentication required',
         });

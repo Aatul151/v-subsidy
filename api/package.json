@@ -1,5 +1,5 @@
 {
-  "name": "saas-core-api",
+  "name": "subsidy-desk-api",
   "version": "1.0.0",
   "description": "Node.js saas-core-api with Express JWT authentication",
   "main": "server.js",

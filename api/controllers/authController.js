@@ -272,7 +272,7 @@ export const getGuestToken = async (req, res) => {
       const providedKey = req.query.key;
       if (!providedKey || providedKey !== guestTokenKey) {
         logger.warn(`Guest token request with invalid or missing key from IP: ${req.ip}`);
-        return res.status(401).json({
+        return res.status(403).json({
           success: false,
           message: 'Invalid access key',
         });

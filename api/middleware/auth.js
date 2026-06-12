@@ -23,7 +23,7 @@ export const protect = async (req, res, next) => {
 
         if (!req.user) {
           logger.warn('JWT token valid but user not found');
-          return res.status(401).json({
+          return res.status(403).json({
             success: false,
             message: 'User not found',
           });
@@ -44,7 +44,7 @@ export const protect = async (req, res, next) => {
       
     } catch (error) {
       logger.warn('JWT authentication failed:', { error: error.message });
-      return res.status(401).json({
+      return res.status(403).json({
         success: false,
         message: 'Not authorized, invalid token',
       });
@@ -53,7 +53,7 @@ export const protect = async (req, res, next) => {
 
   if (!token) {
     logger.warn('Access attempt without token');
-    return res.status(401).json({
+    return res.status(403).json({
       success: false,
       message: 'Not authorized, no token',
     });
@@ -71,7 +71,7 @@ export const requireRoles = (allowedRoles) => {
       // Check if user is authenticated
       if (!req.user || !req.user.role) {
         logger.warn('Role check failed: User not authenticated');
-        return res.status(401).json({
+        return res.status(403).json({
           success: false,
           message: 'Authentication required',
         });

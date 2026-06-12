@@ -12,13 +12,15 @@ import {
   useMediaQuery,
   Tooltip,
   ButtonGroup,
+  InputAdornment,
+  IconButton,
 } from '@mui/material';
 import { GridColDef, GridActionsCellItem } from '@mui/x-data-grid';
 import { AppDataTable } from '@/components/common/AppDataTable';
 import { AppDrawer } from '@/components/common/AppDrawer';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageContent } from '@/components/common/PageContent';
-import { Add as AddIcon, Edit as EditIcon, Refresh as RefreshIcon, Lock as LockIcon, People as PeopleIcon } from '@mui/icons-material';
+import { Add as AddIcon, Edit as EditIcon, Refresh as RefreshIcon, Lock as LockIcon, People as PeopleIcon, VisibilityOff, Visibility } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { formsAPI, FormSection, FormField } from '@/api/forms';
 import { usersAPI, User, CreateUserPayload, UpdateUserPayload } from '@/api/users';
@@ -37,6 +39,8 @@ export const Users = () => {
   const [passwordDrawerOpen, setPasswordDrawerOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Fetch form schema only for building table columns
   // FormContainer will handle fetching for the form itself
@@ -430,13 +434,13 @@ export const Users = () => {
           serverPagination
           rowCount={pagination?.total || 0}
           paginationModel={paginationModel}
-        onPaginationModelChange={(newModel) => {
-          setPaginationModel(newModel);
-        }}
-      />
+          onPaginationModelChange={(newModel) => {
+            setPaginationModel(newModel);
+          }}
+        />
       </PageContent>
 
-      {/* Add/Edit Form Drawer */}
+      {/* Add/Edit User Form Drawer */}
       <FormContainer
         variant="drawer"
         open={formDrawerOpen}
@@ -490,12 +494,26 @@ export const Users = () => {
                 <TextField
                   {...field}
                   label="New Password"
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   fullWidth
                   size="small"
                   error={!!errors.password}
                   helperText={errors.password?.message as string}
                   autoComplete="new-password"
+                  slotProps={{
+                    input: {
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            onClick={() => setShowPassword(!showPassword)}
+                            edge="end"
+                          >
+                            {showPassword ? <VisibilityOff /> : <Visibility />}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    },
+                  }}
                 />
               )}
             />
@@ -512,12 +530,26 @@ export const Users = () => {
                 <TextField
                   {...field}
                   label="Confirm Password"
-                  type="password"
+                  type={showConfirmPassword ? 'text' : 'password'}
                   fullWidth
                   size="small"
                   error={!!errors.confirmPassword}
                   helperText={errors.confirmPassword?.message as string}
                   autoComplete="new-password"
+                  slotProps={{
+                    input: {
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            edge="end"
+                          >
+                            {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    },
+                  }}
                 />
               )}
             />

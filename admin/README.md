@@ -1,4 +1,4 @@
-# React Admin Panel
+# React SubsidyDesk
 
 A modern, feature-rich admin panel built with React 18+, TypeScript, Material UI v6, and Vite.
 

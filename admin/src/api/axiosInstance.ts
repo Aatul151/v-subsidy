@@ -38,9 +38,8 @@ axiosInstance.interceptors.request.use(
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Only clear token and redirect on 401 (Unauthorized) - invalid or expired token
     // 403 (Forbidden) means valid auth but insufficient permissions - do not log user out
-    if (error.response?.status === 401 || error.response?.status === 403) {
+    if (error.response?.status === 403) {
       localStorage.removeItem('token');
       window.location.href = '/login';
     }
