@@ -69,7 +69,7 @@ export const FormContainer = ({
   maxWidth = 'md',
   fullWidth = true,
   anchor = 'right',
-  drawerWidth = 600,
+  drawerWidth = 1200,
   disableEscapeKeyDown = false,
 }: FormContainerProps) => {
   // Determine if we need to fetch formSchema
@@ -170,7 +170,7 @@ export const FormContainer = ({
           onClose={handleClose}
           title="Loading..."
           anchor={anchor}
-          width={typeof drawerWidth === 'number' ? drawerWidth : 600}
+          width={typeof drawerWidth === 'number' ? drawerWidth : 1200}
         >
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
             <CircularProgress />

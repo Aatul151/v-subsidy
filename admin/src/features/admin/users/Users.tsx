@@ -467,7 +467,6 @@ export const Users = () => {
           resetFormState();
         }}
         anchor="right"
-        drawerWidth={600}
       />
 
       {/* Change Password Drawer */}
@@ -475,11 +474,11 @@ export const Users = () => {
         open={passwordDrawerOpen}
         onClose={handleClosePasswordDrawer}
         title={`Change Password - ${selectedUser?.name || selectedUser?.email || 'User'}`}
-        width={400}
+        width={500}
         anchor="right"
       >
         <form onSubmit={handleSubmit(handlePasswordSubmit)}>
-          <Stack spacing={3}>
+          <Stack spacing={1.5}>
             <Controller
               name="password"
               control={control}
@@ -554,14 +553,7 @@ export const Users = () => {
               )}
             />
 
-            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end', pt: 2 }}>
-              <Button
-                variant="outlined"
-                onClick={handleClosePasswordDrawer}
-                disabled={changePasswordMutation.isPending}
-              >
-                Cancel
-              </Button>
+            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-start' }}>
               <Button
                 type="submit"
                 variant="contained"
@@ -573,6 +565,13 @@ export const Users = () => {
                 }
               >
                 {changePasswordMutation.isPending ? 'Changing...' : 'Change Password'}
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={handleClosePasswordDrawer}
+                disabled={changePasswordMutation.isPending}
+              >
+                Cancel
               </Button>
             </Box>
           </Stack>
