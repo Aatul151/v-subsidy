@@ -70,8 +70,9 @@ const consoleFormat = winston.format.combine(
 // Create logger
 const logger = winston.createLogger({
   level: process.env.LOG_LEVEL || 'info',
+  silent: true, //to disable log
   format: logFormat,
-  defaultMeta: { service: 'node-mongo-api' },
+  defaultMeta: { service: 'subsidy-desk-api' },
   transports: [
     // Write all logs with importance level of `error` or less to `error.log`
     new winston.transports.File({
