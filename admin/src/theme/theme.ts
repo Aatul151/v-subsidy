@@ -20,7 +20,7 @@ export const createAppTheme = (settings: ThemeSettings): Theme => {
       borderRadius: 12,
     },
     typography: {
-      fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+      fontFamily: '"Poppins", "Roboto", "Helvetica", "Arial", sans-serif',
 
       h4: {
         fontWeight: 600,
