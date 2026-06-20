@@ -15,6 +15,7 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import { useState, useMemo, useEffect } from 'react';
+import { GridFooter } from '@mui/x-data-grid';
 
 // Common Empty State Component - Reusable with customizable messages
 interface EmptyStateOverlayProps {
@@ -937,6 +938,32 @@ export const AppDataTable = <R extends GridValidRowModel = any>({
       // Pagination initialState will be merged with column visibility in mergedInitialState
     };
 
+  const CustomFooter = () => {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          width: "100%",
+          px: 2,
+          borderTop: "1px solid",
+          borderColor: "divider",
+          minHeight: 52,
+        }}
+      >
+        <Box>
+          {globalSearchTerm.trim() && (
+            <Typography variant="body2" color="text.secondary">
+              Showing {filteredRows.length} of {rows?.length || 0} results
+            </Typography>
+          )}
+        </Box>
+
+        <GridFooter sx={{ border: "none", }} />
+      </Box>
+    );
+  };
   // Build slots prop - merge custom noRowsOverlay, noResultsOverlay, and columnMenu with any existing slots
   // Extract slots from dataGridProps if they exist (dataGridPropsAny already defined above)
   const existingSlots = dataGridPropsAny.slots;
@@ -944,6 +971,7 @@ export const AppDataTable = <R extends GridValidRowModel = any>({
     noRowsOverlay: CustomNoRowsOverlay, // Empty table - "Start by adding your first item"
     noResultsOverlay: CustomNoResultsOverlay, // Filtered results - "Try adjusting your filters"
     columnMenu: CustomColumnMenu, // Custom column menu with only "Manage Columns" option
+    footer: CustomFooter,
     ...(existingSlots || {}),
   };
 
@@ -1146,15 +1174,8 @@ export const AppDataTable = <R extends GridValidRowModel = any>({
     <Box sx={{ height, width: '100%', borderRadius: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
       {/* Global Search Input - Right aligned with small width */}
       {enableGlobalSearch && (
-        <Box sx={{ mb: 2, flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-          {/* Show filtered count on left side */}
-          <Box sx={{ flex: 1 }}>
-            {globalSearchTerm.trim() && (
-              <Typography variant="body2" color="text.secondary">
-                Showing {filteredRows.length} of {rows?.length || 0} results
-              </Typography>
-            )}
-          </Box>
+        <Box sx={{ mb: 2, flexShrink: 0, display: 'flex', alignItems: 'flex-end' }}>
+
           {/* Search input on right side - always positioned on right */}
           <TextField
             size="small"
@@ -1181,6 +1202,7 @@ export const AppDataTable = <R extends GridValidRowModel = any>({
             }}
             sx={{
               width: 300,
+              ml: "auto",
               '& .MuiOutlinedInput-root': {
                 backgroundColor: theme.palette.mode === 'dark'
                   ? alpha(theme.palette.common.white, 0.05)

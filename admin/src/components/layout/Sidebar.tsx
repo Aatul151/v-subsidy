@@ -41,6 +41,7 @@ import { filterFormsByAccess } from '@/utils/formAccess';
 import { getAppDynamicIcon } from '@/components/common/AppDynamicIcon';
 import { getInitialSubmenuState } from '@/utils/navigationUtils';
 import { capitalizeText } from '@/utils/formUtils';
+import { FormatListBulleted as FormatListBulletedIcon } from '@mui/icons-material';
 
 const DRAWER_WIDTH_EXPANDED = 256;
 const DRAWER_WIDTH_COLLAPSED = 80;
@@ -194,6 +195,7 @@ export const Sidebar = ({ open, onClose, collapsed }: SidebarProps) => {
   const menuItems: MenuItem[] = useMemo(() => {
     const items: MenuItem[] = [
       { icon: <DashboardIcon />, path: '/dashboard', title: 'Dashboard' },
+      { icon: <FormatListBulletedIcon />, path: '/client-subsidy', title: 'Client Subsidy' },
     ];
 
     // Add module menu items after Dashboard (each module with its forms as submenu)
@@ -690,8 +692,6 @@ export const Sidebar = ({ open, onClose, collapsed }: SidebarProps) => {
       <Box
         sx={{
           borderTop: `1px solid ${theme.palette.divider}`,
-          pt: 0.5,
-          pb: 0.5,
         }}
       >
         <List sx={{ px: 0, py: 0 }}>

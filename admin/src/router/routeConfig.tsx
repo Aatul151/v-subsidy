@@ -14,6 +14,8 @@ import { Settings } from '@/features/settings/Settings';
 import { LoadingScreen } from '@/components/loading/LoadingScreen';
 import { AuthGuard } from './AuthGuard';
 import { RoleGuard } from './RoleGuard';
+import ClientSubsidy from '@/components/client-subsidy/ClientSubsidyList';
+import ClientSubsidyDetail from '@/components/client-subsidy/ClientSubsidyDetail';
 
 export type RouteConfigItem = {
   path: string;
@@ -190,6 +192,18 @@ export const protectedRoutesConfig: RouteConfigItem[] = [
   {
     path: '/admin/:formName',
     element: <FormEntries />,
+    requiresAuth: true,
+    useLayout: true,
+  },
+  {
+    path: '/client-subsidy',
+    element: <ClientSubsidy />,
+    requiresAuth: true,
+    useLayout: true,
+  },
+  {
+    path: '/client-subsidy/:id',
+    element: <ClientSubsidyDetail />,
     requiresAuth: true,
     useLayout: true,
   },
