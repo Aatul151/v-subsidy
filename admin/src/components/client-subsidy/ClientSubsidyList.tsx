@@ -1,4 +1,4 @@
-import { Box, Chip, FormControl, IconButton, InputLabel, MenuItem, Select } from "@mui/material";
+import { Box, Button, ButtonGroup, Chip, FormControl, IconButton, InputLabel, MenuItem, Select, Tooltip } from "@mui/material";
 import { PageHeader } from "../common/PageHeader";
 import { FormatListBulleted as FormatListBulletedIcon } from '@mui/icons-material';
 import { PageContent } from "../common/PageContent";
@@ -11,10 +11,13 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { Dayjs } from "dayjs";
 import { useForm, Controller } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
+import { Add as AddIcon, GridView as GridViewIcon } from '@mui/icons-material';
+import { useState } from "react";
+import KanbanBoard from "../kanban/KanbanBoard";
 
 export default function ClientSubsidy() {
     const navigate = useNavigate();
-
+    const [isKanbanBoard, setIsKanbanBoard] = useState(false);
     const { control, watch, reset } = useForm({
         defaultValues: {
             client: [],
@@ -77,6 +80,203 @@ export default function ClientSubsidy() {
         },
     ];
 
+    const boardData = [
+        {
+            label: "Application Submitted",
+            value: "application-submitted",
+            bgColor: "#F8FAFC",
+            data: [
+                {
+                    id: "APP001",
+                    title: "Farmer Subsidy Application",
+                    description: "Application and initial documents submitted.",
+                    person: "Bhargavi",
+                    createdAt: "10 Jun 2026, 10:30 AM",
+                },
+                {
+                    id: "APP002",
+                    title: "Document Upload",
+                    description: "Identity and address proof uploaded.",
+                    person: "Rahul",
+                    createdAt: "10 Jun 2026, 11:00 AM",
+                },
+                {
+                    id: "APP001",
+                    title: "Farmer Subsidy Application",
+                    description: "Application and initial documents submitted.",
+                    person: "Bhargavi",
+                    createdAt: "10 Jun 2026, 10:30 AM",
+                },
+                {
+                    id: "APP002",
+                    title: "Document Upload",
+                    description: "Identity and address proof uploaded.",
+                    person: "Rahul",
+                    createdAt: "10 Jun 2026, 11:00 AM",
+                },
+                {
+                    id: "APP001",
+                    title: "Farmer Subsidy Application",
+                    description: "Application and initial documents submitted.",
+                    person: "Bhargavi",
+                    createdAt: "10 Jun 2026, 10:30 AM",
+                },
+            ],
+            pagination: {
+                currentPage: 1,
+                limit: 3,
+                total: 2,
+                totalPages: 1,
+                hasNextPage: true,
+                hasPrevPage: false,
+            },
+        },
+
+        {
+            label: "Verification",
+            value: "verification",
+            bgColor: "#FFF7ED",
+            data: [
+                {
+                    id: "VER001",
+                    title: "Document Verification",
+                    description: "Documents are under verification.",
+                    person: "Priya",
+                    createdAt: "11 Jun 2026, 02:00 PM",
+                },
+                {
+                    id: "VER002",
+                    title: "Eligibility Check",
+                    description: "Checking applicant eligibility.",
+                    person: "Karan",
+                    createdAt: "11 Jun 2026, 03:30 PM",
+                },
+            ],
+            pagination: {
+                currentPage: 1,
+                limit: 3,
+                total: 2,
+                totalPages: 1,
+                hasNextPage: false,
+                hasPrevPage: false,
+            },
+        },
+
+        {
+            label: "Inspection",
+            value: "inspection",
+            bgColor: "#EEF2FF",
+            data: [
+                {
+                    id: "INS001",
+                    title: "Field Inspection",
+                    description: "Inspection scheduled for site visit.",
+                    person: "Amit",
+                    createdAt: "Pending",
+                },
+                {
+                    id: "INS002",
+                    title: "Equipment Check",
+                    description: "Equipment verification pending.",
+                    person: "Neha",
+                    createdAt: "Pending",
+                },
+                {
+                    id: "INS001",
+                    title: "Field Inspection",
+                    description: "Inspection scheduled for site visit.",
+                    person: "Amit",
+                    createdAt: "Pending",
+                },
+            ],
+            pagination: {
+                currentPage: 1,
+                limit: 3,
+                total: 2,
+                totalPages: 1,
+                hasNextPage: false,
+                hasPrevPage: false,
+            },
+        },
+
+        {
+            label: "Approval",
+            value: "approval",
+            bgColor: "#ECFDF5",
+            data: [
+            ],
+            pagination: {
+                currentPage: 1,
+                limit: 3,
+                total: 1,
+                totalPages: 1,
+                hasNextPage: false,
+                hasPrevPage: false,
+            },
+        },
+
+        {
+            label: "Disbursement",
+            value: "disbursement",
+            bgColor: "#FEF3C7",
+            data: [
+                {
+                    id: "DIS001",
+                    title: "Fund Transfer",
+                    description: "Subsidy amount will be released.",
+                    person: "Sneha",
+                    createdAt: "Pending",
+                },
+            ],
+            pagination: {
+                currentPage: 1,
+                limit: 3,
+                total: 1,
+                totalPages: 1,
+                hasNextPage: false,
+                hasPrevPage: false,
+            },
+        },
+    ];
+    const actionButtons = (
+        <ButtonGroup
+            variant="outlined"
+            size={'small'}
+            sx={{
+                '& .MuiButtonGroup-grouped': {
+                    minWidth: 'auto',
+                    padding: '5px 10px',
+                },
+            }}
+        >
+            <Tooltip title={isKanbanBoard ? "Table View" : "Kanban Board"} placement="bottom" arrow>
+                <Button onClick={() => setIsKanbanBoard((prev) => !prev)}>
+                    {isKanbanBoard ? <FormatListBulletedIcon /> : <GridViewIcon />}
+                </Button>
+            </Tooltip>
+            <Tooltip title="Add" placement="bottom" arrow>
+                <Button
+                    color="primary"
+                    sx={{
+                        backgroundColor: (theme) => theme.palette.primary.main,
+                        color: (theme) => theme.palette.primary.contrastText,
+                        borderColor: (theme) => theme.palette.primary.main,
+                        '&:hover': {
+                            backgroundColor: (theme) => theme.palette.primary.dark,
+                            borderColor: (theme) => theme.palette.primary.dark,
+                        },
+                        '&.Mui-disabled': {
+                            backgroundColor: (theme) => theme.palette.action.disabledBackground,
+                            borderColor: (theme) => theme.palette.action.disabled,
+                        },
+                    }}
+                >
+                    <AddIcon fontSize="small" />
+                </Button>
+            </Tooltip>
+        </ButtonGroup>
+    );
+
     return (<>
         <Box
             sx={{
@@ -92,6 +292,7 @@ export default function ClientSubsidy() {
                 icon="FormatListBulleted"
                 fallbackIcon={FormatListBulletedIcon}
                 sx={{ mb: 0.5, borderRadius: '10px', padding: 1.5 }}
+                actions={actionButtons}
             />
 
             <PageContent>
@@ -200,13 +401,14 @@ export default function ClientSubsidy() {
                         </IconButton>
                     </Box>
 
-                    <AppDataTable
-                        rows={rows}
-                        columns={columns}
-                        loading={false}
-                        getRowId={(row) => row.id}
-                        onRowClick={(row) => { navigate(`/client-subsidy/${row.id}`) }}
-                    />
+                    {isKanbanBoard ? <KanbanBoard boards={boardData} sx={{ mt: 6 }} />
+                        : <AppDataTable
+                            rows={rows}
+                            columns={columns}
+                            loading={false}
+                            getRowId={(row) => row.id}
+                            onRowClick={(row) => { navigate(`/client-subsidy/${row.id}`) }}
+                        />}
                 </Box>
             </PageContent >
         </Box >

@@ -1,4 +1,5 @@
-import { Box, Card, Typography, Button, Chip, Avatar } from "@mui/material";
+import { Theme } from "@emotion/react";
+import { Box, Card, Typography, Button, Chip, Avatar, SxProps } from "@mui/material";
 import { useState } from "react";
 
 type KanbanContainerProps = {
@@ -28,13 +29,15 @@ type KanbanBoardProps = {
     onShowMore?: (value: any) => void;
     loading?: boolean;
     onDrop?: (params: { row: any; stage: any; }) => void;
+    sx?: SxProps<Theme>;
 };
 
 export default function KanbanBoard({
     boards: initialBoards,
     onShowMore,
     loading,
-    onDrop
+    onDrop,
+    sx
 }: KanbanBoardProps) {
     const [boards, setBoards] = useState(initialBoards);
     const [dragItem, setDragItem] = useState<{ item: any; sourceBoard: number; } | null>(null);
@@ -64,9 +67,9 @@ export default function KanbanBoard({
                 display: "flex",
                 gap: 2,
                 alignItems: "flex-start",
-                p: 2,
                 overflowX: "auto",
                 overflowY: "hidden",
+                ...sx
             }}
         >
             {boards.map((board, index) => (
@@ -102,7 +105,8 @@ function KanbanItem({
             onDrop={() => onDrop(boardIndex)}
             sx={{
                 width: "100%",
-                height: "calc(100vh - 20vh)",
+                minWidth: "250px",
+                height: "calc(100vh - 30vh)",
                 maxHeight: "calc(100vh - 20vh)",
                 display: "flex",
                 flexDirection: "column",
