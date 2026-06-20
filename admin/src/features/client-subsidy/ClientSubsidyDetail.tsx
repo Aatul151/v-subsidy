@@ -18,7 +18,7 @@ import {
 
 import Grid from "@mui/material/Grid2";
 import { useState } from "react";
-import { PageHeader } from "../common/PageHeader";
+import { PageHeader } from "../../components/common/PageHeader";
 import { useNavigate, useParams } from "react-router-dom";
 
 const stages = [

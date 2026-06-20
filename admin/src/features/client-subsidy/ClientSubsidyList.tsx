@@ -1,8 +1,5 @@
 import { Box, Button, ButtonGroup, Chip, FormControl, IconButton, InputLabel, MenuItem, Select, Tooltip } from "@mui/material";
-import { PageHeader } from "../common/PageHeader";
 import { FormatListBulleted as FormatListBulletedIcon } from '@mui/icons-material';
-import { PageContent } from "../common/PageContent";
-import { AppDataTable } from "../common/AppDataTable";
 import { GridColDef } from "@mui/x-data-grid";
 import CloseIcon from "@mui/icons-material/Close";
 import { LocalizationProvider } from "@mui/x-date-pickers";
@@ -13,7 +10,10 @@ import { useForm, Controller } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { Add as AddIcon, GridView as GridViewIcon } from '@mui/icons-material';
 import { useState } from "react";
-import KanbanBoard from "../kanban/KanbanBoard";
+import KanbanBoard from "@/components/kanban/KanbanBoard";
+import { AppDataTable } from "@/components/common/AppDataTable";
+import { PageHeader } from "@/components/common/PageHeader";
+import { PageContent } from "@/components/common/PageContent";
 
 export default function ClientSubsidy() {
     const navigate = useNavigate();
@@ -31,9 +31,9 @@ export default function ClientSubsidy() {
     const { client, stage, date, startDate, endDate } = watch();
 
     const rows = [
-        { id: 1, client: "Client A", stage: "Pending", data: 120, expiredDate: "2026-07-15", },
-        { id: 2, client: "Client B", stage: "Completed", data: 300, expiredDate: "2026-08-20", },
-        { id: 3, client: "Client C", stage: "In Progress", data: 80, expiredDate: "2026-06-25", },
+        { id: 1, client: "Client A", stage: "Pending", data: 120, expiredDate: "2026-07-15", subsidy: "MSME Subsidy" },
+        { id: 2, client: "Client B", stage: "Completed", data: 300, expiredDate: "2026-08-20", subsidy: "Solar Pump Subsidy" },
+        { id: 3, client: "Client C", stage: "In Progress", data: 80, expiredDate: "2026-06-25", subsidy: "Farmer Subsidy" },
     ];
 
     const columns: GridColDef[] = [
@@ -42,6 +42,12 @@ export default function ClientSubsidy() {
             headerName: "Client",
             flex: 1,
             minWidth: 150,
+        },
+        {
+            field: "subsidy",
+            headerName: "subsidy",
+            flex: 1,
+            minWidth: 120,
         },
         {
             field: "stage",

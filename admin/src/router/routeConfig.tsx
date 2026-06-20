@@ -14,8 +14,8 @@ import { Settings } from '@/features/settings/Settings';
 import { LoadingScreen } from '@/components/loading/LoadingScreen';
 import { AuthGuard } from './AuthGuard';
 import { RoleGuard } from './RoleGuard';
-import ClientSubsidy from '@/components/client-subsidy/ClientSubsidyList';
-import ClientSubsidyDetail from '@/components/client-subsidy/ClientSubsidyDetail';
+import ClientSubsidy from '@/features/client-subsidy/ClientSubsidyList';
+import ClientSubsidyDetail from '@/features/client-subsidy/ClientSubsidyDetail';
 
 export type RouteConfigItem = {
   path: string;
