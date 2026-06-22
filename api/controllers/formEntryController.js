@@ -2,7 +2,7 @@ import FormDefinition from '../models/FormDefinition.js';
 import Module from '../models/Module.js';
 import { getFormEntryModel } from '../helpers/formEntryModelFactory.js';
 import { validateModuleAccess } from '../services/permissionService.js';
-import { buildMongoFilter } from '../utils/buildMongoFilter.js';
+import { buildMongoFilter, convertObjectIds } from '../utils/buildMongoFilter.js';
 import { populateReferences, populateReferencesBatch, getReferenceLabel, resolveReferenceLabel } from '../utils/populateReferences.js';
 import { sendNotificationByDeliveryMode } from '../services/notificationService.js';
 import { flattenPayload, unflattenPayload, getCSVHeaders } from '../utils/formEntryTransformer.js';
@@ -76,10 +76,11 @@ export const createFormEntry = async (req, res) => {
     const EntryModel = getFormEntryModel(form);
     // Create form entry
     // Store form definition _id in formId field
+    const convertedPayload = convertObjectIds(payload);
     const formEntry = await EntryModel.create({
       formId: form._id,
       submittedBy: req.user._id,
-      payload: payload,
+      payload: convertedPayload,
     });
 
     logger.info(`Form entry created: ${formEntry._id} for form: ${formName}`);
@@ -429,10 +430,10 @@ export const getFormEntriesGrouped = async (req, res) => {
 
     // Build aggregation pipeline for grouping
     const groupField = groupBy.trim();
-    
+
     // Determine the field path - if it doesn't start with 'payload.', add it
-    const fieldPath = groupField.startsWith('payload.') 
-      ? groupField 
+    const fieldPath = groupField.startsWith('payload.')
+      ? groupField
       : `payload.${groupField}`;
 
     // Build aggregation pipeline
@@ -968,7 +969,7 @@ export const importFormEntries = async (req, res) => {
               // Already an ID, skip resolution
               continue;
             }
-            
+
             // Resolve label to ID/value
             const resolvedId = await resolveReferenceLabel(fieldName, value, refField);
             if (resolvedId !== null) {
@@ -979,7 +980,7 @@ export const importFormEntries = async (req, res) => {
               const fieldConfig = form.sections
                 .flatMap(s => s.fields || [])
                 .find(f => f.name === fieldName);
-              
+
               if (fieldConfig && fieldConfig.required) {
                 throw new Error(`Required reference field "${fieldName}" could not be resolved: "${value}"`);
               } else {

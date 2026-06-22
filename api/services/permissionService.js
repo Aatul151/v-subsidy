@@ -7,6 +7,7 @@ import FormAccessRules from '../models/FormAccessRules.js';
 import Module from '../models/Module.js';
 import logger from '../config/logger.js';
 import { ADMIN_ROLES, isAdmin } from '../config/roles.js';
+import FormDefinition from '../models/FormDefinition.js';
 
 // Re-export role config so callers can import permission helpers from one place
 export { ADMIN_ROLES, isAdmin };
@@ -231,4 +232,29 @@ export const checkFormAccessMiddleware = (moduleName, action) => {
       });
     }
   };
+};
+
+// Validate Form And Module Access
+export const validateFormAccess = async (
+  formName,
+  role,
+  permission = "read"
+) => {
+  const form = await FormDefinition.findOne({ name: formName }).populate("module");
+
+  if (!form) {
+    return { success: false, statusCode: 404, message: "Form definition not found" };
+  }
+
+  if (!form.module) {
+    return { success: false, statusCode: 400, message: "Form definition has no associated module" };
+  }
+
+  const accessCheck = await validateModuleAccess(role, form, permission);
+
+  if (!accessCheck.allowed) {
+    return { success: false, statusCode: 403, message: accessCheck.message };
+  }
+
+  return { success: true, form };
 };

@@ -1,14 +1,16 @@
+import mongoose from "mongoose";
 import getFormEntryModel from "../helpers/formEntryModelFactory.js";
 import ClientSubsidy from "../models/ClientSubsidy.js";
 import FormDefinition from "../models/FormDefinition.js";
-import { sanitizeFileName, uploadFile } from "../services/fileUploadService.js";
+import { deleteFile, sanitizeFileName, uploadFile } from "../services/fileUploadService.js";
+import { validateFormAccess } from "../services/permissionService.js";
 import { buildMongoFilter } from "../utils/buildMongoFilter.js";
 import { generateUniqueNo } from "../utils/commonFunctions.js";
 import { populateReferencesBatch } from "../utils/populateReferences.js";
 import fs from 'fs/promises';
 import path from 'path';
 
-const CLIENT_SUBSIDY_FORM = "subsidy_entry";
+const CLIENT_SUBSIDY_FORM = "client_subsidy";
 
 // Create
 export const createClientSubsidy = async (req, res) => {
@@ -18,6 +20,11 @@ export const createClientSubsidy = async (req, res) => {
         // Validation
         if (!client || !subsidy) {
             return res.status(400).json({ success: false, message: "Please provide required fields (client, subsidy)" });
+        }
+
+        const validation = await validateFormAccess(CLIENT_SUBSIDY_FORM, req.user?.role, "create");
+        if (!validation.success) {
+            return res.status(validation.statusCode).json({ success: false, message: validation.message });
         }
 
         // Generate dynamically
@@ -48,16 +55,18 @@ export const getClientSubsidies = async (req, res) => {
     try {
         const { client, subsidy, assigned_executive, current_stage, case_number, expireFrom, expireTo, page = 1, limit = 10, } = req.query;
 
-        const form = await FormDefinition.findOne({ name: CLIENT_SUBSIDY_FORM }).populate('module');
-        if (!form) { return res.status(404).json({ success: false, message: 'Form definition not found' }); }
+        const validation = await validateFormAccess(CLIENT_SUBSIDY_FORM, req.user?.role, "read");
+        if (!validation.success) {
+            return res.status(validation.statusCode).json({ success: false, message: validation.message });
+        }
 
         //#region Filter
         const filter = {};
         if (case_number) { filter.case_number = { $regex: case_number, $options: "i" }; }
-        if (client) { filter.client = { $in: client?.split(",") }; }
-        if (subsidy) { filter.subsidy = { $in: subsidy?.split(",") }; }
-        if (assigned_executive) { filter.assigned_executive = { $in: assigned_executive?.split(",") }; }
-        if (current_stage) { filter.current_stage = { $in: current_stage?.split(",") }; }
+        if (client) { filter.client = { $in: client.split(",")?.map(id => new mongoose.Types.ObjectId(id)) } }
+        if (subsidy) { filter.subsidy = { $in: subsidy.split(",")?.map(id => new mongoose.Types.ObjectId(id)) } }
+        if (assigned_executive) { filter.assigned_executive = { $in: assigned_executive.split(",")?.map(id => new mongoose.Types.ObjectId(id)) } }
+        if (current_stage) { filter.current_stage = { $in: current_stage.split(",")?.map(id => new mongoose.Types.ObjectId(id)) } }
         // Expire Date Range
         if (expireFrom || expireTo) {
             filter.expireOn = {};
@@ -70,19 +79,54 @@ export const getClientSubsidies = async (req, res) => {
         const pageSize = Number(limit);
         const skip = (currentPage - 1) * pageSize;
 
-        const [records, totalRecords] = await Promise.all([
+        const stageFilter = { ...filter };
+        delete stageFilter.current_stage;
+
+        const [records, totalRecords, stageCounts] = await Promise.all([
             ClientSubsidy.find(filter)
                 .populate("client")
                 .sort({ createdAt: -1 })
                 .skip(skip)
                 .limit(pageSize),
 
-            ClientSubsidy.countDocuments(filter)
+            ClientSubsidy.countDocuments(filter),
+
+            ClientSubsidy.aggregate([
+                { $match: stageFilter },
+                {
+                    $group: {
+                        _id: "$current_stage",
+                        count: { $sum: 1 }
+                    }
+                }
+            ])
         ]);
+
+        const loadedStageCounts = {};
+        records.forEach(record => {
+            const stageId = record?.current_stage?.toString();
+            if (!stageId) return;
+            loadedStageCounts[stageId] = (loadedStageCounts[stageId] || 0) + 1;
+        });
+
+        // Build stage summary
+        const stageCountsWithPagination = stageCounts?.map(stage => {
+            const loadedCount = loadedStageCounts[stage?._id] || 0;
+            const remainingCount = Math.max(stage.count - loadedCount, 0);
+            const totalPages = Math.ceil(stage.count / pageSize);
+
+            return {
+                stageId: stage._id,
+                totalCount: stage.count,
+                nextPage: remainingCount > 0 ? Math.floor(loadedCount / pageSize) + 1 : 0,
+                hasNextPage: remainingCount > 0
+            };
+        });
+
 
         // Populate Fields
         const data = records.map((e) => ({ payload: e?._doc }));
-        const populatedEntries = await populateReferencesBatch(data, form);
+        const populatedEntries = await populateReferencesBatch(data, validation?.form);
         const formateEntries = populatedEntries?.map((e) => { return e?.payload });
 
         return res.status(200).json({
@@ -94,8 +138,9 @@ export const getClientSubsidies = async (req, res) => {
                 totalPages: Math.ceil(totalRecords / pageSize),
                 hasNextPage: currentPage * pageSize < totalRecords,
                 hasPrevPage: currentPage > 1,
+                stageCounts: stageCountsWithPagination,
             },
-            data: formateEntries,
+            data: formateEntries
         });
 
     } catch (error) {
@@ -108,8 +153,10 @@ export const getClientSubsidyById = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const form = await FormDefinition.findOne({ name: CLIENT_SUBSIDY_FORM }).populate('module');
-        if (!form) { return res.status(404).json({ success: false, message: 'Form definition not found' }); }
+        const validation = await validateFormAccess(CLIENT_SUBSIDY_FORM, req.user?.role, "read");
+        if (!validation.success) {
+            return res.status(validation.statusCode).json({ success: false, message: validation.message });
+        }
 
         const clientSubsidy = await ClientSubsidy.findById(id).populate("client").populate("assigned_executive");
 
@@ -139,6 +186,11 @@ export const updateClientSubsidy = async (req, res) => {
     try {
         const { id } = req.params;
         const { client, subsidy, assigned_executive, current_stage, remarks, expireOn } = req.body;
+
+        const validation = await validateFormAccess(CLIENT_SUBSIDY_FORM, req.user?.role, "update");
+        if (!validation.success) {
+            return res.status(validation.statusCode).json({ success: false, message: validation.message });
+        }
 
         const fieldToUpdate = {};
 
@@ -178,6 +230,11 @@ export const deleteClientSubsidy = async (req, res) => {
     try {
         const { id } = req.params;
         const clientSubsidy = await ClientSubsidy.findByIdAndDelete(id);
+
+        const validation = await validateFormAccess(CLIENT_SUBSIDY_FORM, req.user?.role, "delete");
+        if (!validation.success) {
+            return res.status(validation.statusCode).json({ success: false, message: validation.message });
+        }
 
         if (!clientSubsidy) {
             return res.status(404).json({ success: false, message: "Client subsidy not found." });
@@ -265,6 +322,30 @@ export const uploadDocument = async (req, res) => {
     }
 };
 
+export const deleteClientDocument = async (req, res) => {
+    try {
+        const { fileName } = req.params;
+        const { client_number, case_number, field_name } = req.query;
 
+        if (!client_number || !field_name) { return res.status(400).json({ success: false, message: "Please provide required query." }) }
+
+        // Delete file
+        let fileDir = `documents/${client_number}/${field_name}`;
+        if (case_number) {
+            fileDir = `documents/${client_number}/${case_number}/${field_name}`;
+        }
+
+        const deleteResult = await deleteFile(fileDir, fileName);
+
+        if (!deleteResult?.success) {
+            return res.status(404).json({ success: false, message: deleteResult?.message || 'File not found' });
+        }
+
+        res.status(200).json({ success: true, message: 'File deleted successfully' });
+
+    } catch (error) {
+        return res.status(500).json({ success: false, message: "Failed to delete client document.", error: error.message });
+    }
+}
 
 //#endregion

@@ -1,17 +1,25 @@
 import Client from "../models/Client.js";
-import { validateModuleAccess } from "../services/permissionService.js";
+import { validateFormAccess, validateModuleAccess } from "../services/permissionService.js";
 import { generateUniqueNo } from "../utils/commonFunctions.js";
+
+const MANAGE_CLIENT_FORM = "manage_clients";
 
 // Fetch clints
 export const getClients = async (req, res) => {
   try {
-    const { client_number, name, company_name, mobile_number, email, isActive, page = 1, limit = 10 } = req.query;
+    const { client_number, name, company_name, mobile_number, email, contact_person, isActive, page = 1, limit = 10 } = req.query;
+
+    const validation = await validateFormAccess(MANAGE_CLIENT_FORM, req.user?.role, "read");
+    if (!validation.success) {
+      return res.status(validation.statusCode).json({ success: false, message: validation.message });
+    }
 
     // Filters
     const filter = {};
     if (client_number) { filter.client_number = { $regex: client_number, $options: "i" }; }
     if (name) { filter.name = { $regex: name, $options: "i" }; }
     if (company_name) { filter.company_name = { $regex: company_name, $options: "i" }; }
+    if (contact_person) { filter.contact_person = { $in: contact_person?.split(",") }; }
     if (mobile_number) { filter.mobile_number = { $regex: mobile_number, $options: "i", }; }
     if (email) { filter.email = { $regex: email, $options: "i" }; }
     if (isActive !== undefined) { filter.isActive = isActive === "true"; }
@@ -24,7 +32,7 @@ export const getClients = async (req, res) => {
     // fetch
     const [clients, totalRecords] = await Promise.all([
       Client.find(filter)
-        // .populate("contact_person", "name email")
+        .populate("contact_person", "name email role")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(pageSize),
@@ -54,7 +62,12 @@ export const getClientById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const client = await Client.findById(id)
+    const validation = await validateFormAccess(MANAGE_CLIENT_FORM, req.user?.role, "read");
+    if (!validation.success) {
+      return res.status(validation.statusCode).json({ success: false, message: validation.message });
+    }
+
+    const client = await Client.findById(id).populate("contact_person", "name email role")
     if (!client) {
       return res.status(404).json({ success: false, message: "Client not found." });
     }
@@ -72,6 +85,11 @@ export const createClient = async (req, res) => {
     const { name, company_name, contact_person, mobile_number, email, gst_number, pan_number, address, remarks } = req.body;
 
     // Validation
+    const validation = await validateFormAccess(MANAGE_CLIENT_FORM, req.user?.role, "create");
+    if (!validation.success) {
+      return res.status(validation.statusCode).json({ success: false, message: validation.message });
+    }
+
     if (!name || !company_name || !mobile_number) {
       return res.status(400).json({ success: false, message: 'Please provide required fields.( name, company_name, mobile_number )' });
     }
@@ -111,6 +129,11 @@ export const updateClient = async (req, res) => {
   try {
     const { id } = req.params;
     const { name, company_name, contact_person, mobile_number, email, gst_number, pan_number, address, remarks, isActive } = req.body;
+
+    const validation = await validateFormAccess(MANAGE_CLIENT_FORM, req.user?.role, "update");
+    if (!validation.success) {
+      return res.status(validation.statusCode).json({ success: false, message: validation.message });
+    }
 
     const fieldToUpdate = {};
     if (name !== undefined) fieldToUpdate.name = name;
@@ -155,6 +178,11 @@ export const deleteClient = async (req, res) => {
   try {
     const { id } = req.params;
     const client = await Client.findById(id);
+
+    const validation = await validateFormAccess(MANAGE_CLIENT_FORM, req.user?.role, "delete");
+    if (!validation.success) {
+      return res.status(validation.statusCode).json({ success: false, message: validation.message });
+    }
 
     if (!client) {
       return res.status(404).json({ success: false, message: "Client not found." })
