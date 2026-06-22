@@ -19,6 +19,8 @@ import moduleRoutes from './routes/moduleRoutes.js';
 import settingsRoutes from './routes/settingsRoutes.js';
 import roleRoutes from './routes/roleRoutes.js';
 import fileUploadRoutes from './routes/fileUploadRoutes.js';
+import clientRoutes from './routes/clientRoutes.js';
+import subsidyRoutes from './routes/clientSubsidyRoutes.js';
 import { cleanupOldTempFiles } from './middleware/upload.js';
 
 // Load env vars
@@ -74,6 +76,9 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/roles', roleRoutes);
 app.use('/api/file-upload', fileUploadRoutes);
 
+app.use('/api/client', clientRoutes);
+app.use('/api/client-subsidy', subsidyRoutes);
+
 // Health check route
 app.get('/', (req, res) => {
   logger.info('Health check endpoint accessed');
@@ -127,7 +132,7 @@ io.on('connection', (socket) => {
 
 httpServer.listen(PORT, () => {
   logger.info(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-  
+
   // Cleanup old temp files on startup
   cleanupOldTempFiles(1).catch((err) => {
     logger.error('Error during initial temp file cleanup:', err);
