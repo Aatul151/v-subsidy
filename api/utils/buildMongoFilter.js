@@ -65,10 +65,7 @@ export const buildMongoFilter = (filterObj, formDefinition = null) => {
     return null;
   };
 
-  // Helper function to check if a string is a valid MongoDB ObjectId
-  const isValidObjectId = (str) => {
-    return typeof str === 'string' && /^[0-9a-fA-F]{24}$/.test(str);
-  };
+
 
   // Helper function to convert value based on field type
   const convertValue = (value, fieldType, fieldName) => {
@@ -178,7 +175,7 @@ export const buildMongoFilter = (filterObj, formDefinition = null) => {
     const mongoOp = operatorMap[operator];
     if (mongoOp) {
       const convertedValue = convertValue(value, fieldType, fieldName);
-      
+
       // For equals operator, use direct value assignment (MongoDB default)
       if (operator === 'equals') {
         mongoFilter[mongoFieldName] = convertedValue;
@@ -191,3 +188,25 @@ export const buildMongoFilter = (filterObj, formDefinition = null) => {
   return mongoFilter;
 };
 
+// Helper function to check if a string is a valid MongoDB ObjectId
+const isValidObjectId = (str) => {
+  return typeof str === 'string' && /^[0-9a-fA-F]{24}$/.test(str);
+};
+
+export const convertObjectIds = (obj) => {
+  if (Array.isArray(obj)) { return obj?.map((v) => convertObjectIds(v)); }
+
+  if (obj && typeof obj === "object") {
+    const result = {};
+
+    for (const key in obj) {
+      result[key] = convertObjectIds(obj[key]);
+    }
+
+    return result;
+  }
+
+  if (isValidObjectId(obj)) { return new mongoose.Types.ObjectId(obj);}
+
+  return obj;
+};
