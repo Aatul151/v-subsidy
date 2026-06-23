@@ -42,7 +42,7 @@ export const createClientSubsidy = async (req, res) => {
         });
 
         return res.status(201).json({
-            success: true, message: "Client subsidy created successfully.", data: clientSubsidy
+            success: true, message: "Client subsidy created successfully."
         });
 
     } catch (error) {
@@ -53,7 +53,7 @@ export const createClientSubsidy = async (req, res) => {
 // Fetch All
 export const getClientSubsidies = async (req, res) => {
     try {
-        const { client, subsidy, assigned_executive, current_stage, case_number, expireFrom, expireTo, page = 1, limit = 10, } = req.query;
+        const { client, subsidy, assigned_executive, current_stage, case_number, expireFrom, expireTo, page = 1, limit = 10, isArchived = false } = req.query;
 
         const validation = await validateFormAccess(CLIENT_SUBSIDY_FORM, req.user?.role, "read");
         if (!validation.success) {
@@ -61,7 +61,7 @@ export const getClientSubsidies = async (req, res) => {
         }
 
         //#region Filter
-        const filter = {};
+        const filter = { isArchived: isArchived };
         if (case_number) { filter.case_number = { $regex: case_number, $options: "i" }; }
         if (client) { filter.client = { $in: client.split(",")?.map(id => new mongoose.Types.ObjectId(id)) } }
         if (subsidy) { filter.subsidy = { $in: subsidy.split(",")?.map(id => new mongoose.Types.ObjectId(id)) } }
@@ -185,7 +185,7 @@ export const getClientSubsidyById = async (req, res) => {
 export const updateClientSubsidy = async (req, res) => {
     try {
         const { id } = req.params;
-        const { client, subsidy, assigned_executive, current_stage, remarks, expireOn } = req.body;
+        const { client, subsidy, assigned_executive, current_stage, remarks, expireOn, documents } = req.body;
 
         const validation = await validateFormAccess(CLIENT_SUBSIDY_FORM, req.user?.role, "update");
         if (!validation.success) {
@@ -200,6 +200,7 @@ export const updateClientSubsidy = async (req, res) => {
         if (current_stage !== undefined) fieldToUpdate.current_stage = current_stage;
         if (expireOn !== undefined) fieldToUpdate.expireOn = expireOn;
         if (remarks !== undefined) fieldToUpdate.remarks = remarks;
+        if (documents !== undefined) fieldToUpdate.documents = documents;
 
         if (Object.keys(fieldToUpdate).length === 0) {
             return res.status(400).json({ success: false, message: "Please provide at least one field to update." });
@@ -225,25 +226,39 @@ export const updateClientSubsidy = async (req, res) => {
     }
 };
 
-// Delete
-export const deleteClientSubsidy = async (req, res) => {
+// Delete - Archived
+export const archivedClientSubsidy = async (req, res) => {
     try {
         const { id } = req.params;
-        const clientSubsidy = await ClientSubsidy.findByIdAndDelete(id);
 
         const validation = await validateFormAccess(CLIENT_SUBSIDY_FORM, req.user?.role, "delete");
         if (!validation.success) {
             return res.status(validation.statusCode).json({ success: false, message: validation.message });
         }
 
+        const clientSubsidy = await ClientSubsidy.findOneAndUpdate(
+            {
+                _id: id,
+                isArchived: false
+            },
+            {
+                $set: {
+                    isArchived: true,
+                    archivedBy: req.user?._id,
+                    archivedAt: new Date()
+                }
+            },
+            { new: true }
+        );
+
         if (!clientSubsidy) {
-            return res.status(404).json({ success: false, message: "Client subsidy not found." });
+            return res.status(404).json({ success: false, message: "Client subsidy not found or already archived." });
         }
 
-        return res.status(200).json({ success: true, message: "Client subsidy deleted successfully." });
+        return res.status(200).json({ success: true, message: "Client subsidy archived successfully." });
 
     } catch (error) {
-        return res.status(500).json({ success: false, message: "Failed to delete client subsidy.", error: error.message });
+        return res.status(500).json({ success: false, message: "Failed to archive client subsidy.", error: error.message });
     }
 };
 

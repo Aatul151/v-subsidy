@@ -39,16 +39,32 @@ const clientSubsidySchema = new mongoose.Schema(
       trim: true,
       default: "",
     },
-
-    document: [], //upload aaray
+    documents: [], //upload aaray
 
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },
+
     updatedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
+    },
+
+    isArchived: {
+      type: Boolean,
+      default: false,
+    },
+
+    archivedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null
+    },
+
+    archivedAt: {
+      type: Date,
+      default: null,
     }
   },
   {

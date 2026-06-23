@@ -1,6 +1,6 @@
 import express from 'express';
 import { protect, requireRoles } from '../middleware/auth.js';
-import { createClientSubsidy, getClientSubsidies, getClientSubsidyById, updateClientSubsidy, deleteClientSubsidy, uploadDocument, deleteClientDocument } from '../controllers/clientSubsidyController.js';
+import { createClientSubsidy, getClientSubsidies, getClientSubsidyById, updateClientSubsidy, archivedClientSubsidy, uploadDocument, deleteClientDocument } from '../controllers/clientSubsidyController.js';
 import { uploadMultiple, handleUploadError } from '../middleware/upload.js';
 
 const router = express.Router();
@@ -16,7 +16,7 @@ router.post('/', createClientSubsidy);
 
 router.put('/:id', updateClientSubsidy);
 
-router.delete('/:id', deleteClientSubsidy);
+router.delete('/:id', archivedClientSubsidy);
 
 // Doc upload
 
