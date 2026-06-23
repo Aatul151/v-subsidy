@@ -41,7 +41,7 @@ import { filterFormsByAccess } from '@/utils/formAccess';
 import { getAppDynamicIcon } from '@/components/common/AppDynamicIcon';
 import { getInitialSubmenuState } from '@/utils/navigationUtils';
 import { capitalizeText } from '@/utils/formUtils';
-import { FormatListBulleted as FormatListBulletedIcon } from '@mui/icons-material';
+import { FormatListBulleted as FormatListBulletedIcon, AccountCircle as AccountCircleIcon } from '@mui/icons-material';
 
 const DRAWER_WIDTH_EXPANDED = 256;
 const DRAWER_WIDTH_COLLAPSED = 80;
@@ -195,6 +195,7 @@ export const Sidebar = ({ open, onClose, collapsed }: SidebarProps) => {
   const menuItems: MenuItem[] = useMemo(() => {
     const items: MenuItem[] = [
       { icon: <DashboardIcon />, path: '/dashboard', title: 'Dashboard' },
+      { icon: <AccountCircleIcon />, path: '/manage-client', title: 'Manage Clients' },
       { icon: <FormatListBulletedIcon />, path: '/client-subsidy', title: 'Client Subsidy' },
     ];
 

@@ -16,6 +16,7 @@ import { AuthGuard } from './AuthGuard';
 import { RoleGuard } from './RoleGuard';
 import ClientSubsidy from '@/features/client-subsidy/ClientSubsidyList';
 import ClientSubsidyDetail from '@/features/client-subsidy/ClientSubsidyDetail';
+import ManageClient from '@/features/client/ManageClient';
 
 export type RouteConfigItem = {
   path: string;
@@ -204,6 +205,12 @@ export const protectedRoutesConfig: RouteConfigItem[] = [
   {
     path: '/client-subsidy/:id',
     element: <ClientSubsidyDetail />,
+    requiresAuth: true,
+    useLayout: true,
+  },
+  {
+    path: '/manage-client',
+    element: <ManageClient />,
     requiresAuth: true,
     useLayout: true,
   },
