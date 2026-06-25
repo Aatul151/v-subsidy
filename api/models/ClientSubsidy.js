@@ -65,7 +65,23 @@ const clientSubsidySchema = new mongoose.Schema(
     archivedAt: {
       type: Date,
       default: null,
-    }
+    },
+
+    stageHistory: [
+      {
+        stageId: {
+          type: mongoose.Schema.Types.ObjectId,
+          required: true
+        },
+        updatedBy: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+          required: true
+        },
+        updatedAt: { type: Date, default: Date.now },
+        remarks: { type: String, default: "" }
+      }
+    ]
   },
   {
     timestamps: true,

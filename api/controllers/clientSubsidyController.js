@@ -38,6 +38,12 @@ export const createClientSubsidy = async (req, res) => {
             current_stage,
             expireOn,
             remarks,
+            stageHistory: [
+                {
+                    stageId: current_stage,
+                    updatedBy: req.user._id
+                }
+            ],
             createdBy: req.user._id
         });
 
@@ -92,7 +98,7 @@ export const getClientSubsidies = async (req, res) => {
 
         const [records, totalRecords, stageCounts] = await Promise.all([
             ClientSubsidy.find(filter)
-                .select("-isArchived -archivedBy -archivedAt")
+                .select("-stageHistory -isArchived -archivedBy -archivedAt")
                 .populate("client")
                 .sort({ createdAt: -1 })
                 .skip(skip)
@@ -208,7 +214,7 @@ export const getClientSubsidyById = async (req, res) => {
 export const updateClientSubsidy = async (req, res) => {
     try {
         const { id } = req.params;
-        const { client, subsidy, assigned_executive, current_stage, remarks, expireOn, documents } = req.body;
+        const { client, subsidy, assigned_executive, current_stage, remarks, expireOn, documents, stageRemark } = req.body;
 
         const validation = await validateFormAccess(CLIENT_SUBSIDY_FORM, req.user?.role, "update");
         if (!validation.success) {
@@ -220,10 +226,21 @@ export const updateClientSubsidy = async (req, res) => {
         if (client !== undefined) fieldToUpdate.client = client;
         if (subsidy !== undefined) fieldToUpdate.subsidy = subsidy;
         if (assigned_executive !== undefined) fieldToUpdate.assigned_executive = assigned_executive;
-        if (current_stage !== undefined) fieldToUpdate.current_stage = current_stage;
         if (expireOn !== undefined) fieldToUpdate.expireOn = expireOn;
         if (remarks !== undefined) fieldToUpdate.remarks = remarks;
         if (documents !== undefined) fieldToUpdate.documents = documents;
+
+        if (current_stage !== undefined) {
+            fieldToUpdate.current_stage = current_stage;
+            fieldToUpdate.$push = {
+                stageHistory: {
+                    stageId: current_stage,
+                    updatedBy: req.user._id,
+                    updatedAt: new Date(),
+                    remark: stageRemark || ""
+                }
+            };
+        }
 
         if (Object.keys(fieldToUpdate).length === 0) {
             return res.status(400).json({ success: false, message: "Please provide at least one field to update." });
