@@ -53,7 +53,7 @@ export const createClientSubsidy = async (req, res) => {
 // Fetch All
 export const getClientSubsidies = async (req, res) => {
     try {
-        const { client, subsidy, assigned_executive, current_stage, case_number, expireFrom, expireTo, page = 1, limit = 10, isArchived = false } = req.query;
+        const { client, subsidy, assigned_executive, current_stage, case_number, expireFrom, expireTo, page = 1, limit = 10, skip: customSkip, isArchived = false } = req.query;
 
         const validation = await validateFormAccess(CLIENT_SUBSIDY_FORM, req.user?.role, "read");
         if (!validation.success) {
@@ -70,20 +70,29 @@ export const getClientSubsidies = async (req, res) => {
         // Expire Date Range
         if (expireFrom || expireTo) {
             filter.expireOn = {};
-            if (expireFrom) { filter.expireOn.$gte = new Date(expireFrom); }
-            if (expireTo) { filter.expireOn.$lte = new Date(expireTo); }
+            if (expireFrom) {
+                const fromDate = new Date(expireFrom);
+                fromDate.setHours(0, 0, 0, 0);
+                filter.expireOn.$gte = fromDate;
+            }
+
+            if (expireTo) {
+                const toDate = new Date(expireTo);
+                toDate.setHours(23, 59, 59, 999);
+                filter.expireOn.$lte = toDate;
+            }
         }
         //#endregion
 
         const currentPage = Number(page);
         const pageSize = Number(limit);
-        const skip = (currentPage - 1) * pageSize;
-
-        const stageFilter = { ...filter };
-        delete stageFilter.current_stage;
+        // If the frontend explicitly sends a skip value (Kanban scroll), use it. 
+        // Otherwise fallback to traditional page calculations (Table View).
+        const skip = customSkip !== undefined ? Number(customSkip) : (currentPage - 1) * pageSize;
 
         const [records, totalRecords, stageCounts] = await Promise.all([
             ClientSubsidy.find(filter)
+                .select("-isArchived -archivedBy -archivedAt")
                 .populate("client")
                 .sort({ createdAt: -1 })
                 .skip(skip)
@@ -92,7 +101,7 @@ export const getClientSubsidies = async (req, res) => {
             ClientSubsidy.countDocuments(filter),
 
             ClientSubsidy.aggregate([
-                { $match: stageFilter },
+                { $match: filter },
                 {
                     $group: {
                         _id: "$current_stage",
@@ -102,27 +111,41 @@ export const getClientSubsidies = async (req, res) => {
             ])
         ]);
 
+        // Track what actually got loaded in this specific batch payload
         const loadedStageCounts = {};
         records.forEach(record => {
             const stageId = record?.current_stage?.toString();
-            if (!stageId) return;
-            loadedStageCounts[stageId] = (loadedStageCounts[stageId] || 0) + 1;
+            if (stageId) { loadedStageCounts[stageId] = (loadedStageCounts[stageId] || 0) + 1; }
         });
 
-        // Build stage summary
         const stageCountsWithPagination = stageCounts?.map(stage => {
-            const loadedCount = loadedStageCounts[stage?._id] || 0;
-            const remainingCount = Math.max(stage.count - loadedCount, 0);
-            const totalPages = Math.ceil(stage.count / pageSize);
+            const stageId = stage._id?.toString();
+            const totalStageCount = stage?.count;
+            const loadedInThisSlice = loadedStageCounts[stageId] || 0;
+
+            let nextSkip = 0;
+            let hasNextPage = false;
+
+            if (current_stage) {
+                // Scenario A: Loading more items for a single targeted column
+                // const currentSkipped = customSkip !== undefined ? Number(customSkip) : (currentPage - 1) * pageSize;
+                const totalLoadedSoFar = skip + loadedInThisSlice;
+
+                hasNextPage = totalLoadedSoFar < totalStageCount;
+                nextSkip = totalLoadedSoFar;
+            } else {
+                // Scenario B: Initial load pool (mixed records)
+                hasNextPage = totalStageCount > loadedInThisSlice;
+                nextSkip = loadedInThisSlice;
+            }
 
             return {
                 stageId: stage._id,
-                totalCount: stage.count,
-                nextPage: remainingCount > 0 ? Math.floor(loadedCount / pageSize) + 1 : 0,
-                hasNextPage: remainingCount > 0
+                totalCount: totalStageCount,
+                loadedCount: nextSkip, // The frontend will pass this value directly back as ?skip=
+                hasNextPage: hasNextPage
             };
         });
-
 
         // Populate Fields
         const data = records.map((e) => ({ payload: e?._doc }));
@@ -136,8 +159,8 @@ export const getClientSubsidies = async (req, res) => {
                 limit: pageSize,
                 totalRecords,
                 totalPages: Math.ceil(totalRecords / pageSize),
-                hasNextPage: currentPage * pageSize < totalRecords,
-                hasPrevPage: currentPage > 1,
+                hasNextPage: customSkip !== undefined ? (Number(customSkip) + records.length) < totalRecords : (currentPage * pageSize) < totalRecords,
+                hasPrevPage: customSkip !== undefined ? Number(customSkip) > 0 : currentPage > 1,
                 stageCounts: stageCountsWithPagination,
             },
             data: formateEntries
@@ -164,7 +187,7 @@ export const getClientSubsidyById = async (req, res) => {
             return res.status(404).json({ success: false, message: "Client subsidy not found." });
         }
 
-        const populatedEntries = await populateReferencesBatch([{ payload: clientSubsidy?._doc }], form);
+        const populatedEntries = await populateReferencesBatch([{ payload: clientSubsidy?._doc }], validation?.form);
         const formateEntries = populatedEntries?.map((e) => { return e?.payload });
 
         return res.status(200).json({
@@ -281,8 +304,8 @@ export const uploadDocument = async (req, res) => {
         const uploadResults = [];
         const field_name = fieldName || "default_documents";
 
-        let fileDir = `documents/${client_number}/${field_name}`;
-        if (case_number) { fileDir = `documents/${client_number}/${case_number}/${field_name}`; }
+        let fileDir = `documents/${client_number}`;
+        if (case_number) { fileDir = `documents/${client_number}/${case_number}`; }
 
         for (const file of files) {
             const tempFilePath = file.path;
@@ -290,17 +313,15 @@ export const uploadDocument = async (req, res) => {
             try {
                 const fileBuffer = await fs.readFile(tempFilePath);
 
-                const timestamp = Date.now();
-                const randomSuffix = Math.random().toString(36).slice(2, 9);
-                const dateTime = new Date().toISOString().replace(/[-:TZ.]/g, "").slice(0, 14);
+                const dateTime = new Date().toISOString().replace(/[-:TZ.]/g, "").slice(0, 17);
                 const fileExt = path.extname(file?.originalname);
-                const uniqueFileName = `${dateTime}_${randomSuffix}${fileExt}`;
+                const uniqueFileName = `${field_name}_${dateTime}${fileExt}`;
 
                 const uploadResult = await uploadFile(
                     fileBuffer,
                     fileDir,
                     uniqueFileName,
-                    file.mimetype,
+                    file.mimetype
                 );
 
                 uploadResults.push({
@@ -308,13 +329,13 @@ export const uploadDocument = async (req, res) => {
                     fileName: uniqueFileName,
                     fileUrl: uploadResult.fileUrl,
                     size: file.size,
-                    mimetype: file.mimetype,
+                    mimetype: file.mimetype
                 });
 
             } catch (error) {
                 uploadResults.push({
                     originalName: file.originalname,
-                    error: error.message,
+                    error: error.message
                 });
             }
         }
@@ -322,13 +343,13 @@ export const uploadDocument = async (req, res) => {
         res.status(200).json({
             success: true,
             message: `${uploadResults?.length} file(s) uploaded successfully`,
-            data: uploadResults,
+            data: uploadResults
         });
 
     } catch (error) {
         logger.error('Upload files error:', {
             error: error.message,
-            stack: error.stack,
+            stack: error.stack
         });
 
         res.status(500).json({
