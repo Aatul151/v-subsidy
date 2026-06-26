@@ -1,83 +1,63 @@
 {
-  "exportedAt": "2026-06-26T12:54:20.124Z",
+  "exportedAt": "2026-06-26T13:24:43.153Z",
   "count": 4,
   "forms": [
     {
-      "_id": "6a34df3485e924ffc5fb0c13",
-      "title": "Document Templates",
-      "name": "document_templates",
-      "collectionName": "document_template",
+      "_id": "6a34ef4443b4e72a812ac427",
+      "title": "Stages",
+      "name": "applicable_stages",
       "module": {
         "_id": "6a34df7685e924ffc5fb0cb8",
-        "name": "master",
+        "name": "manage_clients",
+        "description": "",
         "isActive": true
       },
       "sections": [
         {
-          "title": "Subsidy info",
+          "title": "Info",
           "fields": [
             {
               "type": "text",
-              "label": "Template Name",
-              "name": "name",
-              "required": true
+              "label": "label",
+              "name": "label",
+              "required": true,
+              "allowFilter": true
             },
             {
               "type": "text",
-              "label": "Details",
-              "name": "details",
+              "label": "value",
+              "name": "value",
+              "required": true,
+              "allowFilter": true
+            },
+            {
+              "type": "text",
+              "label": "Decription",
+              "name": "description",
+              "required": false,
+              "placeholder": ""
+            },
+            {
+              "type": "number",
+              "label": "Order Index",
+              "name": "order_index",
               "required": false
             },
             {
-              "type": "formReference",
-              "label": "Attech Doc",
-              "name": "attech_doc",
+              "type": "color",
+              "label": "Background color",
+              "name": "bgColor",
               "required": true,
-              "referenceFormName": "doc_list",
-              "referenceFieldName": "doc_name",
-              "allowMultiple": true
-            }
-          ],
-          "id": "section_1781849873546"
-        }
-      ],
-      "formType": "custom",
-      "settings": {
-        "formIcon": "",
-        "isPublic": false,
-        "isSingleRecordForm": false,
-        "allowManageFromEntryPage": false,
-        "fieldsPerRow": 1,
-        "sectionDisplayMode": "panel"
-      }
-    },
-    {
-      "_id": "6a34e18a85e924ffc5fb0df8",
-      "title": "Doc List",
-      "name": "doc_list",
-      "module": {
-        "_id": "6a34df7685e924ffc5fb0cb8",
-        "name": "master",
-        "isActive": true
-      },
-      "sections": [
-        {
-          "title": "Section 1",
-          "fields": [
-            {
-              "type": "text",
-              "label": "Document NAme",
-              "name": "doc_name",
-              "required": true
+              "allowFilter": true
             },
             {
               "type": "toggle",
-              "label": "Multi select doc",
-              "name": "isMaltiSelect",
+              "label": "isActive",
+              "name": "isActive",
               "required": false
             }
           ],
-          "id": "section_1781850429406"
+          "id": "section_1781853972922"
         }
       ],
       "formType": "custom",
@@ -97,7 +77,8 @@
       "collectionName": "subsidy",
       "module": {
         "_id": "6a34df7685e924ffc5fb0cb8",
-        "name": "master",
+        "name": "manage_clients",
+        "description": "",
         "isActive": true
       },
       "sections": [
@@ -152,60 +133,84 @@
       }
     },
     {
-      "_id": "6a34ef4443b4e72a812ac427",
-      "title": "Stages",
-      "name": "applicable_stages",
+      "_id": "6a34e18a85e924ffc5fb0df8",
+      "title": "Doc List",
+      "name": "doc_list",
       "module": {
         "_id": "6a34df7685e924ffc5fb0cb8",
-        "name": "master",
+        "name": "manage_clients",
+        "description": "",
         "isActive": true
       },
       "sections": [
         {
-          "title": "Info",
+          "title": "Section 1",
           "fields": [
             {
               "type": "text",
-              "label": "label",
-              "name": "label",
+              "label": "Document Name",
+              "name": "doc_name",
               "required": true,
               "allowFilter": true
-            },
-            {
-              "type": "text",
-              "label": "value",
-              "name": "value",
-              "required": true,
-              "allowFilter": true
-            },
-            {
-              "type": "color",
-              "label": "Background color",
-              "name": "bgColor",
-              "required": true,
-              "allowFilter": true
-            },
-            {
-              "type": "number",
-              "label": "Order Index",
-              "name": "order_index",
-              "required": false
             },
             {
               "type": "toggle",
-              "label": "isActive",
-              "name": "isActive",
+              "label": "Multi select doc",
+              "name": "isMaltiSelect",
               "required": false
+            }
+          ],
+          "id": "section_1781850429406"
+        }
+      ],
+      "formType": "custom",
+      "settings": {
+        "formIcon": "",
+        "isPublic": false,
+        "isSingleRecordForm": false,
+        "allowManageFromEntryPage": false,
+        "fieldsPerRow": 1,
+        "sectionDisplayMode": "panel"
+      }
+    },
+    {
+      "_id": "6a34df3485e924ffc5fb0c13",
+      "title": "Document Templates",
+      "name": "document_templates",
+      "collectionName": "document_template",
+      "module": {
+        "_id": "6a34df7685e924ffc5fb0cb8",
+        "name": "manage_clients",
+        "description": "",
+        "isActive": true
+      },
+      "sections": [
+        {
+          "title": "Subsidy info",
+          "fields": [
+            {
+              "type": "text",
+              "label": "Template Name",
+              "name": "name",
+              "required": true
             },
             {
               "type": "text",
-              "label": "Decription",
-              "name": "description",
-              "required": false,
-              "placeholder": ""
+              "label": "Details",
+              "name": "details",
+              "required": false
+            },
+            {
+              "type": "formReference",
+              "label": "Attach Doc",
+              "name": "attach_doc",
+              "required": true,
+              "referenceFormName": "doc_list",
+              "referenceFieldName": "doc_name",
+              "allowMultiple": true
             }
           ],
-          "id": "section_1781853972922"
+          "id": "section_1781849873546"
         }
       ],
       "formType": "custom",
