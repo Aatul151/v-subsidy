@@ -20,14 +20,22 @@ export const SYSTEM_MODULES = [
 ];
 
 export const DEFAULT_MODULES = [
-    // {
-    //     _id: new mongoose.Types.ObjectId('695e36822057e48fc9b80249'),
-    //     name: "people",
-    //     description: "Student Form | Teacher Form | Parent Form | Staff Form",
-    //     icon: "People",
-    //     isActive: true,
-    //     isDefault: true,
-    // },
+    {
+        _id: new mongoose.Types.ObjectId('6a34ee8343b4e72a812ac332'),
+        name: "client_subsidy",
+        description: "",
+        icon: "",
+        isActive: true,
+        isDefault: true,
+    },
+    {
+        _id: new mongoose.Types.ObjectId('6a34df7685e924ffc5fb0cb8'),
+        name: "manage_clients",
+        description: "",
+        icon: "",
+        isActive: true,
+        isDefault: true,
+    },
 ]
 
 export const SYSTEM_ROLES = [

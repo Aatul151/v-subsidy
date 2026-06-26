@@ -1,0 +1,222 @@
+{
+  "exportedAt": "2026-06-26T12:54:20.124Z",
+  "count": 4,
+  "forms": [
+    {
+      "_id": "6a34df3485e924ffc5fb0c13",
+      "title": "Document Templates",
+      "name": "document_templates",
+      "collectionName": "document_template",
+      "module": {
+        "_id": "6a34df7685e924ffc5fb0cb8",
+        "name": "master",
+        "isActive": true
+      },
+      "sections": [
+        {
+          "title": "Subsidy info",
+          "fields": [
+            {
+              "type": "text",
+              "label": "Template Name",
+              "name": "name",
+              "required": true
+            },
+            {
+              "type": "text",
+              "label": "Details",
+              "name": "details",
+              "required": false
+            },
+            {
+              "type": "formReference",
+              "label": "Attech Doc",
+              "name": "attech_doc",
+              "required": true,
+              "referenceFormName": "doc_list",
+              "referenceFieldName": "doc_name",
+              "allowMultiple": true
+            }
+          ],
+          "id": "section_1781849873546"
+        }
+      ],
+      "formType": "custom",
+      "settings": {
+        "formIcon": "",
+        "isPublic": false,
+        "isSingleRecordForm": false,
+        "allowManageFromEntryPage": false,
+        "fieldsPerRow": 1,
+        "sectionDisplayMode": "panel"
+      }
+    },
+    {
+      "_id": "6a34e18a85e924ffc5fb0df8",
+      "title": "Doc List",
+      "name": "doc_list",
+      "module": {
+        "_id": "6a34df7685e924ffc5fb0cb8",
+        "name": "master",
+        "isActive": true
+      },
+      "sections": [
+        {
+          "title": "Section 1",
+          "fields": [
+            {
+              "type": "text",
+              "label": "Document NAme",
+              "name": "doc_name",
+              "required": true
+            },
+            {
+              "type": "toggle",
+              "label": "Multi select doc",
+              "name": "isMaltiSelect",
+              "required": false
+            }
+          ],
+          "id": "section_1781850429406"
+        }
+      ],
+      "formType": "custom",
+      "settings": {
+        "formIcon": "",
+        "isPublic": false,
+        "isSingleRecordForm": false,
+        "allowManageFromEntryPage": false,
+        "fieldsPerRow": 1,
+        "sectionDisplayMode": "panel"
+      }
+    },
+    {
+      "_id": "6a34ee4d43b4e72a812ac2d6",
+      "title": "Manage Subsidy",
+      "name": "manage_subsidy",
+      "collectionName": "subsidy",
+      "module": {
+        "_id": "6a34df7685e924ffc5fb0cb8",
+        "name": "master",
+        "isActive": true
+      },
+      "sections": [
+        {
+          "title": "Section 1",
+          "fields": [
+            {
+              "type": "text",
+              "label": "Subsidy Name",
+              "name": "subsidy_name",
+              "required": false
+            },
+            {
+              "type": "text",
+              "label": "Description",
+              "name": "description",
+              "required": false
+            },
+            {
+              "type": "text",
+              "label": "Government Department",
+              "name": "government_department",
+              "required": false
+            },
+            {
+              "type": "text",
+              "label": "Eligibility Notes",
+              "name": "eligibility_notes",
+              "required": false
+            },
+            {
+              "type": "formReference",
+              "label": "Requird Docs",
+              "name": "requird_docs",
+              "required": true,
+              "allowMultiple": true,
+              "referenceFormName": "doc_list",
+              "referenceFieldName": "doc_name"
+            }
+          ],
+          "id": "section_1781853648172"
+        }
+      ],
+      "formType": "custom",
+      "settings": {
+        "formIcon": "",
+        "isPublic": false,
+        "isSingleRecordForm": false,
+        "allowManageFromEntryPage": false,
+        "fieldsPerRow": 1,
+        "sectionDisplayMode": "panel"
+      }
+    },
+    {
+      "_id": "6a34ef4443b4e72a812ac427",
+      "title": "Stages",
+      "name": "applicable_stages",
+      "module": {
+        "_id": "6a34df7685e924ffc5fb0cb8",
+        "name": "master",
+        "isActive": true
+      },
+      "sections": [
+        {
+          "title": "Info",
+          "fields": [
+            {
+              "type": "text",
+              "label": "label",
+              "name": "label",
+              "required": true,
+              "allowFilter": true
+            },
+            {
+              "type": "text",
+              "label": "value",
+              "name": "value",
+              "required": true,
+              "allowFilter": true
+            },
+            {
+              "type": "color",
+              "label": "Background color",
+              "name": "bgColor",
+              "required": true,
+              "allowFilter": true
+            },
+            {
+              "type": "number",
+              "label": "Order Index",
+              "name": "order_index",
+              "required": false
+            },
+            {
+              "type": "toggle",
+              "label": "isActive",
+              "name": "isActive",
+              "required": false
+            },
+            {
+              "type": "text",
+              "label": "Decription",
+              "name": "description",
+              "required": false,
+              "placeholder": ""
+            }
+          ],
+          "id": "section_1781853972922"
+        }
+      ],
+      "formType": "custom",
+      "settings": {
+        "formIcon": "",
+        "isPublic": false,
+        "isSingleRecordForm": false,
+        "allowManageFromEntryPage": false,
+        "fieldsPerRow": 1,
+        "sectionDisplayMode": "panel"
+      }
+    }
+  ]
+}
