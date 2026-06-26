@@ -33,7 +33,7 @@ export const fileUploadAPI = {
     const formData = new FormData();
     formData.append('formName', formName);
     formData.append('fieldName', fieldName);
-    
+
     // Append all files
     files.forEach((file) => {
       formData.append('files', file);
@@ -69,6 +69,31 @@ export const fileUploadAPI = {
    */
   deleteFile: async (formName: string, formRecordId: string, fileName: string): Promise<void> => {
     await axiosInstance.delete(`/file-upload/${formName}/${formRecordId}/${fileName}`);
+  },
+
+  uploadClientFiles: async (
+    fieldName: string,
+    files: File[],
+    client_number: string,
+    case_number: string,
+  ): Promise<UploadedFile[]> => {
+    const formData = new FormData();
+    formData.append('fieldName', fieldName);
+    formData.append('client_number', client_number);
+    formData.append('case_number', case_number);
+
+    // Append all files
+    files.forEach((file) => {
+      formData.append('files', file);
+    });
+
+    const response = await axiosInstance.post<FileUploadResponse>('/client-subsidy/upload-doc', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+
+    return response.data.data;
   },
 };
 

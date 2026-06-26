@@ -1,4 +1,4 @@
-import { ArrowBack, ArrowForward, Assignment, DescriptionOutlined, TrendingUp } from "@mui/icons-material";
+import { ArrowBack, ArrowForward, Assignment, DescriptionOutlined, Edit, TrendingUp, Visibility } from "@mui/icons-material";
 import {
     Box,
     Button,
@@ -17,111 +17,99 @@ import {
 } from "@mui/material";
 
 import Grid from "@mui/material/Grid2";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PageHeader } from "../../components/common/PageHeader";
 import { useNavigate, useParams } from "react-router-dom";
-
-const stages = [
-    {
-        name: "Application Submitted",
-        createdAt: "10 Jun 2026, 10:30 AM",
-        description: "Application and initial documents submitted.",
-    },
-    {
-        name: "Verification",
-        createdAt: "11 Jun 2026, 02:00 PM",
-        description: "Documents are under verification.",
-    },
-    {
-        name: "Inspection",
-        createdAt: "",
-        description: "Inspection will be scheduled.",
-    },
-    {
-        name: "Approval",
-        createdAt: "",
-        description: "Awaiting approval.",
-    },
-    {
-        name: "Disbursement",
-        createdAt: "",
-        description: "Subsidy amount will be released.",
-    },
-];
-
-const subsidyCase = {
-    caseNo: "CASE-2026-0001",
-    subsidyName: "MSME Subsidy",
-    clientName: "ABC Industries",
-    assignedExecutive: "Karan Patel",
-
-    currentStage: "Verification",
-    currentStatus: "Active",
-    state: "Gujarat",
-    department: "MSME",
-
-    documentsUploaded: 3,
-    totalDocuments: 5,
-    progress: 40,
-
-    createdAt: "10 Jun 2026",
-    updatedAt: "12 Jun 2026",
-};
+import { useQuery } from "@tanstack/react-query";
+import { clientSubsidyAPI } from "@/api/clientSubsidy";
+import { SYSTEM_FORM_NAMES } from "@/utils/formUtils";
+import { formEntriesAPI } from "@/api/forms";
+import dayjs from "dayjs";
+import { AppDrawer } from "@/components/common/AppDrawer";
+import DocumentManager from "./DocumentManager";
+import { useAppAlert } from "@/components/common/AppAlert";
 
 export default function ClientSubsidyDetail() {
     const [activeStage, setActiveStage] = useState(0);
-    const [subsidyDetail, setSubsidyDetail] = useState(subsidyCase);
+    const [subsidyDetail, setSubsidyDetail] = useState<any>(null);
+    const [documentMode, setDocumentMode] = useState<any>(null);
     const navigate = useNavigate();
     const { id } = useParams();
+    const { showAlert } = useAppAlert();
+
+    const { data: stagesList = [] } = useQuery({
+        queryKey: ['formEntries', SYSTEM_FORM_NAMES.APPLICABLE_STAGES],
+        queryFn: async () => {
+            try {
+                const response = await formEntriesAPI.getAll({
+                    formName: SYSTEM_FORM_NAMES.APPLICABLE_STAGES, page: 1, limit: 10,
+                });
+                return response.data || [];
+            } catch (error: any) {
+                showAlert('error', error.response?.data?.message);
+            }
+        },
+    });
+
+    const {
+        data: clientSubsidydetail,
+    } = useQuery({
+        queryKey: ['client_subsidy', id],
+        queryFn: async () => {
+            if (!id) return;
+            return await clientSubsidyAPI.getById(id);
+
+        },
+        placeholderData: (previousData) => previousData, // Keep previous data while fetching new page
+    });
+
+    useEffect(() => {
+        setSubsidyDetail(clientSubsidydetail?.[0])
+    }, [clientSubsidydetail])
 
     const handleStageStep = (selectedIdx: number, direction?: string) => {
         let nextStage = selectedIdx
         if (direction) nextStage = direction === '+' ? selectedIdx + 1 : selectedIdx - 1
-        setActiveStage((nextStage) % stages?.length);
+        setActiveStage((nextStage) % stagesList?.length);
     };
 
     const headerFields = [
         {
             label: "Case No",
-            value: subsidyDetail?.caseNo,
+            value: subsidyDetail?.case_number || '-',
         },
         {
             label: "Subsidy Name",
-            value: subsidyDetail?.subsidyName,
+            value: subsidyDetail?.subsidy_ref?.subsidy_name || '-',
         },
         {
             label: "Client Name",
-            value: subsidyDetail?.clientName,
+            value: subsidyDetail?.client?.name || '-',
         },
         {
             label: "Assigned Executive",
-            value: subsidyDetail?.assignedExecutive,
+            value: subsidyDetail?.assigned_executive?.name || '-',
         },
         {
             label: "State",
-            value: subsidyDetail?.state,
+            value: subsidyDetail?.state || '-',
         },
         {
             label: "Current Stage",
-            value: stages[activeStage]?.name,
-            isStatus: true
-        },
-        {
-            label: "Current Status",
-            value: subsidyDetail?.currentStatus,
+            value: subsidyDetail?.current_stage_ref?.label || '-',
             isStatus: true
         },
         {
             label: "Department",
-            value: subsidyDetail?.department,
+            value: subsidyDetail?.subsidy_ref?.government_department || '-',
         },
         {
             label: "Created At",
-            value: subsidyDetail?.createdAt,
+            value: dayjs(subsidyDetail?.createdAt).format("DD-MM-YYYY") || '-',
         },
         {
             label: "Updated At",
-            value: subsidyDetail?.updatedAt,
+            value: dayjs(subsidyDetail?.updatedAt).format("DD-MM-YYYY") || '-',
         },
     ];
 
@@ -215,14 +203,36 @@ export default function ClientSubsidyDetail() {
                                 size="small"
                                 variant="outlined"
                                 icon={<DescriptionOutlined />}
-                                label="Documents: 3/5"
-                                sx={{ p: 1, color: 'primary.main', borderColor: "primary.main", '& .MuiChip-icon': { color: 'primary.main' } }}
+                                label={
+                                    <Stack direction="row" alignItems="center" spacing={1}>
+                                        <Typography variant="body2">Documents: 3 out of 5</Typography>
+
+                                        <Tooltip title="View Documents" placement="bottom" arrow>
+                                            <Visibility fontSize="small" sx={{ cursor: 'pointer' }}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setDocumentMode('view');
+                                                }}
+                                            />
+                                        </Tooltip>
+
+                                        <Tooltip title="Edit Documents" placement="bottom" arrow>
+                                            <Edit fontSize="small" sx={{ cursor: 'pointer' }}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setDocumentMode('edit');
+                                                }}
+                                            />
+                                        </Tooltip>
+                                    </Stack>
+                                }
+                                sx={{ p: 1, color: 'primary.main', borderColor: "primary.main", '& .MuiChip-icon': { color: 'primary.main' }, cursor: 'pointer' }}
                             />
 
                             <Chip
                                 size="small"
                                 variant="outlined"
-                                label={`Progress: ${(activeStage / stages?.length) * 100} %`}
+                                label={`Progress: ${(activeStage / stagesList?.length) * 100} %`}
                                 icon={<TrendingUp />}
                                 sx={{ p: 1, color: 'primary.main', borderColor: "primary.main", '& .MuiChip-icon': { color: 'primary.main' } }}
                             />
@@ -255,27 +265,29 @@ export default function ClientSubsidyDetail() {
                                     activeStep={activeStage}
                                     orientation="vertical"
                                 >
-                                    {stages.map((stage, idx) => (
-                                        <Step key={stage.name}>
-                                            <StepLabel onClick={() => { if (idx <= activeStage) { handleStageStep(idx) } }} sx={{ cursor: "pointer" }}>
-                                                <Typography fontWeight={600}>
-                                                    {stage.name}
-                                                </Typography>
-                                                {stage?.createdAt && <Typography color="text.secondary" variant="subtitle2" fontWeight={600} fontSize={12}>
-                                                    {stage.createdAt}
-                                                </Typography>}
-                                            </StepLabel>
+                                    {[...(stagesList || [])]
+                                        .sort((a: any, b: any) => a?.payload?.orderIndex - b?.payload?.orderIndex)
+                                        .map((stage: any, idx) => (
+                                            <Step key={stage?.payload?.label}>
+                                                <StepLabel onClick={() => { if (idx <= activeStage) { handleStageStep(idx) } }} sx={{ cursor: "pointer" }}>
+                                                    <Typography fontWeight={600}>
+                                                        {stage?.payload?.label}
+                                                    </Typography>
+                                                    {stage?.createdAt && <Typography color="text.secondary" variant="subtitle2" fontWeight={600} fontSize={12}>
+                                                        {stage?.createdAt}
+                                                    </Typography>}
+                                                </StepLabel>
 
-                                            <StepContent>
-                                                <Typography
-                                                    variant="body2"
-                                                    sx={{ mt: 1 }}
-                                                >
-                                                    {stage.description}
-                                                </Typography>
-                                            </StepContent>
-                                        </Step>
-                                    ))}
+                                                <StepContent>
+                                                    <Typography
+                                                        variant="body2"
+                                                        sx={{ mt: 1 }}
+                                                    >
+                                                        {stage?.payload?.description}
+                                                    </Typography>
+                                                </StepContent>
+                                            </Step>
+                                        ))}
                                 </Stepper>
                             </Paper>
                         </Grid>
@@ -322,7 +334,7 @@ export default function ClientSubsidyDetail() {
                                         size="small"
                                         endIcon={<ArrowForward />}
                                         onClick={() => handleStageStep(activeStage, '+')}
-                                        disabled={activeStage === stages.length - 1}
+                                        disabled={activeStage === stagesList.length - 1}
                                     >
                                         Next Stage
                                     </Button>
@@ -348,7 +360,7 @@ export default function ClientSubsidyDetail() {
                                         fontWeight={700}
                                         textAlign="center"
                                     >
-                                        {stages[activeStage]?.name}
+                                        {stagesList[activeStage]?.payload?.label}
                                     </Typography>
 
                                     <Typography
@@ -357,7 +369,7 @@ export default function ClientSubsidyDetail() {
                                         textAlign="center"
                                         maxWidth={500}
                                     >
-                                        {stages[activeStage]?.description}
+                                        {stagesList[activeStage]?.description}
                                     </Typography>
                                 </Stack>
                             </Paper>
@@ -365,6 +377,14 @@ export default function ClientSubsidyDetail() {
                     </Grid>
                 </Stack>
             </Box>
+
+            <AppDrawer open={Boolean(documentMode)} onClose={() => setDocumentMode(null)} title={`${documentMode == "edit" ? "Edit" : "View"} Document`} anchor="right" width={600}>
+                <DocumentManager
+                    caseDetail={subsidyDetail}
+                    documentMode={documentMode}
+                    onClose={() => setDocumentMode(false)}
+                />
+            </AppDrawer>
         </>
     );
 }

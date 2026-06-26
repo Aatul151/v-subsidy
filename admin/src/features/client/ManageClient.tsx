@@ -1,7 +1,7 @@
 import { PageHeader } from "@/components/common/PageHeader";
 import { Alert, Box, Button, ButtonGroup, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Tooltip, Typography } from "@mui/material";
 import { FormatListBulleted as FormatListBulletedIcon } from '@mui/icons-material';
-import { Add as AddIcon, Edit as EditIcon, Visibility as ViewIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import { Add as AddIcon, Edit as EditIcon, Visibility as ViewIcon } from '@mui/icons-material';
 import { PageContent } from "@/components/common/PageContent";
 import { AppDataTable } from "@/components/common/AppDataTable";
 import { useState } from "react";
@@ -46,23 +46,23 @@ export default function ManageClient() {
 
     const formSchema = formSchemaRaw;
 
-    const pagination = { page: 0, pageSize: 10 };
-
+    const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 10, });
     // GET clients list
     const {
         data: clientData,
         isLoading: clientLoading,
     } = useQuery({
-        queryKey: ['manage-clients', pagination.page, pagination.pageSize],
+        queryKey: ['manage-clients', paginationModel.page, paginationModel.pageSize],
         queryFn: async () => {
             // API uses 1-based page numbers
-            const apiPage = pagination.page + 1;
-            const apiLimit = pagination.pageSize;
+            const apiPage = paginationModel.page + 1;
+            const apiLimit = paginationModel.pageSize;
             return await clientsAPI.getAll(apiPage, apiLimit);
         },
         placeholderData: (previousData) => previousData, // Keep previous data while fetching new page
     });
     const clients = clientData?.data || [];
+    const pagination = clientData?.pagination as any
 
     // Create client mutation
     const createMutation = useMutation({
@@ -189,6 +189,14 @@ export default function ManageClient() {
 
         // Add metadata columns
         columns.push(
+            {
+                field: 'clientNo',
+                headerName: 'Client No.',
+                width: 180,
+                renderCell: (params: any) => {
+                    return params?.row?.client_number;
+                },
+            },
             {
                 field: 'actions',
                 type: 'actions',
@@ -326,6 +334,13 @@ export default function ManageClient() {
                     columns={columns}
                     loading={clientLoading}
                     getRowId={(row) => row._id}
+                    serverPagination
+                    rowCount={pagination?.totalRecords || 0}
+                    paginationModel={paginationModel}
+                    onPaginationModelChange={(newModel) => {
+                        setPaginationModel(newModel);
+                    }}
+
                 />
             </PageContent>
 

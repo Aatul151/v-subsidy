@@ -2,6 +2,7 @@ import axiosInstance from '@/api/axiosInstance';
 import { rolesAPI } from '@/api/roles';
 import { usersAPI } from '@/api/users';
 import { OptionItem } from '@/api/forms';
+import { clientsAPI } from '@/api/manageClient';
 
 interface ApiResponse<T> {
   success: boolean;
@@ -51,6 +52,14 @@ export const apiReferenceService = {
         }));
       }
 
+      if (endpoint === '/clients' || endpoint === 'clients') {
+        const response = await clientsAPI.getAll(1, 1000);
+        return response.data.map((item: any) => ({
+          label: String(item[labelField] || item.name || item.email || item._id || 'Unknown'),
+          value: String(item[valueField] || item._id || ''),
+        }));
+      }
+
       // Generic API call for other endpoints
       const response = await axiosInstance.get<ApiResponse<any[]>>(endpoint, {
         params: { page: 1, limit: 1000 },
@@ -74,6 +83,7 @@ export const apiReferenceService = {
     return [
       { value: '/roles', label: 'Roles', referenceModel: 'Role' },
       { value: '/users', label: 'Users', referenceModel: 'User' },
+      { value: '/clients', label: 'Clients', referenceModel: 'Clients' },
       // Add more endpoints as needed
     ];
   },

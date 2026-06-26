@@ -1,6 +1,8 @@
 import { Theme } from "@emotion/react";
-import { Box, Card, Typography, Button, Chip, Avatar, SxProps } from "@mui/material";
-import { useState } from "react";
+import { Box, Card, Typography, Button, Chip, SxProps, IconButton } from "@mui/material";
+import { useEffect, useState } from "react";
+import { Refresh as RefreshIcon, Launch as LaunchIcon } from '@mui/icons-material';
+import { useNavigate } from "react-router-dom";
 
 type KanbanContainerProps = {
     value: string;
@@ -11,17 +13,17 @@ type KanbanContainerProps = {
     height?: string;
     loading?: boolean;
     pagination: {
-        currentPage: number,
-        limit: number,
-        total: number,
-        totalPages: number,
+        loadedCount: number,
+        nextPage: boolean,
         hasNextPage: boolean,
-        hasPrevPage: boolean,
+        stageId: any
+        totalCount: number
     },
-    onShowMore?: () => void;
+    onShowMore?: (value: any) => void;
     boardIndex: number;
     onDragStart: (item: any, boardIndex: number) => void;
     onDrop: (value: any) => void;
+    onRefresh: () => void
 };
 
 type KanbanBoardProps = {
@@ -29,6 +31,7 @@ type KanbanBoardProps = {
     onShowMore?: (value: any) => void;
     loading?: boolean;
     onDrop?: (params: { row: any; stage: any; }) => void;
+    onRefresh?: (value: any) => void;
     sx?: SxProps<Theme>;
 };
 
@@ -37,10 +40,15 @@ export default function KanbanBoard({
     onShowMore,
     loading,
     onDrop,
+    onRefresh,
     sx
 }: KanbanBoardProps) {
     const [boards, setBoards] = useState(initialBoards);
     const [dragItem, setDragItem] = useState<{ item: any; sourceBoard: number; } | null>(null);
+
+    useEffect(() => {
+        setBoards(initialBoards);
+    }, [initialBoards]);
 
     const handleDragStart = (item: any, sourceBoard: number) => {
         setDragItem({ item, sourceBoard });
@@ -57,8 +65,7 @@ export default function KanbanBoard({
         updatedBoards[destinationBoard].data.push(dragItem.item);
         setBoards(updatedBoards);
         setDragItem(null);
-
-        onDrop?.({ row: dragItem.item, stage: updatedBoards[destinationBoard].value });
+        onDrop?.({ row: dragItem.item, stage: updatedBoards[destinationBoard]._id });
     };
 
     return (
@@ -72,7 +79,7 @@ export default function KanbanBoard({
                 ...sx
             }}
         >
-            {boards.map((board, index) => (
+            {boards?.map((board, index) => (
                 <KanbanItem
                     key={board.value}
                     {...board}
@@ -81,6 +88,7 @@ export default function KanbanBoard({
                     onDragStart={handleDragStart}
                     onDrop={handleDrop}
                     onShowMore={() => onShowMore?.(board)}
+                    onRefresh={() => onRefresh?.(board)}
                 />
             ))}
         </Box>
@@ -97,8 +105,10 @@ function KanbanItem({
     boardIndex,
     onDragStart,
     onDrop,
+    onRefresh
 }: KanbanContainerProps) {
-    const { hasNextPage } = pagination;
+    const { hasNextPage, totalCount } = pagination;
+    const navigate = useNavigate();
     return (
         <Box
             onDragOver={(e) => e.preventDefault()}
@@ -131,7 +141,18 @@ function KanbanItem({
                 }}
             >
                 <Typography sx={{ fontWeight: 700 }} > {label}</Typography>
-                <Chip size="small" label={data.length} />
+                <Box
+                    sx={{
+                        display: "flex",
+                        alignItems: "center",
+                    }}>
+                    {(data?.length == 0 && totalCount > 0) &&
+                        <Button onClick={onRefresh}  >
+                            <RefreshIcon fontSize="small" />
+                        </Button>}
+
+                    {totalCount && <Chip size="small" label={totalCount} />}
+                </Box>
             </Box>
 
             <Box
@@ -161,22 +182,32 @@ function KanbanItem({
                             "&:hover": { boxShadow: "0px 10px 18px rgba(0,0,0,.08)", border: "1px solid black" },
                         }}
                     >
-                        <Typography sx={{ fontWeight: 600 }}>
-                            {item?.title}
-                        </Typography>
+                        <Box sx={{ display: "flex", alignItems: 'center', justifyContent: 'space-between' }}>
+                            <Typography sx={{ fontWeight: 600 }}>
+                                {item?.title}
+                            </Typography>
+                            <IconButton onClick={() => navigate(`/client-subsidy/${item.id}`)}>
+                                <LaunchIcon fontSize="small" />
+                            </IconButton>
+                        </Box>
 
-                        <Typography fontSize={12} color="text.secondary"  >
+                        <Box sx={{ display: "flex", alignItems: 'center', justifyContent: 'space-between' }}>
+                            <Typography fontSize={14} color="primary"  >
+                                {item?.person}
+                            </Typography>
+                            <Typography fontSize={12} color="primary"  >
+                                {item?.case_number}
+                            </Typography>
+                        </Box>
+
+                        <Typography fontSize={12} color="textSecondary"  >
                             {item?.description}
                         </Typography>
-
-                        <Avatar sx={{ mt: 1, width: 26, height: 26, fontSize: 11, ml: "auto" }}  >
-                            {item?.person?.[0]?.toUpperCase()}
-                        </Avatar>
                     </Card>
 
                 ))}
 
-                {hasNextPage && (
+                {(hasNextPage && data?.length > 0) && (
                     <Button
                         fullWidth
                         disabled={loading}
