@@ -1,11 +1,15 @@
-import { ArrowBack, ArrowForward, Assignment, DescriptionOutlined, Edit, TrendingUp, Visibility } from "@mui/icons-material";
+import { ArrowBack, ArrowForward, Assignment, DescriptionOutlined, Edit, TrendingUp, Visibility, Close as CloseIcon, DescriptionOutlined as DescriptionOutlinedIcon } from "@mui/icons-material";
 import {
     Box,
     Button,
     ButtonGroup,
     Card,
     Chip,
+    Dialog,
+    DialogContent,
+    DialogTitle,
     Divider,
+    IconButton,
     Paper,
     Stack,
     Step,
@@ -30,9 +34,11 @@ import DocumentManager from "./DocumentManager";
 import { useAppAlert } from "@/components/common/AppAlert";
 
 export default function ClientSubsidyDetail() {
-    const [activeStage, setActiveStage] = useState(0);
     const [subsidyDetail, setSubsidyDetail] = useState<any>(null);
     const [documentMode, setDocumentMode] = useState<any>(null);
+    const [openDocumentList, setOpenDocumentList] = useState(false);
+    const [activeStage, setActiveStage] = useState(0);
+
     const navigate = useNavigate();
     const { id } = useParams();
     const { showAlert } = useAppAlert();
@@ -51,6 +57,15 @@ export default function ClientSubsidyDetail() {
         },
     });
 
+    const sortedStages = [...(stagesList || [])].sort((a: any, b: any) => a?.payload?.order_index - b?.payload?.order_index);
+    const currentStageIndex = sortedStages.findIndex((stage: any) => stage?.payload?.label === subsidyDetail?.current_stage_ref?.label);
+
+    useEffect(() => {
+        if (currentStageIndex >= 0) {
+            setActiveStage(currentStageIndex);
+        }
+    }, [currentStageIndex]);
+
     const {
         data: clientSubsidydetail,
     } = useQuery({
@@ -68,7 +83,7 @@ export default function ClientSubsidyDetail() {
     }, [clientSubsidydetail])
 
     const handleStageStep = (selectedIdx: number, direction?: string) => {
-        let nextStage = selectedIdx
+        let nextStage = selectedIdx;
         if (direction) nextStage = direction === '+' ? selectedIdx + 1 : selectedIdx - 1
         setActiveStage((nextStage) % stagesList?.length);
     };
@@ -139,10 +154,9 @@ export default function ClientSubsidyDetail() {
     );
 
     const getColor = (item: any) => {
-        if (item?.label === 'Current Stage') return 'secondary.main'
-        else return 'primary.main'
+        if (item?.label === 'Current Stage') return subsidyDetail?.current_stage_ref?.bgColor;
+        else return 'primary.main';
     }
-
     return (
         <>
             <Box>
@@ -180,7 +194,7 @@ export default function ClientSubsidyDetail() {
                                                 size="small"
                                                 variant="outlined"
                                                 label={item?.value}
-                                                sx={{ bgcolor: `${getColor(item)}`, color: 'white', borderColor: `${getColor(item)}` }}
+                                                sx={{ bgcolor: `${getColor(item)}`, borderColor: `${getColor(item)}` }}
                                             />
                                         </Typography>
                                         :
@@ -205,9 +219,18 @@ export default function ClientSubsidyDetail() {
                                 icon={<DescriptionOutlined />}
                                 label={
                                     <Stack direction="row" alignItems="center" spacing={1}>
-                                        <Typography variant="body2">Documents: 3 out of 5</Typography>
+                                        <Typography variant="body2">Documents: {(subsidyDetail?.subsidy_ref?.requird_docs_ref?.length || 0)} required</Typography>
 
-                                        <Tooltip title="View Documents" placement="bottom" arrow>
+                                        {subsidyDetail?.subsidy_ref?.requird_docs_ref?.length > 0 && <Tooltip title="View Documents" placement="bottom" arrow>
+                                            <Visibility fontSize="small" sx={{ cursor: 'pointer' }}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setOpenDocumentList(true);
+                                                }}
+                                            />
+                                        </Tooltip>}
+
+                                        {/* <Tooltip title="View Documents" placement="bottom" arrow>
                                             <Visibility fontSize="small" sx={{ cursor: 'pointer' }}
                                                 onClick={(e) => {
                                                     e.stopPropagation();
@@ -223,7 +246,7 @@ export default function ClientSubsidyDetail() {
                                                     setDocumentMode('edit');
                                                 }}
                                             />
-                                        </Tooltip>
+                                        </Tooltip> */}
                                     </Stack>
                                 }
                                 sx={{ p: 1, color: 'primary.main', borderColor: "primary.main", '& .MuiChip-icon': { color: 'primary.main' }, cursor: 'pointer' }}
@@ -232,7 +255,11 @@ export default function ClientSubsidyDetail() {
                             <Chip
                                 size="small"
                                 variant="outlined"
-                                label={`Progress: ${(activeStage / stagesList?.length) * 100} %`}
+                                label={`Progress: ${subsidyDetail?.subsidy_ref?.requird_docs_ref?.length
+                                    ? Math.round(
+                                        ((subsidyDetail?.documents?.length || 0) /
+                                            subsidyDetail?.subsidy_ref?.requird_docs_ref?.length) * 100
+                                    ) : 0}%`}
                                 icon={<TrendingUp />}
                                 sx={{ p: 1, color: 'primary.main', borderColor: "primary.main", '& .MuiChip-icon': { color: 'primary.main' } }}
                             />
@@ -265,29 +292,33 @@ export default function ClientSubsidyDetail() {
                                     activeStep={activeStage}
                                     orientation="vertical"
                                 >
-                                    {[...(stagesList || [])]
-                                        .sort((a: any, b: any) => a?.payload?.orderIndex - b?.payload?.orderIndex)
-                                        .map((stage: any, idx) => (
-                                            <Step key={stage?.payload?.label}>
-                                                <StepLabel onClick={() => { if (idx <= activeStage) { handleStageStep(idx) } }} sx={{ cursor: "pointer" }}>
-                                                    <Typography fontWeight={600}>
-                                                        {stage?.payload?.label}
-                                                    </Typography>
-                                                    {stage?.createdAt && <Typography color="text.secondary" variant="subtitle2" fontWeight={600} fontSize={12}>
-                                                        {stage?.createdAt}
-                                                    </Typography>}
-                                                </StepLabel>
+                                    {sortedStages.map((stage: any, idx) => (
+                                        <Step key={stage?.payload?.label}>
+                                            <StepLabel
+                                                onClick={() => { if (idx <= currentStageIndex) { handleStageStep(idx); } }}
+                                                sx={{
+                                                    cursor: idx <= currentStageIndex ? "pointer" : "not-allowed",
+                                                    opacity: idx <= currentStageIndex ? 1 : 0.5
+                                                }}
+                                            >
+                                                <Typography fontWeight={600}>
+                                                    {stage?.payload?.label}
+                                                </Typography>
 
-                                                <StepContent>
-                                                    <Typography
-                                                        variant="body2"
-                                                        sx={{ mt: 1 }}
-                                                    >
-                                                        {stage?.payload?.description}
+                                                {stage?.createdAt && (
+                                                    <Typography variant="body2" sx={{ mt: 1 }} >
+                                                        {dayjs(subsidyDetail?.createdAt).format("DD-MM-YYYY")}
                                                     </Typography>
-                                                </StepContent>
-                                            </Step>
-                                        ))}
+                                                )}
+                                            </StepLabel>
+
+                                            <StepContent>
+                                                <Typography variant="body2" sx={{ mt: 1 }}>
+                                                    {stage?.payload?.description}
+                                                </Typography>
+                                            </StepContent>
+                                        </Step>
+                                    ))}
                                 </Stepper>
                             </Paper>
                         </Grid>
@@ -334,7 +365,7 @@ export default function ClientSubsidyDetail() {
                                         size="small"
                                         endIcon={<ArrowForward />}
                                         onClick={() => handleStageStep(activeStage, '+')}
-                                        disabled={activeStage === stagesList.length - 1}
+                                        disabled={activeStage >= currentStageIndex}
                                     >
                                         Next Stage
                                     </Button>
@@ -360,7 +391,7 @@ export default function ClientSubsidyDetail() {
                                         fontWeight={700}
                                         textAlign="center"
                                     >
-                                        {stagesList[activeStage]?.payload?.label}
+                                        {sortedStages[activeStage]?.payload?.label}
                                     </Typography>
 
                                     <Typography
@@ -369,7 +400,7 @@ export default function ClientSubsidyDetail() {
                                         textAlign="center"
                                         maxWidth={500}
                                     >
-                                        {stagesList[activeStage]?.description}
+                                        {sortedStages[activeStage]?.description}
                                     </Typography>
                                 </Stack>
                             </Paper>
@@ -385,6 +416,55 @@ export default function ClientSubsidyDetail() {
                     onClose={() => setDocumentMode(false)}
                 />
             </AppDrawer>
+
+            {openDocumentList &&
+                <Dialog
+                    open={openDocumentList}
+                    onClose={() => setOpenDocumentList(false)}
+                    maxWidth="sm"
+                    fullWidth
+                >
+                    <DialogTitle>  Required Documents
+                        <IconButton onClick={() => setOpenDocumentList(false)} sx={{ position: "absolute", right: 10, top: 10 }}  >
+                            <CloseIcon />
+                        </IconButton>
+                    </DialogTitle>
+
+                    <DialogContent dividers sx={{ p: 3 }}>
+                        <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+                            {subsidyDetail?.subsidy_ref?.requird_docs_ref?.map(
+                                (doc: any, index: number) => (
+                                    <Paper
+                                        key={doc?._id}
+                                        elevation={0}
+                                        sx={{
+                                            p: 2, display: "flex", alignItems: "center", gap: 2, border: "1px solid", borderColor: "divider", borderRadius: 2,
+                                            transition: "0.2s", cursor: "pointer",
+                                            "&:hover": {
+                                                transform: "translateY(-2px)",
+                                                boxShadow: 2
+                                            }
+                                        }}
+                                    >
+                                        <Box sx={{ width: 35, height: 35, borderRadius: "50%", bgcolor: "primary.light", display: "flex", alignItems: "center", justifyContent: "center" }}  >
+                                            <DescriptionOutlinedIcon fontSize="small" />
+                                        </Box>
+
+                                        <Box sx={{ flex: 1 }}>
+                                            <Typography variant="body1" fontWeight={500}>
+                                                {doc?.doc_name}
+                                            </Typography>
+
+                                            <Typography variant="caption" color="text.secondary">
+                                                Document {index + 1}
+                                            </Typography>
+                                        </Box>
+                                    </Paper>
+                                )
+                            )}
+                        </Box>
+                    </DialogContent >
+                </Dialog >}
         </>
     );
 }

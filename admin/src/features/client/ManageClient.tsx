@@ -363,7 +363,7 @@ export default function ManageClient() {
                 isLoading={createMutation.isPending || updateMutation.isPending}
                 onSuccess={() => { handleActions(false, null, 'view'); }}
                 anchor="right"
-                drawerWidth={600}
+                drawerWidth={1000}
             />
 
             {/* Delete Confirmation Dialog */}

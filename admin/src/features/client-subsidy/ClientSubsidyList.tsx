@@ -21,6 +21,7 @@ import { FormField, FormSection } from "@aatulwork/customform-renderer";
 import { clientSubsidyAPI, ClientSubsidyType, CreateClientPayload, UpdateClientSubsidyPayload } from "@/api/clientSubsidy";
 import { FormContainer } from "@/components/form-builder/FormContainer";
 import { useAppAlert } from "@/components/common/AppAlert";
+import { clientsAPI } from "@/api/manageClient";
 
 export default function ClientSubsidy() {
     const navigate = useNavigate();
@@ -104,7 +105,13 @@ export default function ClientSubsidy() {
         retry: 1,
     });
 
-    const { data: stagesList = [] } = useQuery({
+    const { data: clientList } = useQuery({
+        queryKey: ['manage-clients'],
+        queryFn: async () => { return await clientsAPI.getAll(1, 10) },
+        placeholderData: (previousData) => previousData,
+    });
+
+    const { data: stagesList = [] as any } = useQuery({
         queryKey: ['formEntries', SYSTEM_FORM_NAMES.APPLICABLE_STAGES],
         queryFn: async () => {
             try {
@@ -133,14 +140,14 @@ export default function ClientSubsidy() {
 
     const filters = {
         client: Array.isArray(client) ? client?.join(",") : client,
-        current_stage: isKanbanBoard && isExpanded ? filterStage : (Array.isArray(stage) ? stage?.join(",") : stage),
         skip: skip && isKanbanBoard && isExpanded ? skip : undefined,
+        ...(isKanbanBoard ? (isExpanded ? { current_stage: filterStage } : {}) : { current_stage: Array.isArray(stage) ? stage.join(",") : stage }),
         ...(OpenArchiveTable && { isArchived: true }),
         ...dateRange,
     };
 
     const currentPage = isKanbanBoard && isExpanded ? pages : page + 1;
-    const currentLimit = isKanbanBoard ? 2 : pageSize;
+    const currentLimit = isKanbanBoard ? 100 : pageSize;
 
     const {
         data: clientSubsidyList,
@@ -165,46 +172,50 @@ export default function ClientSubsidy() {
 
     useEffect(() => {
         const isClientFilterEmpty = !client || client.length === 0;
+        const isDateFilterApplied = !!date && date !== "";
 
-        if (!filterStage && isClientFilterEmpty && clientSubsidyList?.pagination) {
+        // 1. Get the current active date strings from your helper function
+        const activeRange = isDateFilterApplied ? getDateRange() : null;
+
+        if (!filterStage && isClientFilterEmpty && !isDateFilterApplied && clientSubsidyList?.pagination) {
             setDefaultSubsidyCount(clientSubsidyList.pagination);
         } else {
             const updatedStages = clientSubsidyList?.pagination?.stageCounts || [];
 
             setDefaultSubsidyCount((prev: any) => {
                 const stageMap = new Map();
-
-                // Helper function to check if the stage's clients overlap with the filter array
-                const matchesClientFilter = (s: any) =>
-                    Array.isArray(s.client)
-                        ? s.client.some((id: string) => client.includes(id))
-                        : client.includes(s.client);
-
-                // 1. Filter arrays dynamically based on overlap
-                const existingStages = !isClientFilterEmpty
-                    ? (prev?.stageCounts || []).filter(matchesClientFilter)
-                    : (prev?.stageCounts || []);
-
-                const incomingStages = !isClientFilterEmpty
-                    ? updatedStages.filter(matchesClientFilter)
-                    : updatedStages;
-
-                // 2. Merge data cleanly
+                // 2. Combined validation helper for client and dates
+                const isValidStage = (s: any) => {
+                    // Check client matches if filtered
+                    const matchesClient = isClientFilterEmpty || (
+                        Array.isArray(s.client)
+                            ? s.client.some((id: string) => client.includes(id))
+                            : client.includes(s.client)
+                    );
+                    // Check dates match if date filter is active
+                    const matchesDate = !isDateFilterApplied || (
+                        s.expireFrom === activeRange?.expireFrom &&
+                        s.expireTo === activeRange?.expireTo
+                    );
+                    return matchesClient && matchesDate;
+                };
+                // 3. Filter existing state and incoming data with the unified rule
+                const existingStages = (prev?.stageCounts || []).filter(isValidStage);
+                const incomingStages = updatedStages.filter(isValidStage);
+                // 4. Merge data fields cleanly
                 [...existingStages, ...incomingStages].forEach((stage: any) => {
                     stageMap.set(stage.stageId, {
                         ...stageMap.get(stage.stageId),
                         ...stage
                     });
                 });
-
                 return {
                     ...prev,
                     stageCounts: Array.from(stageMap.values())
                 };
             });
         }
-    }, [clientSubsidyList, filterStage, client]);
-
+    }, [clientSubsidyList, filterStage, client, date, startDate, endDate]);
 
     const clientSubsidy = clientSubsidyList?.data || [];
     const clientSubsidyPagination = clientSubsidyList?.pagination as any;
@@ -545,7 +556,7 @@ export default function ClientSubsidy() {
     );
 
     const boardData = (stagesList || [])
-        ?.filter((e) => e?.payload?.isActive)
+        ?.filter((e: any) => e?.payload?.isActive)
         ?.map((data: any) => {
             const stageCountObj = defaultSubsidyCount?.stageCounts?.find((e: any) => e?.stageId == data?._id);
             return ({
@@ -670,13 +681,13 @@ export default function ClientSubsidy() {
                                             labelId="client-label"
                                             label="Client"
                                         >
-                                            {[...new Map(dropdownData.map((r: any) => [r?.client?._id, { label: r?.client?.name, id: r?.client?._id }])).values()]
+                                            {[...new Map(clientList?.data?.map((r: any) => [r?._id, { label: r?.name, id: r?._id }])).values()]
                                                 .map((stage: any) => (<MenuItem key={stage?.id} value={stage?.id} > {stage?.label}  </MenuItem>))}
                                         </Select>
                                     </FormControl>
                                 )}
                             />
-                            <Controller
+                            {!isKanbanBoard && <Controller
                                 name="stage"
                                 control={control}
                                 render={({ field }) => (
@@ -688,6 +699,7 @@ export default function ClientSubsidy() {
                                                 field.onChange(e);
                                                 if (isKanbanBoard) { setPages(1); }
                                                 setIsExpanded(false);
+                                                setFilterStage('');
                                             }}
                                             multiple={true}
                                             labelId="stage-label"
@@ -698,7 +710,7 @@ export default function ClientSubsidy() {
                                         </Select>
                                     </FormControl>
                                 )}
-                            />
+                            />}
                             <Controller
                                 name="date"
                                 control={control}
@@ -706,7 +718,6 @@ export default function ClientSubsidy() {
                                     <FormControl sx={{ width: 200 }} size="small">
                                         <InputLabel id="date-label">  Expire On    </InputLabel>
                                         <Select
-                                            // onClick={(e) => { setIsExpanded(false); e?.preventDefault() }}
                                             {...field}
                                             onChange={(e) => {
                                                 field.onChange(e);
@@ -817,7 +828,7 @@ export default function ClientSubsidy() {
                     handleActions(false, null, 'view');
                 }}
                 anchor="right"
-                drawerWidth={600}
+                drawerWidth={1000}
             />
 
             {/* Archive Confirmation Dialog */}
