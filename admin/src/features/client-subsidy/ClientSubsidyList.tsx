@@ -183,13 +183,15 @@ export default function ClientSubsidy() {
             const updatedStages = clientSubsidyList?.pagination?.stageCounts || [];
 
             setDefaultSubsidyCount((prev: any) => {
+                if (updatedStages.length === 0) { return { ...prev, stageCounts: [] }; }
+
                 const stageMap = new Map();
                 // 2. Combined validation helper for client and dates
                 const isValidStage = (s: any) => {
-                    // Check client matches if filtered
+                    // Check client matches EXACTLY if filtered
                     const matchesClient = isClientFilterEmpty || (
                         Array.isArray(s.client)
-                            ? s.client.some((id: string) => client.includes(id))
+                            ? s.client.length === client.length && s.client.every((id: string) => client?.includes(id))
                             : client.includes(s.client)
                     );
                     // Check dates match if date filter is active
@@ -429,6 +431,12 @@ export default function ClientSubsidy() {
 
         // Add metadata columns
         columns.push(
+            {
+                field: 'case_number',
+                headerName: 'Case Number',
+                width: 180,
+                valueGetter: (value: any) => { return value; },
+            },
             {
                 field: 'actions',
                 type: 'actions',

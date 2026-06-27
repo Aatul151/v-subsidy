@@ -191,7 +191,7 @@ export default function ManageClient() {
         columns.push(
             {
                 field: 'clientNo',
-                headerName: 'Client No.',
+                headerName: 'Client Number.',
                 width: 180,
                 renderCell: (params: any) => {
                     return params?.row?.client_number;
