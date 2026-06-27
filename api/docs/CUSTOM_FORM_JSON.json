@@ -1,5 +1,5 @@
 {
-  "exportedAt": "2026-06-27T05:23:38.914Z",
+  "exportedAt": "2026-06-27T05:34:00.536Z",
   "count": 4,
   "forms": [
     {
@@ -13,18 +13,18 @@
       },
       "sections": [
         {
-          "title": "Info",
+          "title": "Stage Information",
           "fields": [
             {
               "type": "text",
-              "label": "label",
+              "label": "Label",
               "name": "label",
               "required": true,
               "allowFilter": true
             },
             {
               "type": "text",
-              "label": "value",
+              "label": "Value",
               "name": "value",
               "required": true,
               "allowFilter": true
@@ -81,7 +81,7 @@
       },
       "sections": [
         {
-          "title": "Section 1",
+          "title": "Subsidy Detail",
           "fields": [
             {
               "type": "text",
@@ -141,7 +141,7 @@
       },
       "sections": [
         {
-          "title": "Section 1",
+          "title": "Document Detail",
           "fields": [
             {
               "type": "text",
@@ -182,7 +182,7 @@
       },
       "sections": [
         {
-          "title": "Subsidy info",
+          "title": "Template Details",
           "fields": [
             {
               "type": "text",
