@@ -1,4 +1,4 @@
-import { ArrowBack, ArrowForward, Assignment, DescriptionOutlined, Edit, TrendingUp, Visibility, Close as CloseIcon, DescriptionOutlined as DescriptionOutlinedIcon } from "@mui/icons-material";
+import { ArrowBack, ArrowForward, Assignment, DescriptionOutlined, TrendingUp, Visibility, Close as CloseIcon, DescriptionOutlined as DescriptionOutlinedIcon } from "@mui/icons-material";
 import {
     Box,
     Button,

@@ -48,7 +48,7 @@ export default function DocumentManager({ caseDetail, documentMode = "view", onC
     // MANAFE
     const formRendererServices = {
         fileUpload: {
-            uploadFiles: async (formName: string, fieldName: string, files: File[]) => {
+            uploadFiles: async (_formName: string, fieldName: string, files: File[]) => {
                 // CALL API 
                 return fileUploadAPI.uploadClientFiles(fieldName, files, caseDetail?.client?.client_number, caseDetail?.case_number);
             },

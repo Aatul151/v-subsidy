@@ -109,10 +109,10 @@ export default function ManageClient() {
         setSelectedClient(client)
     }
 
-    const handleDelete = async (client: Clients) => {
-        setSelectedClient(client);
-        setDeleteDialogOpen(true)
-    }
+    // const handleDelete = async (client: Clients) => {
+    //     setSelectedClient(client);
+    //     setDeleteDialogOpen(true)
+    // }
 
     const confirmDelete = () => {
         if (selectedClient?._id) {
