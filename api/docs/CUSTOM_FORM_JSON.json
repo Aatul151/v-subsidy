@@ -1,5 +1,5 @@
 {
-  "exportedAt": "2026-06-26T13:24:43.153Z",
+  "exportedAt": "2026-06-27T05:23:38.914Z",
   "count": 4,
   "forms": [
     {
@@ -7,9 +7,8 @@
       "title": "Stages",
       "name": "applicable_stages",
       "module": {
-        "_id": "6a34df7685e924ffc5fb0cb8",
-        "name": "manage_clients",
-        "description": "",
+        "_id": "6a3f5cf6fa62ec3661a0330f",
+        "name": "master",
         "isActive": true
       },
       "sections": [
@@ -76,9 +75,8 @@
       "name": "manage_subsidy",
       "collectionName": "subsidy",
       "module": {
-        "_id": "6a34df7685e924ffc5fb0cb8",
-        "name": "manage_clients",
-        "description": "",
+        "_id": "6a3f5cf6fa62ec3661a0330f",
+        "name": "master",
         "isActive": true
       },
       "sections": [
@@ -115,7 +113,7 @@
               "name": "requird_docs",
               "required": true,
               "allowMultiple": true,
-              "referenceFormName": "doc_list",
+              "referenceFormName": "document_master",
               "referenceFieldName": "doc_name"
             }
           ],
@@ -134,12 +132,11 @@
     },
     {
       "_id": "6a34e18a85e924ffc5fb0df8",
-      "title": "Doc List",
-      "name": "doc_list",
+      "title": "Document master",
+      "name": "document_master",
       "module": {
-        "_id": "6a34df7685e924ffc5fb0cb8",
-        "name": "manage_clients",
-        "description": "",
+        "_id": "6a3f5cf6fa62ec3661a0330f",
+        "name": "master",
         "isActive": true
       },
       "sections": [
@@ -179,9 +176,8 @@
       "name": "document_templates",
       "collectionName": "document_template",
       "module": {
-        "_id": "6a34df7685e924ffc5fb0cb8",
-        "name": "manage_clients",
-        "description": "",
+        "_id": "6a3f5cf6fa62ec3661a0330f",
+        "name": "master",
         "isActive": true
       },
       "sections": [
@@ -205,7 +201,7 @@
               "label": "Attach Doc",
               "name": "attach_doc",
               "required": true,
-              "referenceFormName": "doc_list",
+              "referenceFormName": "document_master",
               "referenceFieldName": "doc_name",
               "allowMultiple": true
             }

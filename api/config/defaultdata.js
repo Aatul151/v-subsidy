@@ -21,6 +21,14 @@ export const SYSTEM_MODULES = [
 
 export const DEFAULT_MODULES = [
     {
+        _id: new mongoose.Types.ObjectId('6a3f5cf6fa62ec3661a0330f'),
+        name: "master",
+        description: "",
+        icon: "",
+        isActive: true,
+        isDefault: true
+    },
+    {
         _id: new mongoose.Types.ObjectId('6a34ee8343b4e72a812ac332'),
         name: "client_subsidy",
         description: "",
