@@ -22,6 +22,7 @@ import { clientSubsidyAPI, ClientSubsidyType, CreateClientPayload, UpdateClientS
 import { FormContainer } from "@/components/form-builder/FormContainer";
 import { useAppAlert } from "@/components/common/AppAlert";
 import { clientsAPI } from "@/api/manageClient";
+import { usersAPI } from "@/api/users";
 
 export default function ClientSubsidy() {
     const navigate = useNavigate();
@@ -46,13 +47,14 @@ export default function ClientSubsidy() {
         defaultValues: {
             client: [],
             stage: [],
+            assigned_executive: [],
             date: "",
             startDate: null as Dayjs | null,
             endDate: null as Dayjs | null,
         },
     });
 
-    const { client, stage, date, startDate, endDate }: any = watch();
+    const { client, stage, assigned_executive, date, startDate, endDate }: any = watch();
 
     const getDateRange = () => {
         switch (date) {
@@ -111,6 +113,12 @@ export default function ClientSubsidy() {
         placeholderData: (previousData) => previousData,
     });
 
+    const { data: userList, } = useQuery({
+        queryKey: ['users'],
+        queryFn: async () => { return await usersAPI.getAll(1, 10); },
+        placeholderData: (previousData) => previousData,
+    });
+
     const { data: stagesList = [] as any } = useQuery({
         queryKey: ['formEntries', SYSTEM_FORM_NAMES.APPLICABLE_STAGES],
         queryFn: async () => {
@@ -140,6 +148,7 @@ export default function ClientSubsidy() {
 
     const filters = {
         client: Array.isArray(client) ? client?.join(",") : client,
+        assigned_executive: Array.isArray(assigned_executive) ? assigned_executive?.join(",") : assigned_executive,
         skip: skip && isKanbanBoard && isExpanded ? skip : undefined,
         ...(isKanbanBoard ? (isExpanded ? { current_stage: filterStage } : {}) : { current_stage: Array.isArray(stage) ? stage.join(",") : stage }),
         ...(OpenArchiveTable && { isArchived: true }),
@@ -173,11 +182,12 @@ export default function ClientSubsidy() {
     useEffect(() => {
         const isClientFilterEmpty = !client || client.length === 0;
         const isDateFilterApplied = !!date && date !== "";
+        const isUserFilterEmpty = !assigned_executive || assigned_executive.length === 0;
 
         // 1. Get the current active date strings from your helper function
         const activeRange = isDateFilterApplied ? getDateRange() : null;
 
-        if (!filterStage && isClientFilterEmpty && !isDateFilterApplied && clientSubsidyList?.pagination) {
+        if (!filterStage && isClientFilterEmpty && isUserFilterEmpty && !isDateFilterApplied && clientSubsidyList?.pagination) {
             setDefaultSubsidyCount(clientSubsidyList.pagination);
         } else {
             const updatedStages = clientSubsidyList?.pagination?.stageCounts || [];
@@ -186,7 +196,7 @@ export default function ClientSubsidy() {
                 if (updatedStages.length === 0) { return { ...prev, stageCounts: [] }; }
 
                 const stageMap = new Map();
-                // 2. Combined validation helper for client and dates
+                // 2. Combined validation helper for client, dates, and executive users
                 const isValidStage = (s: any) => {
                     // Check client matches EXACTLY if filtered
                     const matchesClient = isClientFilterEmpty || (
@@ -199,7 +209,17 @@ export default function ClientSubsidy() {
                         s.expireFrom === activeRange?.expireFrom &&
                         s.expireTo === activeRange?.expireTo
                     );
-                    return matchesClient && matchesDate;
+
+                    // FIX: Check assigned_executive filter strictly 
+                    const matchesUser = isUserFilterEmpty || (
+                        s.assigned_executive && (
+                            Array.isArray(s.assigned_executive)
+                                ? s.assigned_executive.length === assigned_executive.length && s.assigned_executive.every((id: string) => assigned_executive?.includes(id))
+                                : assigned_executive.includes(s.assigned_executive)
+                        )
+                    );
+
+                    return matchesClient && matchesDate && matchesUser;
                 };
                 // 3. Filter existing state and incoming data with the unified rule
                 const existingStages = (prev?.stageCounts || []).filter(isValidStage);
@@ -217,8 +237,7 @@ export default function ClientSubsidy() {
                 };
             });
         }
-    }, [clientSubsidyList, filterStage, client, date, startDate, endDate]);
-
+    }, [clientSubsidyList, filterStage, client, date, startDate, endDate, assigned_executive]);
     const clientSubsidy = clientSubsidyList?.data || [];
     const clientSubsidyPagination = clientSubsidyList?.pagination as any;
 
@@ -720,6 +739,29 @@ export default function ClientSubsidy() {
                                 )}
                             />}
                             <Controller
+                                name="assigned_executive"
+                                control={control}
+                                render={({ field }) => (
+                                    <FormControl sx={{ width: 200 }} size="small">
+                                        <InputLabel id="client-label">Assign Executive </InputLabel>
+                                        <Select
+                                            {...field}
+                                            onChange={(e) => {
+                                                field.onChange(e);
+                                                if (isKanbanBoard) { setPages(1); }
+                                                setIsExpanded(false);
+                                            }}
+                                            multiple={true}
+                                            labelId="assigned_executive-label"
+                                            label="assigned_executive"
+                                        >
+                                            {[...new Map(userList?.data?.map((r: any) => [r?._id, { label: r?.name, id: r?._id }])).values()]
+                                                .map((stage: any) => (<MenuItem key={stage?.id} value={stage?.id} > {stage?.label}  </MenuItem>))}
+                                        </Select>
+                                    </FormControl>
+                                )}
+                            />
+                            <Controller
                                 name="date"
                                 control={control}
                                 render={({ field }) => (
@@ -776,7 +818,7 @@ export default function ClientSubsidy() {
 
                                 </LocalizationProvider>
                             )}
-                            {(client?.length > 0 || stage?.length > 0 || date !== '') && <IconButton
+                            {(client?.length > 0 || stage?.length > 0 || date !== '' || assigned_executive?.length > 0) && <IconButton
                                 sx={{ fontSize: "20px", width: 26, height: 26 }}
                                 onClick={() => { reset(); setIsExpanded(true); setFilterStage(''); setPages(1) }}
                             >
