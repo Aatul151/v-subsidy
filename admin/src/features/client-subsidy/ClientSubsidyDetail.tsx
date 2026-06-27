@@ -32,6 +32,9 @@ import dayjs from "dayjs";
 import { AppDrawer } from "@/components/common/AppDrawer";
 import DocumentManager from "./DocumentManager";
 import { useAppAlert } from "@/components/common/AppAlert";
+import utc from "dayjs/plugin/utc";
+
+dayjs.extend(utc);
 
 export default function ClientSubsidyDetail() {
     const [subsidyDetail, setSubsidyDetail] = useState<any>(null);
@@ -106,8 +109,8 @@ export default function ClientSubsidyDetail() {
             value: subsidyDetail?.assigned_executive?.name || '-',
         },
         {
-            label: "State",
-            value: subsidyDetail?.state || '-',
+            label: "Expire On",
+            value: dayjs.utc(subsidyDetail?.expireOn).format("DD-MM-YYYY") || '-',
         },
         {
             label: "Current Stage",

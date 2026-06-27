@@ -23,6 +23,9 @@ import { FormContainer } from "@/components/form-builder/FormContainer";
 import { useAppAlert } from "@/components/common/AppAlert";
 import { clientsAPI } from "@/api/manageClient";
 import { usersAPI } from "@/api/users";
+import utc from "dayjs/plugin/utc";
+
+dayjs.extend(utc);
 
 export default function ClientSubsidy() {
     const navigate = useNavigate();
@@ -32,7 +35,6 @@ export default function ClientSubsidy() {
     const [formDrawerOpen, setFormDrawerOpen] = useState(false);
     const [formMode, setFormMode] = useState<'add' | 'edit' | 'view'>('add');
     const [selectedClientSubsidy, setSelectedClientSubsidy] = useState<ClientSubsidyType | null>(null)
-    const [dropdownData, setDropdownData] = useState<any[]>([]);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [OpenArchiveTable, setOpenArchiveTable] = useState(false);
     const [isKanbanBoard, setIsKanbanBoard] = useState(false);
@@ -57,6 +59,7 @@ export default function ClientSubsidy() {
     const { client, stage, assigned_executive, date, startDate, endDate }: any = watch();
 
     const getDateRange = () => {
+        const today = dayjs();
         switch (date) {
             case "today":
                 return {
@@ -66,14 +69,14 @@ export default function ClientSubsidy() {
 
             case "week":
                 return {
-                    expireFrom: dayjs().startOf("week").format("YYYY-MM-DD"),
-                    expireTo: dayjs().endOf("week").format("YYYY-MM-DD"),
+                    expireFrom: today.startOf("week").add(1, "day").format("YYYY-MM-DD"),
+                    expireTo: today.startOf("week").add(7, "day").format("YYYY-MM-DD"),
                 };
 
             case "month":
                 return {
-                    expireFrom: dayjs().startOf("month").format("YYYY-MM-DD"),
-                    expireTo: dayjs().endOf("month").format("YYYY-MM-DD"),
+                    expireFrom: today.startOf("month").format("YYYY-MM-DD"),
+                    expireTo: today.endOf("month").format("YYYY-MM-DD"),
                 };
 
             case "custom":
@@ -263,16 +266,6 @@ export default function ClientSubsidy() {
         }
     }, [clientSubsidy]);
 
-    useEffect(() => {
-        if (dropdownData.length === 0) {
-            if (isKanbanBoard) {
-                setDropdownData(allClientSubsidy);
-            } else {
-                setDropdownData(clientSubsidy);
-            }
-        }
-    }, [allClientSubsidy, clientSubsidy]);
-
     // Create mutation
     const createMutation = useMutation({
         mutationFn: (payload: CreateClientPayload) => clientSubsidyAPI.create(payload),
@@ -418,7 +411,7 @@ export default function ClientSubsidy() {
                     headerName: field.label,
                     width: 200,
                     renderCell: (params: any) => {
-                        return params?.value ? dayjs(params.value).format("DD-MM-YYYY") : "-";
+                        return params?.value ? dayjs.utc(params.value).format("DD-MM-YYYY") : "-";
                     },
                 });
             }
@@ -820,7 +813,7 @@ export default function ClientSubsidy() {
                             )}
                             {(client?.length > 0 || stage?.length > 0 || date !== '' || assigned_executive?.length > 0) && <IconButton
                                 sx={{ fontSize: "20px", width: 26, height: 26 }}
-                                onClick={() => { reset(); setIsExpanded(true); setFilterStage(''); setPages(1) }}
+                                onClick={() => { reset(); setIsExpanded(false); setFilterStage(''); setPages(1); setSkip(''); }}
                             >
                                 <CloseIcon sx={{ fontSize: 20 }} />
                             </IconButton>}
