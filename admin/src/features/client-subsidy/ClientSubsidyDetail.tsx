@@ -134,6 +134,10 @@ export default function ClientSubsidyDetail({ id: propId }: any) {
             isStatus: true
         },
         {
+            label: "Status",
+            value: subsidyDetail?.status || '-',
+        },
+        {
             label: "Department",
             value: subsidyDetail?.subsidy_ref?.government_department || '-',
         },
@@ -219,7 +223,7 @@ export default function ClientSubsidyDetail({ id: propId }: any) {
                                             />
                                         </Typography>
                                         :
-                                        <Typography fontWeight={600} fontSize={13}>
+                                        <Typography fontWeight={600} fontSize={13} sx={{ textTransform: "Capitalize" }}>
                                             {item?.value}
                                         </Typography>}
                                 </Box>

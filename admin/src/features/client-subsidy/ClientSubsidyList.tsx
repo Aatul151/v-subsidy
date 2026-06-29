@@ -50,13 +50,14 @@ export default function ClientSubsidy() {
             client: [],
             stage: [],
             assigned_executive: [],
+            status: [],
             date: "",
             startDate: null as Dayjs | null,
             endDate: null as Dayjs | null,
         },
     });
 
-    const { client, stage, assigned_executive, date, startDate, endDate }: any = watch();
+    const { client, stage, assigned_executive, date, startDate, endDate, status }: any = watch();
 
     const getDateRange = () => {
         const today = dayjs();
@@ -151,6 +152,7 @@ export default function ClientSubsidy() {
 
     const filters = {
         client: Array.isArray(client) ? client?.join(",") : client,
+        status: Array.isArray(status) ? status?.join(",") : status,
         assigned_executive: Array.isArray(assigned_executive) ? assigned_executive?.join(",") : assigned_executive,
         skip: skip && isKanbanBoard && isExpanded ? skip : undefined,
         ...(isKanbanBoard ? (isExpanded ? { current_stage: filterStage } : {}) : { current_stage: Array.isArray(stage) ? stage.join(",") : stage }),
@@ -186,11 +188,12 @@ export default function ClientSubsidy() {
         const isClientFilterEmpty = !client || client.length === 0;
         const isDateFilterApplied = !!date && date !== "";
         const isUserFilterEmpty = !assigned_executive || assigned_executive.length === 0;
+        const isStatusFilterEmpty = !status || status.length === 0;
 
         // 1. Get the current active date strings from your helper function
         const activeRange = isDateFilterApplied ? getDateRange() : null;
 
-        if (!filterStage && isClientFilterEmpty && isUserFilterEmpty && !isDateFilterApplied && clientSubsidyList?.pagination) {
+        if (!filterStage && isClientFilterEmpty && isUserFilterEmpty && isStatusFilterEmpty && !isDateFilterApplied && clientSubsidyList?.pagination) {
             setDefaultSubsidyCount(clientSubsidyList.pagination);
         } else {
             const updatedStages = clientSubsidyList?.pagination?.stageCounts || [];
@@ -221,8 +224,13 @@ export default function ClientSubsidy() {
                                 : assigned_executive.includes(s.assigned_executive)
                         )
                     );
+                    const matchesStatus = isStatusFilterEmpty || (
+                        Array.isArray(s.status)
+                            ? s.status.length === status.length && s.status.every((st: string) => status?.includes(st))
+                            : status.includes(s.client)
+                    );
 
-                    return matchesClient && matchesDate && matchesUser;
+                    return matchesClient && matchesDate && matchesUser && matchesStatus;
                 };
                 // 3. Filter existing state and incoming data with the unified rule
                 const existingStages = (prev?.stageCounts || []).filter(isValidStage);
@@ -328,7 +336,8 @@ export default function ClientSubsidy() {
             assigned_executive: data?.assigned_executive,
             current_stage: data?.current_stage,
             expireOn: dayjs(data.expireOn).format("YYYY-MM-DD"),
-            remarks: data?.remarks
+            remarks: data?.remarks,
+            status: data?.status
         }
         if (formMode == 'edit' && selectedClientSubsidy?._id) {
             await updateMutation.mutateAsync({ id: selectedClientSubsidy._id, payload });
@@ -341,9 +350,10 @@ export default function ClientSubsidy() {
         client: 2,
         subsidy: 3,
         current_stage: 4,
-        assigned_executive: 5,
-        expireOn: 6,
-        remarks: 7,
+        status: 5,
+        assigned_executive: 6,
+        expireOn: 7,
+        remarks: 8,
     };
 
     // Build columns dynamically from form schema
@@ -428,8 +438,7 @@ export default function ClientSubsidy() {
                         return params?.value ? dayjs.utc(params.value).format("DD-MM-YYYY") : "-";
                     },
                 });
-            }
-            else if (field.name.toLowerCase() === "remarks") {
+            } else if (field.name.toLowerCase() === "remarks") {
                 columns.push({
                     field: field.name,
                     headerName: field.label,
@@ -439,8 +448,18 @@ export default function ClientSubsidy() {
                         return params?.row?.remarks;
                     },
                 });
-            }
-            else {
+            } else if (field.name === "status") {
+                columns.push({
+                    field: field.name,
+                    headerName: field.label,
+                    width: 200,
+                    order: orderMap.status,
+                    renderCell: (params: any) => {
+                        const status = params?.row?.status;
+                        return status ? status.charAt(0).toUpperCase() + status.slice(1) : "";
+                    },
+                });
+            } else {
                 columns.push({
                     field: field.name,
                     headerName: field.label,
@@ -611,7 +630,8 @@ export default function ClientSubsidy() {
                         createdAt: item?.createdAt,
                         current_stage: item?.current_stage,
                         case_number: item?.case_number,
-                        expireOn: dayjs.utc(item?.expireOn).format("DD-MMM-YYYY")
+                        expireOn: dayjs.utc(item?.expireOn).format("DD-MMM-YYYY"),
+                        totalRequirdDocs: item?.subsidy_ref?.requird_docs?.length
                     })),
 
                 pagination: {
@@ -696,8 +716,8 @@ export default function ClientSubsidy() {
                                 gap: 1,
                                 flexWrap: "wrap",
                                 alignItems: "center",
-                                width: { xs: "100%", sm: "auto" },
-                                justifyContent: { xs: "flex-start", sm: "flex-end" },
+                                width: { xs: isKanbanBoard ? "100%" : "20%", sm: isKanbanBoard ? "100%" : "60%", md: isKanbanBoard ? "100%" : "70%" },
+                                justifyContent: { xs: "flex-start", sm: "flex-end", md: "flex-start" },
                             }}
                         >
                             <Controller
@@ -766,6 +786,31 @@ export default function ClientSubsidy() {
                                         >
                                             {[...new Map(userList?.data?.map((r: any) => [r?._id, { label: r?.name, id: r?._id }])).values()]
                                                 .map((stage: any) => (<MenuItem key={stage?.id} value={stage?.id} > {stage?.label}  </MenuItem>))}
+                                        </Select>
+                                    </FormControl>
+                                )}
+                            />
+                            <Controller
+                                name="status"
+                                control={control}
+                                render={({ field }) => (
+                                    <FormControl sx={{ width: 200 }} size="small">
+                                        <InputLabel id="client-label">Status </InputLabel>
+                                        <Select
+                                            {...field}
+                                            onChange={(e) => {
+                                                field.onChange(e);
+                                                if (isKanbanBoard) { setPages(1); }
+                                                setIsExpanded(false);
+                                            }}
+                                            multiple={true}
+                                            labelId="status-label"
+                                            label="status"
+                                        >
+                                            <MenuItem value="active" >Active</MenuItem>
+                                            <MenuItem value="inactive" >Inactive</MenuItem>
+                                            <MenuItem value="completed" >Completed</MenuItem>
+                                            <MenuItem value="closed" >Closed</MenuItem>
                                         </Select>
                                     </FormControl>
                                 )}
@@ -842,7 +887,11 @@ export default function ClientSubsidy() {
                             columns={columns}
                             loading={clientLoading}
                             getRowId={(row) => row._id}
-
+                            sx={{
+                                mt: date === "custom" ? 5 : 0,
+                                "@media (max-width:1487px)": { mt: "90px", },
+                                height: { xs: "auto", md: "500px", },
+                            }}
                             serverPagination
                             rowCount={clientSubsidyPagination?.totalRecords || 0}
                             paginationModel={paginationModel}
