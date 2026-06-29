@@ -595,7 +595,8 @@ export default function ClientSubsidy() {
                         person: item?.client?.name,
                         createdAt: item?.createdAt,
                         current_stage: item?.current_stage,
-                        case_number: item?.case_number
+                        case_number: item?.case_number,
+                        expireOn: dayjs.utc(item?.expireOn).format("DD-MMM-YYYY")
                     })),
 
                 pagination: {
