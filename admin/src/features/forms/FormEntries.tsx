@@ -257,7 +257,7 @@ export const FormEntries = () => {
   // Create a unique key for all form references (for caching)
   const formReferenceKey = useMemo(() => {
     return formReferenceFields
-      .map((field: FormField) => `${field.referenceFormName}_${field.referenceFieldName}`)
+      .map((field: FormField) => `${field?.name}_${field.referenceFormName}_${field.referenceFieldName}`)
       .sort()
       .join('|');
   }, [formReferenceFields]);
@@ -695,9 +695,15 @@ export const FormEntries = () => {
 
     // Files are already uploaded and stored as metadata in form values
     // Just submit the form data as-is (file metadata is already included)
+
+    // Remove _ref fileds
+    const cleanedPayload = Object.fromEntries(
+      Object.entries(data ?? {})?.filter(([key]) => !key?.endsWith('_ref'))
+    );
+
     const payload: CreateFormEntryPayload | UpdateFormEntryPayload = {
       formName: decodedFormName,
-      payload: data, // All data including file metadata
+      payload: cleanedPayload, // All data including file metadata
     };
 
     if (formMode === 'edit' && selectedEntry?._id) {
@@ -893,7 +899,7 @@ export const FormEntries = () => {
         minWidth: 150,
         valueGetter: (_value, row: FormEntry) => {
           // Get value from payload object if it exists, otherwise from root (for backward compatibility)
-          const fieldValue = row.payload?.[field.name] ?? row[field.name];
+          const fieldValue = row.payload?.[`${field.name}_ref`] ?? row.payload?.[field.name] ?? row[field.name];
 
           // Handle different data types
           if (fieldValue === null || fieldValue === undefined) return '';
@@ -923,12 +929,7 @@ export const FormEntries = () => {
           const getLabelForValue = (val: any): string => {
             // Custom rendering for formReference fields - show label instead of ID
             if (field.type === 'formReference' && field.referenceFormName && field.referenceFieldName) {
-              const valueStr = String(val);
-              const referenceMap = formReferenceMaps[field.name];
-              if (referenceMap && referenceMap[valueStr]) {
-                return referenceMap[valueStr];
-              }
-              // If label not found in cache, return ID (will update when cache loads)
+              const valueStr = String(val?.[field?.referenceFieldName] || val);
               return valueStr;
             }
 
