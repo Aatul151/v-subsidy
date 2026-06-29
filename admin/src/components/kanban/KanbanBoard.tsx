@@ -2,8 +2,9 @@ import { Theme } from "@emotion/react";
 import { Box, Card, Typography, Button, Chip, SxProps, IconButton } from "@mui/material";
 import { useEffect, useState } from "react";
 import { Refresh as RefreshIcon, Launch as LaunchIcon, AccessTime as AccessTimeIcon } from '@mui/icons-material';
-import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
+import { AppDrawer } from "../common/AppDrawer";
+import ClientSubsidyDetail from "@/features/client-subsidy/ClientSubsidyDetail";
 
 type KanbanContainerProps = {
     value: string;
@@ -109,127 +110,139 @@ function KanbanItem({
     onRefresh
 }: KanbanContainerProps) {
     const { hasNextPage, totalCount } = pagination;
-    const navigate = useNavigate();
+    const [subsidyId, setSubsidyId] = useState<any>(false);
     return (
-        <Box
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={() => onDrop(boardIndex)}
-            sx={{
-                width: "100%",
-                minWidth: "250px",
-                height: "calc(100vh - 30vh)",
-                maxHeight: "calc(100vh - 20vh)",
-                display: "flex",
-                flexDirection: "column",
-                minHeight: 0,
-                bgcolor: bgColor,
-                borderRadius: 1,
-                p: 2,
-                overflow: "hidden",
-                border: "1px solid #E5E7EB",
-                boxShadow: "0px 4px 16px rgba(0,0,0,.06)",
-            }}
-        >
+        <>
             <Box
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={() => onDrop(boardIndex)}
                 sx={{
+                    width: "100%",
+                    minWidth: "250px",
+                    height: "calc(100vh - 30vh)",
+                    maxHeight: "calc(100vh - 20vh)",
                     display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    mb: 2,
-                    pb: 1,
-                    flexShrink: 0,
-                    borderBottom: "1px solid #F1F5F9",
+                    flexDirection: "column",
+                    minHeight: 0,
+                    bgcolor: bgColor,
+                    borderRadius: 1,
+                    p: 2,
+                    overflow: "hidden",
+                    border: "1px solid #E5E7EB",
+                    boxShadow: "0px 4px 16px rgba(0,0,0,.06)",
                 }}
             >
-                <Typography sx={{ fontWeight: 700 }} > {label}</Typography>
                 <Box
                     sx={{
                         display: "flex",
+                        justifyContent: "space-between",
                         alignItems: "center",
-                    }}>
-                    {(data?.length == 0 && totalCount > 0) &&
-                        <Button onClick={onRefresh}  >
-                            <RefreshIcon fontSize="small" />
-                        </Button>}
-
-                    {totalCount && <Chip size="small" label={totalCount} />}
-                </Box>
-            </Box>
-
-            <Box
-                sx={{
-                    flex: 1,
-                    minHeight: 0,
-                    overflowY: "auto",
-                    overflowX: "hidden",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 1,
-                    pr: 1,
-                    "&::-webkit-scrollbar": { width: 6 },
-                    "&::-webkit-scrollbar-thumb": { background: "#D1D5DB", borderRadius: 20 },
-                }}
-            >
-                {data.map((item) => (
-                    <Card
-                        key={item.id}
-                        draggable
-                        onDragStart={() => onDragStart(item, boardIndex)}
+                        mb: 2,
+                        pb: 1,
+                        flexShrink: 0,
+                        borderBottom: "1px solid #F1F5F9",
+                    }}
+                >
+                    <Typography sx={{ fontWeight: 700 }} > {label}</Typography>
+                    <Box
                         sx={{
-                            p: 1.5,
-                            borderRadius: 1,
-                            flexShrink: 0,
-                            border: "1px solid #F1F5F9",
-                            "&:hover": { boxShadow: "0px 10px 18px rgba(0,0,0,.08)", border: "1px solid black" },
-                        }}
-                    >
-                        <Box sx={{ display: "flex", alignItems: 'center', justifyContent: 'space-between' }}>
-                            <Typography sx={{ fontWeight: 600, fontSize: 16 }}>
-                                {item?.title}
-                            </Typography>
-                            <IconButton onClick={() => navigate(`/client-subsidy/${item.id}`)}>
-                                <LaunchIcon sx={{ fontSize: 16 }} />
-                            </IconButton>
-                        </Box>
+                            display: "flex",
+                            alignItems: "center",
+                        }}>
+                        {(data?.length == 0 && totalCount > 0) &&
+                            <Button onClick={onRefresh}  >
+                                <RefreshIcon fontSize="small" />
+                            </Button>}
 
-                        <Box sx={{ display: "flex", alignItems: 'center', justifyContent: 'space-between' }}>
-                            <Typography fontSize={12} color="primary"  >
-                                {item?.person}
-                            </Typography>
-                            <Typography fontSize={12} color="primary" sx={{ textTransform: "capitalize" }}>
-                                {item?.case_number ?? "-"}
-                            </Typography>
-                        </Box>
+                        {totalCount && <Chip size="small" label={totalCount} />}
+                    </Box>
+                </Box>
 
-                        <Typography
-                            fontSize={12}
+                <Box
+                    sx={{
+                        flex: 1,
+                        minHeight: 0,
+                        overflowY: "auto",
+                        overflowX: "hidden",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 1,
+                        pr: 1,
+                        "&::-webkit-scrollbar": { width: 6 },
+                        "&::-webkit-scrollbar-thumb": { background: "#D1D5DB", borderRadius: 20 },
+                    }}
+                >
+                    {data.map((item) => (
+                        <Card
+                            key={item.id}
+                            draggable
+                            onDragStart={() => onDragStart(item, boardIndex)}
                             sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 0.5,
-                                fontWeight: 500,
-                                color: dayjs(item?.expireOn).isBefore(dayjs()) ? "error.main" : "text.secondary",
-                                fontSize: 12
+                                p: 1.5,
+                                borderRadius: 1,
+                                flexShrink: 0,
+                                border: "1px solid #F1F5F9",
+                                "&:hover": { boxShadow: "0px 10px 18px rgba(0,0,0,.08)", border: "1px solid black" },
                             }}
                         >
-                            <AccessTimeIcon sx={{ fontSize: 12, marginTop: "-2px" }} />  {item?.expireOn ? dayjs(item.expireOn).format("DD MMM YYYY") : "-"}
-                        </Typography>
-                    </Card>
+                            <Box sx={{ display: "flex", alignItems: 'center', justifyContent: 'space-between' }}>
+                                <Typography sx={{ fontWeight: 600, fontSize: 16 }}>
+                                    {item?.title}
+                                </Typography>
+                                <IconButton onClick={() => setSubsidyId(item?.id)}>
+                                    <LaunchIcon sx={{ fontSize: 16 }} />
+                                </IconButton>
+                            </Box>
 
-                ))}
+                            <Box sx={{ display: "flex", alignItems: 'center', justifyContent: 'space-between' }}>
+                                <Typography fontSize={12} color="primary"  >
+                                    {item?.person}
+                                </Typography>
+                                <Typography fontSize={12} color="primary" sx={{ textTransform: "capitalize" }}>
+                                    {item?.case_number ?? "-"}
+                                </Typography>
+                            </Box>
 
-                {(hasNextPage && data?.length > 0) && (
-                    <Button
-                        fullWidth
-                        disabled={loading}
-                        onClick={onShowMore}
-                        sx={{ textTransform: "none", justifyContent: "flex-start" }}
-                    >
-                        {loading ? "Loading..." : "Show More"}
-                    </Button>
-                )}
+                            <Typography
+                                fontSize={12}
+                                sx={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 0.5,
+                                    fontWeight: 500,
+                                    color: dayjs(item?.expireOn).isBefore(dayjs()) ? "error.main" : "text.secondary",
+                                    fontSize: 12
+                                }}
+                            >
+                                <AccessTimeIcon sx={{ fontSize: 12, marginTop: "-2px" }} />  {item?.expireOn ? dayjs(item.expireOn).format("DD MMM YYYY") : "-"}
+                            </Typography>
+                        </Card>
+
+                    ))}
+
+                    {(hasNextPage && data?.length > 0) && (
+                        <Button
+                            fullWidth
+                            disabled={loading}
+                            onClick={onShowMore}
+                            sx={{ textTransform: "none", justifyContent: "flex-start" }}
+                        >
+                            {loading ? "Loading..." : "Show More"}
+                        </Button>
+                    )}
+                </Box>
             </Box>
-        </Box>
+            <AppDrawer
+                open={Boolean(subsidyId)}
+                onClose={() => setSubsidyId(null)}
+                title={`Client Subsidy detail`}
+                anchor="right"
+                width={1000}
+                displayExpandDrawer={true}
+            >
+                <ClientSubsidyDetail id={subsidyId} />
+            </AppDrawer>
+        </>
     );
 }
 

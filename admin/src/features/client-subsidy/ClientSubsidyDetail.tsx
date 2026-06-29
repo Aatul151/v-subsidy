@@ -36,14 +36,16 @@ import utc from "dayjs/plugin/utc";
 
 dayjs.extend(utc);
 
-export default function ClientSubsidyDetail() {
+export default function ClientSubsidyDetail({ id: propId }: any) {
+    const { id: paramId } = useParams();
+    const id = propId || paramId;
+
     const [subsidyDetail, setSubsidyDetail] = useState<any>(null);
     const [documentMode, setDocumentMode] = useState<any>(null);
     const [openDocumentList, setOpenDocumentList] = useState(false);
     const [activeStage, setActiveStage] = useState(0);
 
     const navigate = useNavigate();
-    const { id } = useParams();
     const { showAlert } = useAppAlert();
 
     const { data: stagesList = [] } = useQuery({
@@ -164,13 +166,15 @@ export default function ClientSubsidyDetail() {
         <>
             <Box>
                 <Stack spacing={3}>
-                    <PageHeader
-                        title="Client Subsidy detail"
-                        icon="Assignment"
-                        fallbackIcon={Assignment}
-                        sx={{ mb: 0.5, borderRadius: '10px', padding: 1.5 }}
-                        actions={actionButton}
-                    />
+                    {!propId && (
+                        <PageHeader
+                            title="Client Subsidy detail"
+                            icon="Assignment"
+                            fallbackIcon={Assignment}
+                            sx={{ mb: 0.5, borderRadius: '10px', padding: 1.5 }}
+                            actions={actionButton}
+                        />
+                    )}
 
                     {/* Header Section */}
                     <Card sx={{ p: 2, borderRadius: 1 }}>

@@ -7,6 +7,9 @@ import {
   useTheme,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import { useState } from 'react';
+import WestIcon from '@mui/icons-material/West';
+import EastIcon from '@mui/icons-material/East';
 
 type Anchor = 'left' | 'right' | 'top' | 'bottom';
 
@@ -17,6 +20,7 @@ interface AppDrawerProps {
   children: React.ReactNode;
   width?: number;
   anchor?: Anchor;
+  displayExpandDrawer?: boolean;
 }
 
 export const AppDrawer = ({
@@ -25,9 +29,11 @@ export const AppDrawer = ({
   title,
   children,
   width = 400,
-  anchor = 'right'
+  anchor = 'right',
+  displayExpandDrawer = false
 }: AppDrawerProps) => {
   const theme = useTheme();
+  const [expandDrawer, setExpandDrawer] = useState(false);
 
   const handleClose = (_event?: {}, reason?: string) => {
 
@@ -54,7 +60,7 @@ export const AppDrawer = ({
       }}
       PaperProps={{
         sx: {
-          width: { xs: '100%', sm: width },
+          width: { xs: '100%', sm: expandDrawer ? 1500 : width },
           boxSizing: 'border-box',
           borderRadius: 0,
           height: anchor === 'right' || anchor === 'left' ? '100%' : 'auto',
@@ -73,9 +79,17 @@ export const AppDrawer = ({
             borderBottom: `1px solid ${theme.palette.divider}`,
           }}
         >
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            {title}
-          </Typography>
+          <Box sx={{ display: "flex", alignItems: "center" }}>
+            {displayExpandDrawer && (
+              <IconButton onClick={() => setExpandDrawer((prev) => !prev)} sx={{color: 'primary.main',}} size="small">
+                {expandDrawer ? <EastIcon /> : <WestIcon />}
+              </IconButton>
+            )}
+
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              {title}
+            </Typography>
+          </Box>
           <IconButton
             onClick={onClose}
             size="small"
