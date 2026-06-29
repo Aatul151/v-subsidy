@@ -131,6 +131,11 @@ export default function ManageClient() {
             await createMutation.mutateAsync(data);
         }
     };
+    const orderMap: Record<string, number> = {
+        clientNo: 1,
+        name: 2,
+        contact_person: 3,
+    };
 
     // Build columns dynamically from form schema
     const buildColumns = (): GridColDef[] => {
@@ -142,7 +147,7 @@ export default function ManageClient() {
             ];
         }
 
-        const columns: GridColDef[] = [];
+        const columns: (GridColDef & { order?: number })[] = [];
 
         // Get all fields from sections
         const allFields = formSchema.sections
@@ -151,11 +156,12 @@ export default function ManageClient() {
 
         // Add columns for each field
         allFields.forEach((field: FormField) => {
-            if (field.name.toLowerCase() === "client_name") {
+            if (field.name.toLowerCase() === "name") {
                 columns.push({
                     field: field.name,
                     headerName: field.label,
                     width: 150,
+                    order: orderMap.name,
                     renderCell: (params: any) => {
                         const clientName = params?.row?.name;
                         return clientName;
@@ -166,6 +172,7 @@ export default function ManageClient() {
                     field: field.name,
                     headerName: field.label,
                     width: 150,
+                    order: orderMap.contact_person,
                     renderCell: (params: any) => {
                         const clientName = params?.row?.contact_person?.name;
                         return clientName;
@@ -192,7 +199,8 @@ export default function ManageClient() {
             {
                 field: 'clientNo',
                 headerName: 'Client Number.',
-                width: 180,
+                width: 150,
+                order: orderMap.clientNo,
                 renderCell: (params: any) => {
                     return params?.row?.client_number;
                 },
@@ -225,7 +233,7 @@ export default function ManageClient() {
             },
         );
 
-        return columns;
+        return columns.sort((a, b) => (a.order || 999) - (b.order || 999));
     };
 
     const columns = buildColumns();

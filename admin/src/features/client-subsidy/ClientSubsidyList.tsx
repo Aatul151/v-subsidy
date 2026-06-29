@@ -336,6 +336,15 @@ export default function ClientSubsidy() {
             await createMutation.mutateAsync(data);
         }
     };
+    const orderMap: Record<string, number> = {
+        case_number: 1,
+        client: 2,
+        subsidy: 3,
+        current_stage: 4,
+        assigned_executive: 5,
+        expireOn: 6,
+        remarks: 7,
+    };
 
     // Build columns dynamically from form schema
     const buildColumns = (): GridColDef[] => {
@@ -347,7 +356,7 @@ export default function ClientSubsidy() {
                 { field: 'stage', headerName: 'stage', flex: 1, minWidth: 150 },
             ];
         }
-        const columns: GridColDef[] = [];
+        const columns: (GridColDef & { order?: number })[] = [];
 
         // Get all fields from sections
         const allFields = formSchema.sections
@@ -361,6 +370,7 @@ export default function ClientSubsidy() {
                     field: field.name,
                     headerName: field.label,
                     width: 200,
+                    order: orderMap.client,
                     renderCell: (params: any) => {
                         const clientName = params?.row?.client?.name;
                         return clientName;
@@ -371,6 +381,7 @@ export default function ClientSubsidy() {
                     field: field.name,
                     headerName: field.label,
                     width: 200,
+                    order: orderMap.subsidy,
                     renderCell: (params: any) => {
                         const subsidyName = params?.row?.subsidy_ref?.subsidy_name;
                         return subsidyName;
@@ -381,6 +392,7 @@ export default function ClientSubsidy() {
                     field: field.name,
                     headerName: field.label,
                     width: 250,
+                    order: orderMap.current_stage,
                     renderCell: (params: any) => {
                         const stage = params?.row?.current_stage_ref?.label;
                         const bgColor = params?.row?.current_stage_ref?.bgColor;
@@ -400,6 +412,7 @@ export default function ClientSubsidy() {
                     field: field.name,
                     headerName: field.label,
                     width: 200,
+                    order: orderMap.assigned_executive,
                     renderCell: (params: any) => {
                         const clientName = params?.row?.assigned_executive_ref?.name;
                         return clientName;
@@ -410,6 +423,7 @@ export default function ClientSubsidy() {
                     field: field.name,
                     headerName: field.label,
                     width: 200,
+                    order: orderMap.expireOn,
                     renderCell: (params: any) => {
                         return params?.value ? dayjs.utc(params.value).format("DD-MM-YYYY") : "-";
                     },
@@ -420,6 +434,7 @@ export default function ClientSubsidy() {
                     field: field.name,
                     headerName: field.label,
                     width: 250,
+                    order: orderMap.remarks,
                     renderCell: (params: any) => {
                         return params?.row?.remarks;
                     },
@@ -446,6 +461,7 @@ export default function ClientSubsidy() {
             {
                 field: 'case_number',
                 headerName: 'Case Number',
+                order: orderMap.case_number,
                 width: 180,
                 valueGetter: (value: any) => { return value; },
             },
@@ -480,8 +496,7 @@ export default function ClientSubsidy() {
                 ],
             }
         );
-
-        return columns;
+        return columns.sort((a, b) => (a.order || 999) - (b.order || 999));
     };
 
     const columns = buildColumns();
