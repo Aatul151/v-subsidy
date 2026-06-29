@@ -29,6 +29,11 @@ const clientSubsidySchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
     },
 
+    status: {
+      type: String,
+      default: null,
+    },
+
     expireOn: {
       type: Date,
       default: null,

@@ -15,7 +15,7 @@ const CLIENT_SUBSIDY_FORM = "client_subsidy";
 // Create
 export const createClientSubsidy = async (req, res) => {
     try {
-        const { client, subsidy, assigned_executive, current_stage, remarks, expireOn } = req.body;
+        const { client, subsidy, assigned_executive, current_stage, status, remarks, expireOn } = req.body;
 
         // Validation
         if (!client || !subsidy) {
@@ -38,6 +38,7 @@ export const createClientSubsidy = async (req, res) => {
             current_stage,
             expireOn,
             remarks,
+            status,
             stageHistory: [
                 {
                     stageId: current_stage,
@@ -59,7 +60,7 @@ export const createClientSubsidy = async (req, res) => {
 // Fetch All
 export const getClientSubsidies = async (req, res) => {
     try {
-        const { client, subsidy, assigned_executive, current_stage, case_number, expireFrom, expireTo, page = 1, limit = 10, skip: customSkip, isArchived = false } = req.query;
+        const { client, subsidy, assigned_executive, current_stage, case_number, expireFrom, expireTo, status, page = 1, limit = 10, skip: customSkip, isArchived = false } = req.query;
 
         const validation = await validateFormAccess(CLIENT_SUBSIDY_FORM, req.user?.role, "read");
         if (!validation.success) {
@@ -73,6 +74,7 @@ export const getClientSubsidies = async (req, res) => {
         if (subsidy) { filter.subsidy = { $in: subsidy.split(",")?.map(id => new mongoose.Types.ObjectId(id)) } }
         if (assigned_executive) { filter.assigned_executive = { $in: assigned_executive.split(",")?.map(id => new mongoose.Types.ObjectId(id)) } }
         if (current_stage) { filter.current_stage = { $in: current_stage.split(",")?.map(id => new mongoose.Types.ObjectId(id)) } }
+        if (status) { filter.status = { $in: status?.split(",")?.map(status => status) } }
         // Expire Date Range
         if (expireFrom || expireTo) {
             filter.expireOn = {};
@@ -152,7 +154,8 @@ export const getClientSubsidies = async (req, res) => {
                 hasNextPage: hasNextPage,
                 client: client?.split(','),
                 expireFrom, expireTo,
-                assigned_executive: assigned_executive?.split(',')
+                assigned_executive: assigned_executive?.split(','),
+                status: status?.split(',')
             };
         });
 
@@ -217,7 +220,7 @@ export const getClientSubsidyById = async (req, res) => {
 export const updateClientSubsidy = async (req, res) => {
     try {
         const { id } = req.params;
-        const { client, subsidy, assigned_executive, current_stage, remarks, expireOn, documents, stageRemark } = req.body;
+        const { client, subsidy, assigned_executive, current_stage, remarks, expireOn, documents, status, stageRemark } = req.body;
 
         const validation = await validateFormAccess(CLIENT_SUBSIDY_FORM, req.user?.role, "update");
         if (!validation.success) {
@@ -231,6 +234,7 @@ export const updateClientSubsidy = async (req, res) => {
         if (assigned_executive !== undefined) fieldToUpdate.assigned_executive = assigned_executive;
         if (expireOn !== undefined) fieldToUpdate.expireOn = expireOn;
         if (remarks !== undefined) fieldToUpdate.remarks = remarks;
+        if (status !== undefined) fieldToUpdate.status = status;
         if (documents !== undefined) fieldToUpdate.documents = documents;
 
         if (current_stage !== undefined) {

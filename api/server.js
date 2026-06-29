@@ -21,6 +21,7 @@ import roleRoutes from './routes/roleRoutes.js';
 import fileUploadRoutes from './routes/fileUploadRoutes.js';
 import clientRoutes from './routes/clientRoutes.js';
 import subsidyRoutes from './routes/clientSubsidyRoutes.js';
+import dashboardRoutes from './routes/dashboardRoutes.js';
 import { cleanupOldTempFiles } from './middleware/upload.js';
 
 // Load env vars
@@ -76,6 +77,7 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/roles', roleRoutes);
 app.use('/api/file-upload', fileUploadRoutes);
 
+app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/client', clientRoutes);
 app.use('/api/client-subsidy', subsidyRoutes);
 
