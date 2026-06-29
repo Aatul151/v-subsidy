@@ -1,8 +1,9 @@
 import { Theme } from "@emotion/react";
 import { Box, Card, Typography, Button, Chip, SxProps, IconButton } from "@mui/material";
 import { useEffect, useState } from "react";
-import { Refresh as RefreshIcon, Launch as LaunchIcon } from '@mui/icons-material';
+import { Refresh as RefreshIcon, Launch as LaunchIcon, AccessTime as AccessTimeIcon } from '@mui/icons-material';
 import { useNavigate } from "react-router-dom";
+import dayjs from "dayjs";
 
 type KanbanContainerProps = {
     value: string;
@@ -183,25 +184,35 @@ function KanbanItem({
                         }}
                     >
                         <Box sx={{ display: "flex", alignItems: 'center', justifyContent: 'space-between' }}>
-                            <Typography sx={{ fontWeight: 600 }}>
+                            <Typography sx={{ fontWeight: 600, fontSize: 16 }}>
                                 {item?.title}
                             </Typography>
                             <IconButton onClick={() => navigate(`/client-subsidy/${item.id}`)}>
-                                <LaunchIcon fontSize="small" />
+                                <LaunchIcon sx={{ fontSize: 16 }} />
                             </IconButton>
                         </Box>
 
                         <Box sx={{ display: "flex", alignItems: 'center', justifyContent: 'space-between' }}>
-                            <Typography fontSize={14} color="primary"  >
+                            <Typography fontSize={12} color="primary"  >
                                 {item?.person}
                             </Typography>
-                            <Typography fontSize={12} color="primary"  >
-                                {item?.case_number}
+                            <Typography fontSize={12} color="primary" sx={{ textTransform: "capitalize" }}>
+                                {item?.case_number ?? "-"}
                             </Typography>
                         </Box>
 
-                        <Typography fontSize={12} color="textSecondary"  >
-                            {item?.description}
+                        <Typography
+                            fontSize={12}
+                            sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 0.5,
+                                fontWeight: 500,
+                                color: dayjs(item?.expireOn).isBefore(dayjs()) ? "error.main" : "text.secondary",
+                                fontSize: 12
+                            }}
+                        >
+                            <AccessTimeIcon sx={{ fontSize: 12, marginTop: "-2px" }} />  {item?.expireOn ? dayjs(item.expireOn).format("DD MMM YYYY") : "-"}
                         </Typography>
                     </Card>
 
