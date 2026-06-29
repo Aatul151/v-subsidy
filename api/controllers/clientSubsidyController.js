@@ -150,8 +150,9 @@ export const getClientSubsidies = async (req, res) => {
                 totalCount: totalStageCount,
                 loadedCount: nextSkip, // The frontend will pass this value directly back as ?skip=
                 hasNextPage: hasNextPage,
-                client : client?.split(','),
-                expireFrom,expireTo
+                client: client?.split(','),
+                expireFrom, expireTo,
+                assigned_executive: assigned_executive?.split(',')
             };
         });
 
