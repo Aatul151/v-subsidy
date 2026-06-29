@@ -1,4 +1,4 @@
-import { Alert, Box, Button, ButtonGroup, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControl, IconButton, InputLabel, MenuItem, Select, Tooltip, Typography } from "@mui/material";
+import { Alert, Avatar, Box, Button, ButtonGroup, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControl, IconButton, InputLabel, MenuItem, Select, Tooltip, Typography } from "@mui/material";
 import { FormatListBulleted as FormatListBulletedIcon } from '@mui/icons-material';
 import { GridActionsCellItem, GridColDef } from "@mui/x-data-grid";
 import CloseIcon from "@mui/icons-material/Close";
@@ -8,14 +8,14 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs, { Dayjs } from "dayjs";
 import { useForm, Controller } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
-import { Add as AddIcon, GridView as GridViewIcon, Edit as EditIcon, Visibility as ViewIcon, Delete as DeleteIcon, } from '@mui/icons-material';
+import { Add as AddIcon, GridView as GridViewIcon, Edit as EditIcon, Refresh as RefreshIcon, Visibility as ViewIcon, Delete as DeleteIcon, } from '@mui/icons-material';
 import { useEffect, useState } from "react";
 import KanbanBoard from "@/components/kanban/KanbanBoard";
 import { AppDataTable } from "@/components/common/AppDataTable";
 import { PageHeader } from "@/components/common/PageHeader";
 import { PageContent } from "@/components/common/PageContent";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { SYSTEM_FORM_NAMES, transformFormSchema } from "@/utils/formUtils";
+import { formatDateTime, SYSTEM_FORM_NAMES, transformFormSchema } from "@/utils/formUtils";
 import { formEntriesAPI, formsAPI } from "@/api/forms";
 import { FormField, FormSection } from "@aatulwork/customform-renderer";
 import { clientSubsidyAPI, ClientSubsidyType, CreateClientPayload, UpdateClientSubsidyPayload } from "@/api/clientSubsidy";
@@ -24,6 +24,7 @@ import { useAppAlert } from "@/components/common/AppAlert";
 import { clientsAPI } from "@/api/manageClient";
 import { usersAPI } from "@/api/users";
 import utc from "dayjs/plugin/utc";
+import { getAvatarColor } from "@/utils/iconMap";
 
 dayjs.extend(utc);
 
@@ -346,13 +347,13 @@ export default function ClientSubsidy() {
         }
     };
     const orderMap: Record<string, number> = {
-        case_number: 1,
-        client: 2,
+        client: 1,
+        case_number: 2,
         subsidy: 3,
-        current_stage: 4,
+        expireOn: 4,
+        current_stage: 5,
         status: 5,
         assigned_executive: 6,
-        expireOn: 7,
         remarks: 8,
     };
 
@@ -383,7 +384,12 @@ export default function ClientSubsidy() {
                     order: orderMap.client,
                     renderCell: (params: any) => {
                         const clientName = params?.row?.client?.name;
-                        return clientName;
+                        return <>
+                            <Avatar sx={{ width: 25, height: 25, mr: 1, bgcolor: `${getAvatarColor(clientName)}.light`, }}>
+                                {clientName?.charAt(0)?.toUpperCase()}
+                            </Avatar>
+                            {clientName}
+                        </>
                     },
                 });
             } else if (field.name.toLowerCase() === 'subsidy') {
@@ -435,7 +441,7 @@ export default function ClientSubsidy() {
                     width: 200,
                     order: orderMap.expireOn,
                     renderCell: (params: any) => {
-                        return params?.value ? dayjs.utc(params.value).format("DD-MM-YYYY") : "-";
+                        return formatDateTime(params?.value, { datePickerMode: 'date' });
                     },
                 });
             } else if (field.name.toLowerCase() === "remarks") {
@@ -564,19 +570,28 @@ export default function ClientSubsidy() {
 
     const actionButtons = (
         <>
-            <Button
+            {!isKanbanBoard && <Button
                 variant="outlined"
                 size={'small'}
                 onClick={() => setOpenArchiveTable((prev) => !prev)}
                 sx={{ backgroundColor: OpenArchiveTable ? 'primary.main' : 'transparent', color: OpenArchiveTable ? 'primary.contrastText' : 'primary.main' }}
             >
-                Archive {OpenArchiveTable && <CloseIcon fontSize="small" />}
-            </Button>
-            <ButtonGroup
+                {OpenArchiveTable && <>View All Items <CloseIcon fontSize="small" sx={{ ml: 1 }} /></>}
+                {!OpenArchiveTable && <>View Archived Items<ViewIcon fontSize="small" sx={{ ml: 1 }} /></>}
+            </Button>}
+            {!OpenArchiveTable && <ButtonGroup
                 variant="outlined"
                 size={'small'}
                 sx={{ '& .MuiButtonGroup-grouped': { minWidth: 'auto', padding: '5px 10px' } }}
             >
+                <Tooltip title="Refresh" placement="bottom" arrow>
+                    <Button
+                        onClick={() => { }}
+                        disabled={isLoading}
+                    >
+                        <RefreshIcon fontSize="small" />
+                    </Button>
+                </Tooltip>
                 <Tooltip title={isKanbanBoard ? "Table View" : "Kanban Board"} placement="bottom" arrow>
                     <Button onClick={() => setIsKanbanBoard((prev) => !prev)}>
                         {isKanbanBoard ? <FormatListBulletedIcon /> : <GridViewIcon />}
@@ -605,7 +620,7 @@ export default function ClientSubsidy() {
                     </Button>
                 </Tooltip>
             </ButtonGroup>
-
+            }
         </>
     );
 

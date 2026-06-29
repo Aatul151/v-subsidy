@@ -1,4 +1,4 @@
-import { Box, Grid, Card, Typography, Avatar, Stack, Divider, useTheme, Chip, CardContent } from "@mui/material";
+import { Box, Grid, Card, Typography, Avatar, Stack, Divider, useTheme, Chip, CardContent, Button, IconButton, Tooltip } from "@mui/material";
 import {
   PeopleAlt as PeopleAltIcon,
   CheckCircle as CheckCircleIcon,
@@ -8,10 +8,11 @@ import {
   FormatListBulleted as FormatListBulletedIcon,
   TrendingDown as TrendingDownIcon,
   SearchOff as SearchOffIcon,
+  Refresh as RefreshIcon
 } from '@mui/icons-material';
 import { Dashboard as DashboardIcon } from '@mui/icons-material';
 import { PageHeader } from '@/components/common/PageHeader';
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { dashBoardAPI } from "@/api/dashboard";
 import { clientSubsidyAPI } from "@/api/clientSubsidy";
 import dayjs from "dayjs";
@@ -19,10 +20,13 @@ import utc from "dayjs/plugin/utc";
 import { AppDrawer } from "@/components/common/AppDrawer";
 import ClientSubsidyDetail from "../client-subsidy/ClientSubsidyDetail";
 import { useState } from "react";
+import { getAvatarColor } from "@/utils/iconMap";
 
 dayjs.extend(utc);
 
 export const Dashboard = () => {
+  const queryClient = useQueryClient();
+
   const theme = useTheme();
   const [subsidyId, setSubsidyId] = useState<any>(false);
 
@@ -46,7 +50,7 @@ export const Dashboard = () => {
       expireFrom: dayjs().startOf("day").format("YYYY-MM-DD"),
       expireTo: dayjs().endOf("day").format("YYYY-MM-DD"),
       sortBy: "expireOn",
-      sortType: "DESCASC"
+      sortType: "ASC"
     }
   );
 
@@ -66,6 +70,10 @@ export const Dashboard = () => {
     }
 
   );
+
+  const onRefreshList = (key: string) => {
+    queryClient.invalidateQueries({ queryKey: [key] });
+  }
 
   const counts = [
     {
@@ -118,19 +126,30 @@ export const Dashboard = () => {
     }
   ];
 
-  const SubsidyListCard = ({ title, data, color, icon }: any) => {
-    return (<Card sx={{ borderRadius: 1, height: "100%", boxShadow: "0px 8px 24px rgba(0,0,0,.06)" }} >
+  const SubsidyListCard = ({ title, data, color, onRefresh = () => { } }: any) => {
+
+    return (<Card sx={{ borderRadius: 1, height: "100%" }} >
       <CardContent sx={{ p: 2 }}>
         <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
           <Typography fontWeight={700} fontSize={20}>
             {title}
           </Typography>
-          <Chip size="small" label={`${data?.length} Items`} color={color} />
+          <Box>
+            <Tooltip title="Reload Data" arrow>
+              <IconButton
+                color="primary"
+                onClick={onRefresh}
+              >
+                <RefreshIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Chip size="small" label={`${data?.length} Items`} color={color} />
+          </Box>
         </Stack>
 
         {data?.length > 0 ? <Box
           sx={{
-            maxHeight: 550,
+            maxHeight: 400,
             overflowY: "auto",
             overflowX: "hidden",
             "&::-webkit-scrollbar": { width: 4, },
@@ -153,15 +172,15 @@ export const Dashboard = () => {
               <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ width: "100%", minWidth: 0, }}>
                 <Stack direction="row" spacing={1.5} alignItems="center" sx={{ minWidth: 0, flex: 1, }}
                   onClick={() => setSubsidyId(item?._id)}>
-                  <Avatar sx={{ width: 35, height: 35, bgcolor: `${color}.light`, }}>
-                    {icon}
+                  <Avatar sx={{ width: 35, height: 35, bgcolor: `${getAvatarColor(item?.client?.name)}.light`, }}>
+                    {item?.client?.name?.charAt(0)?.toUpperCase()}
                   </Avatar>
                   <Box sx={{ minWidth: 0 }}>
                     <Typography fontWeight={600} fontSize={14} noWrap >
                       {item?.client?.name}
                     </Typography>
                     <Typography fontSize={12} color="text.secondary" noWrap  >
-                      {item?.subsidy_ref?.subsidy_name}
+                      <span style={{ textTransform: "capitalize" }}> {item?.case_number} </span>| {item?.subsidy_ref?.subsidy_name}
                     </Typography>
                   </Box>
                 </Stack>
@@ -191,16 +210,6 @@ export const Dashboard = () => {
     )
   };
 
-  // const { user, isSuperAdmin, isAdmin } = useAuthStore(selectUserAndRoles);
-  // Fetch users count (first page with limit 1 to get total) - only for admin
-  // const { data: usersData, isLoading: usersLoading } = useQuery({
-  //   queryKey: ['users', 1, 1],
-  //   queryFn: async () => {
-  //     return await usersAPI.getAll(1, 1);
-  //   },
-  //   enabled: isAdmin || isSuperAdmin, // Only fetch users count for admin/superadmin
-  // });
-
   return (
     <>
       <Box
@@ -227,7 +236,6 @@ export const Dashboard = () => {
                 <Card
                   sx={{
                     borderRadius: 1,
-                    boxShadow: "0px 10px 30px rgba(0,0,0,0.08)",
                     transition: ".3s",
                     background: `linear-gradient(135deg,  ${item.color}15,  ${item.color}05)`,
                     "&:hover": { transform: "translateY(-6px)", },
@@ -255,13 +263,12 @@ export const Dashboard = () => {
 
           {/* Lists */}
           <Grid container spacing={1} mt={0.5}>
-
             <Grid item xs={12} md={6} lg={4}>
               <SubsidyListCard
                 title="Today's Expire Subsidy"
                 data={todayExpireList?.data}
                 color="info"
-                icon={<AccessTimeIcon fontSize="small" />}
+                onRefresh={() => { onRefreshList("client_today_list") }}
               />
             </Grid>
 
@@ -270,7 +277,7 @@ export const Dashboard = () => {
                 title="Expiring This Week"
                 data={weekExpireList?.data}
                 color="warning"
-                icon={<AccessTimeIcon fontSize="small" />}
+                onRefresh={() => { onRefreshList("client_weekexpire_list") }}
               />
             </Grid>
 
@@ -279,7 +286,8 @@ export const Dashboard = () => {
                 title="Top 10 Expired Subsidies"
                 data={expiredList?.data}
                 color="error"
-                icon={<ErrorOutlineIcon fontSize="small" />}
+                onRefresh={() => { onRefreshList("client_expiredlist") }}
+
               />
             </Grid>
           </Grid>

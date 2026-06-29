@@ -128,7 +128,7 @@ export const formatDateTime = (
         return date.format('hh:mm A');
       case 'date':
       default:
-        return date.format('DD/MM/YYYY');
+        return date.format('DD MMM YYYY');
     }
   } catch (error) {
     // If parsing fails, return empty value

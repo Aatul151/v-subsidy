@@ -589,3 +589,15 @@ export const getIconSelectOptions = (): SearchableSelectOption[] => {
   }));
 };
 
+const colors = [
+  "primary",
+  "secondary",
+  "error",
+  "warning",
+  "info",
+  "success",
+];
+export const getAvatarColor = (name = "") => {
+  const hash = name ? [...name].reduce((acc, char) => acc + char.charCodeAt(0), 0) : 117;
+  return colors[hash % colors.length];
+};

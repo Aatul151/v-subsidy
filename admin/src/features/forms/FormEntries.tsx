@@ -1187,7 +1187,7 @@ export const FormEntries = () => {
           </Button>
         </Tooltip>
       )}
-      {!isSingleRecordForm && (entries.length > 0 || (pagination?.total && pagination.total > 0)) && (
+      {/* {!isSingleRecordForm && (entries.length > 0 || (pagination?.total && pagination.total > 0)) && (
         <Tooltip title="Export Entries" placement="bottom" arrow>
           <Button
             onClick={handleExport}
@@ -1206,7 +1206,7 @@ export const FormEntries = () => {
             <UploadIcon fontSize="small" />
           </Button>
         </Tooltip>
-      )}
+      )} */}
       {!isSingleRecordForm && canCreate && (
         <Tooltip title={isMobile ? 'Add' : `Add ${formSchema?.title || 'Entry'}`} placement="bottom" arrow>
           <Button

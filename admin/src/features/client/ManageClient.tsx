@@ -1,7 +1,7 @@
 import { PageHeader } from "@/components/common/PageHeader";
-import { Alert, Box, Button, ButtonGroup, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Tooltip, Typography } from "@mui/material";
+import { Alert, Avatar, Box, Button, ButtonGroup, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Tooltip, Typography } from "@mui/material";
 import { FormatListBulleted as FormatListBulletedIcon } from '@mui/icons-material';
-import { Add as AddIcon, Edit as EditIcon, Visibility as ViewIcon } from '@mui/icons-material';
+import { Add as AddIcon, Edit as EditIcon, Visibility as ViewIcon, Refresh as RefreshIcon } from '@mui/icons-material';
 import { PageContent } from "@/components/common/PageContent";
 import { AppDataTable } from "@/components/common/AppDataTable";
 import { useState } from "react";
@@ -14,6 +14,7 @@ import { GridActionsCellItem, GridColDef } from "@mui/x-data-grid";
 import { FormField, FormSection } from "@aatulwork/customform-renderer";
 import { useAppAlert } from "@/components/common/AppAlert";
 import { UpdateRolePayload } from "@/api/roles";
+import { getAvatarColor } from "@/utils/iconMap";
 
 
 export default function ManageClient() {
@@ -132,8 +133,8 @@ export default function ManageClient() {
         }
     };
     const orderMap: Record<string, number> = {
-        clientNo: 1,
-        name: 2,
+        clientNo: 2,
+        name: 1,
         contact_person: 3,
     };
 
@@ -164,7 +165,12 @@ export default function ManageClient() {
                     order: orderMap.name,
                     renderCell: (params: any) => {
                         const clientName = params?.row?.name;
-                        return clientName;
+                        return <>
+                            <Avatar sx={{ width: 25, height: 25, mr: 1, bgcolor: `${getAvatarColor(clientName)}.light`, }}>
+                                {clientName?.charAt(0)?.toUpperCase()}
+                            </Avatar>
+                            {clientName}
+                        </>
                     },
                 });
             } else if (field.name.toLowerCase() === "contact_person") {
@@ -198,7 +204,7 @@ export default function ManageClient() {
         columns.push(
             {
                 field: 'clientNo',
-                headerName: 'Client Number.',
+                headerName: 'Client Number',
                 width: 150,
                 order: orderMap.clientNo,
                 renderCell: (params: any) => {
@@ -291,7 +297,16 @@ export default function ManageClient() {
                 },
             }}
         >
+            <Tooltip title="Refresh" placement="bottom" arrow>
+                <Button
+                    onClick={() => { }}
+                    disabled={isLoading}
+                >
+                    <RefreshIcon fontSize="small" />
+                </Button>
+            </Tooltip>
             <Tooltip title="Add Client" placement="bottom" arrow>
+
                 <Button
                     onClick={() => handleActions(true, null, 'add')}
                     disabled={isLoading}
