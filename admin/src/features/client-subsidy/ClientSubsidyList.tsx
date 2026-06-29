@@ -65,25 +65,25 @@ export default function ClientSubsidy() {
             case "today":
                 return {
                     expireFrom: dayjs().startOf("day").format("YYYY-MM-DD"),
-                    expireTo: dayjs().endOf("day").format("YYYY-MM-DD"),
+                    expireTo: dayjs().endOf("day").format("YYYY-MM-DD")
                 };
 
             case "week":
                 return {
-                    expireFrom: today.startOf("week").add(1, "day").format("YYYY-MM-DD"),
-                    expireTo: today.startOf("week").add(7, "day").format("YYYY-MM-DD"),
+                    expireFrom: dayjs().add(1, "day").format("YYYY-MM-DD"),
+                    expireTo: dayjs().add(7, "day").format("YYYY-MM-DD")
                 };
 
             case "month":
                 return {
                     expireFrom: today.startOf("month").format("YYYY-MM-DD"),
-                    expireTo: today.endOf("month").format("YYYY-MM-DD"),
+                    expireTo: today.endOf("month").format("YYYY-MM-DD")
                 };
 
             case "custom":
                 return {
                     expireFrom: startDate?.format("YYYY-MM-DD"),
-                    expireTo: endDate?.format("YYYY-MM-DD"),
+                    expireTo: endDate?.format("YYYY-MM-DD")
                 };
 
             default:

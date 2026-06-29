@@ -95,7 +95,7 @@ export const createClient = async (req, res) => {
     }
 
     // Generate dynamically
-    const clientNo = await generateUniqueNo("clientSequence", "cus");
+    const clientNo = await generateUniqueNo("clientSequence", "Cus");
 
     // Create Client
     const client = await Client.create({

@@ -18,8 +18,8 @@ export const generateUniqueNo = async (key, prefix, includeYear = false, padding
     const sequence = String(settings.systemSettings[key]).padStart(padding, "0");
 
     if (includeYear) {
-        return `${prefix}_${new Date().getFullYear()}_${sequence}`;
+        return `${prefix}${new Date().getFullYear()}${sequence}`;
     }
 
-    return `${prefix}_${sequence}`;
+    return `${prefix}${sequence}`;
 };

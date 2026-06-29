@@ -1,4 +1,4 @@
-import { Box, Grid, Card, Typography, Avatar, Stack, Divider, useTheme, Chip, CardContent, Button, } from "@mui/material";
+import { Box, Grid, Card, Typography, Avatar, Stack, Divider, useTheme, Chip, CardContent } from "@mui/material";
 import {
   PeopleAlt as PeopleAltIcon,
   CheckCircle as CheckCircleIcon,
@@ -7,7 +7,6 @@ import {
   ErrorOutline as ErrorOutlineIcon,
   FormatListBulleted as FormatListBulletedIcon,
   TrendingDown as TrendingDownIcon,
-  Lock as LockIcon,
   SearchOff as SearchOffIcon,
 } from '@mui/icons-material';
 import { Dashboard as DashboardIcon } from '@mui/icons-material';
@@ -46,18 +45,26 @@ export const Dashboard = () => {
     {
       expireFrom: dayjs().startOf("day").format("YYYY-MM-DD"),
       expireTo: dayjs().endOf("day").format("YYYY-MM-DD"),
+      sortBy: "expireOn",
+      sortType: "DESCASC"
     }
   );
 
   const { data: weekExpireList } = getSubsidyQuery("client_weekexpire_list", 1, 100,
     {
-      expireFrom: dayjs().startOf("week").add(1, "day").format("YYYY-MM-DD"),
-      expireTo: dayjs().startOf("week").add(7, "day").format("YYYY-MM-DD"),
+      expireFrom: dayjs().add(1, "day").format("YYYY-MM-DD"), // Tomorrow
+      expireTo: dayjs().add(7, "day").format("YYYY-MM-DD"),// Next 7th day
+      sortBy: "expireOn",
+      sortType: "ASC",
     }
   );
 
   const { data: expiredList } = getSubsidyQuery("client_expiredlist", 1, 10,
-    { expireTo: dayjs().subtract(1, "day").format("YYYY-MM-DD"), }
+    {
+      expireTo: dayjs().subtract(1, "day").format("YYYY-MM-DD"),
+      sortBy: "expireOn",
+    }
+
   );
 
   const counts = [
@@ -283,7 +290,7 @@ export const Dashboard = () => {
         onClose={() => setSubsidyId(null)}
         title={`Client Subsidy detail`}
         anchor="right"
-        width={1000}
+        width={1400}
         displayExpandDrawer={true}
       >
         <ClientSubsidyDetail id={subsidyId} />

@@ -28,7 +28,7 @@ export const createClientSubsidy = async (req, res) => {
         }
 
         // Generate dynamically
-        const case_number = await generateUniqueNo("subsidySequence", "case", true);
+        const case_number = await generateUniqueNo("subsidySequence", "Case", true);
 
         const clientSubsidy = await ClientSubsidy.create({
             case_number,
@@ -60,7 +60,7 @@ export const createClientSubsidy = async (req, res) => {
 // Fetch All
 export const getClientSubsidies = async (req, res) => {
     try {
-        const { client, subsidy, assigned_executive, current_stage, case_number, expireFrom, expireTo, status, page = 1, limit = 10, skip: customSkip, isArchived = false } = req.query;
+        const { client, subsidy, assigned_executive, current_stage, case_number, expireFrom, expireTo, expired, sortBy = "createdAt", sortType = "DESC", status, page = 1, limit = 10, skip: customSkip, isArchived = false } = req.query;
 
         const validation = await validateFormAccess(CLIENT_SUBSIDY_FORM, req.user?.role, "read");
         if (!validation.success) {
@@ -90,6 +90,11 @@ export const getClientSubsidies = async (req, res) => {
                 filter.expireOn.$lte = toDate;
             }
         }
+        if (expired == "true") {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            filter.expireOn = { $lt: today, $ne: null };
+        }
         //#endregion
 
         const currentPage = Number(page);
@@ -97,12 +102,13 @@ export const getClientSubsidies = async (req, res) => {
         // If the frontend explicitly sends a skip value (Kanban scroll), use it. 
         // Otherwise fallback to traditional page calculations (Table View).
         const skip = customSkip !== undefined ? Number(customSkip) : (currentPage - 1) * pageSize;
+        const sortDirection = sortType?.toUpperCase() === "DESC" ? -1 : 1;
 
         const [records, totalRecords, stageCounts] = await Promise.all([
             ClientSubsidy.find(filter)
                 .select("-stageHistory -isArchived -archivedBy -archivedAt")
                 .populate("client")
-                .sort({ createdAt: -1 })
+                .sort({ [sortBy]: sortDirection })
                 .skip(skip)
                 .limit(pageSize),
 
