@@ -62,6 +62,20 @@ export default function ClientSubsidyDetail({ id: propId }: any) {
         },
     });
 
+    const { data: documentsList = [] } = useQuery({
+        queryKey: ['formEntries', SYSTEM_FORM_NAMES.DOCUMENT_MASTER],
+        queryFn: async () => {
+            try {
+                const response = await formEntriesAPI.getAll({
+                    formName: SYSTEM_FORM_NAMES.DOCUMENT_MASTER, page: 1, limit: 100,
+                });
+                return response.data || [];
+            } catch (error: any) {
+                showAlert('error', error.response?.data?.message);
+            }
+        },
+    });
+
     const sortedStages = [...(stagesList || [])].sort((a: any, b: any) => a?.payload?.order_index - b?.payload?.order_index);
     const currentStageIndex = sortedStages.findIndex((stage: any) => stage?.payload?.label === subsidyDetail?.current_stage_ref?.label);
 
@@ -226,9 +240,9 @@ export default function ClientSubsidyDetail({ id: propId }: any) {
                                 icon={<DescriptionOutlined />}
                                 label={
                                     <Stack direction="row" alignItems="center" spacing={1}>
-                                        <Typography variant="body2">Documents: {(subsidyDetail?.subsidy_ref?.requird_docs_ref?.length || 0)} required</Typography>
+                                        <Typography variant="body2">Documents: {(subsidyDetail?.subsidy_ref?.requird_docs?.length || 0)} required</Typography>
 
-                                        {subsidyDetail?.subsidy_ref?.requird_docs_ref?.length > 0 && <Tooltip title="View Documents" placement="bottom" arrow>
+                                        {subsidyDetail?.subsidy_ref?.requird_docs?.length > 0 && <Tooltip title="View Documents" placement="bottom" arrow>
                                             <Visibility fontSize="small" sx={{ cursor: 'pointer' }}
                                                 onClick={(e) => {
                                                     e.stopPropagation();
@@ -262,10 +276,10 @@ export default function ClientSubsidyDetail({ id: propId }: any) {
                             <Chip
                                 size="small"
                                 variant="outlined"
-                                label={`Progress: ${subsidyDetail?.subsidy_ref?.requird_docs_ref?.length
+                                label={`Progress: ${subsidyDetail?.subsidy_ref?.requird_docs?.length
                                     ? Math.round(
                                         ((subsidyDetail?.documents?.length || 0) /
-                                            subsidyDetail?.subsidy_ref?.requird_docs_ref?.length) * 100
+                                            subsidyDetail?.subsidy_ref?.requird_docs?.length) * 100
                                     ) : 0}%`}
                                 icon={<TrendingUp />}
                                 sx={{ p: 1, color: 'primary.main', borderColor: "primary.main", '& .MuiChip-icon': { color: 'primary.main' } }}
@@ -439,10 +453,11 @@ export default function ClientSubsidyDetail({ id: propId }: any) {
 
                     <DialogContent dividers sx={{ p: 3 }}>
                         <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-                            {subsidyDetail?.subsidy_ref?.requird_docs_ref?.map(
-                                (doc: any, index: number) => (
+                            {subsidyDetail?.subsidy_ref?.requird_docs?.map((docId: string, index: number) => {
+                                const document = documentsList?.find((d: any) => d?._id == docId);
+                                return (
                                     <Paper
-                                        key={doc?._id}
+                                        key={docId}
                                         elevation={0}
                                         sx={{
                                             p: 2, display: "flex", alignItems: "center", gap: 2, border: "1px solid", borderColor: "divider", borderRadius: 2,
@@ -459,7 +474,7 @@ export default function ClientSubsidyDetail({ id: propId }: any) {
 
                                         <Box sx={{ flex: 1 }}>
                                             <Typography variant="body1" fontWeight={500}>
-                                                {doc?.doc_name}
+                                                {document?.payload?.doc_name || "Unknown Document"}
                                             </Typography>
 
                                             <Typography variant="caption" color="text.secondary">
@@ -468,7 +483,7 @@ export default function ClientSubsidyDetail({ id: propId }: any) {
                                         </Box>
                                     </Paper>
                                 )
-                            )}
+                            })}
                         </Box>
                     </DialogContent >
                 </Dialog >}

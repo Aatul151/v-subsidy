@@ -1,7 +1,7 @@
 import { Theme } from "@emotion/react";
 import { Box, Card, Typography, Button, Chip, SxProps, IconButton } from "@mui/material";
 import { useEffect, useState } from "react";
-import { Refresh as RefreshIcon, Launch as LaunchIcon, AccessTime as AccessTimeIcon } from '@mui/icons-material';
+import { Refresh as RefreshIcon, Launch as LaunchIcon, AccessTime as AccessTimeIcon, PostAdd } from '@mui/icons-material';
 import dayjs from "dayjs";
 import { AppDrawer } from "../common/AppDrawer";
 import ClientSubsidyDetail from "@/features/client-subsidy/ClientSubsidyDetail";
@@ -216,6 +216,21 @@ function KanbanItem({
                             >
                                 <AccessTimeIcon sx={{ fontSize: 12, marginTop: "-2px" }} />  {item?.expireOn ? dayjs(item.expireOn).format("DD MMM YYYY") : "-"}
                             </Typography>
+
+                            <Typography
+                                variant="caption"
+                                sx={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 0.5,
+                                    color: "text.secondary",
+                                }}
+                            >
+
+                                <PostAdd sx={{ fontSize: 15, }} />
+                                Required Docs: {item?.totalRequirdDocs || 0}
+                            </Typography>
+
                         </Card>
 
                     ))}
@@ -237,8 +252,7 @@ function KanbanItem({
                 onClose={() => setSubsidyId(null)}
                 title={`Client Subsidy detail`}
                 anchor="right"
-                width={1000}
-                displayExpandDrawer={true}
+                width={1400}
             >
                 <ClientSubsidyDetail id={subsidyId} />
             </AppDrawer>
