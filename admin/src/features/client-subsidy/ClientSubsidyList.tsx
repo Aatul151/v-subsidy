@@ -33,7 +33,7 @@ export default function ClientSubsidy() {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const { showAlert, AlertComponent } = useAppAlert();
-    const [searchParams] = useSearchParams();
+    const [searchParams, setSearchParams] = useSearchParams();
 
     const statusParam = searchParams.get('status');
     const expiredParam = searchParams.get('expired');
@@ -494,7 +494,13 @@ export default function ClientSubsidy() {
                 headerName: 'Case Number',
                 order: orderMap.case_number,
                 width: 180,
-                valueGetter: (value: any) => { return value; },
+                renderCell: (params) => {
+                    return (<>
+                        <Tooltip title="View Client Subsidy Detail" placement="bottom" arrow>
+                            <Button sx={{ textTransform: "capitalize" }} onClick={() => { navigate(`/client-subsidy/${params?.row?._id}`) }}>{params?.row?.case_number}</Button>
+                        </Tooltip >
+                    </>)
+                }
             },
             {
                 field: 'actions',
@@ -630,40 +636,38 @@ export default function ClientSubsidy() {
         </>
     );
 
-    const boardData = (stagesList || [])
-        ?.filter((e: any) => e?.payload?.isActive)
-        ?.map((data: any) => {
-            const stageCountObj = defaultSubsidyCount?.stageCounts?.find((e: any) => e?.stageId == data?._id);
-            return ({
-                _id: data?._id,
-                label: data?.payload?.label,
-                value: data?.payload?.value,
-                bgColor: data?.payload?.bgColor,
-                orderIndex: data?.payload?.order_index,
+    const boardData = (stagesList || [])?.map((data: any) => {
+        const stageCountObj = defaultSubsidyCount?.stageCounts?.find((e: any) => e?.stageId == data?._id);
+        return ({
+            _id: data?._id,
+            label: data?.payload?.label,
+            value: data?.payload?.value,
+            bgColor: data?.payload?.bgColor,
+            orderIndex: data?.payload?.order_index,
 
-                data: (allClientSubsidy || [])
-                    ?.filter((item: any) => item?.current_stage == data?._id)
-                    ?.map((item: any) => ({
-                        id: item?._id,
-                        title: item?.subsidy_ref?.subsidy_name,
-                        description: item?.subsidy_ref?.description,
-                        person: item?.client?.name,
-                        createdAt: item?.createdAt,
-                        current_stage: item?.current_stage,
-                        case_number: item?.case_number,
-                        expireOn: dayjs.utc(item?.expireOn).format("DD-MMM-YYYY"),
-                        totalRequirdDocs: item?.subsidy_ref?.requird_docs?.length
-                    })),
+            data: (allClientSubsidy || [])
+                ?.filter((item: any) => item?.current_stage == data?._id)
+                ?.map((item: any) => ({
+                    id: item?._id,
+                    title: item?.subsidy_ref?.subsidy_name,
+                    description: item?.subsidy_ref?.description,
+                    person: item?.client?.name,
+                    createdAt: item?.createdAt,
+                    current_stage: item?.current_stage,
+                    case_number: item?.case_number,
+                    expireOn: dayjs.utc(item?.expireOn).format("DD-MMM-YYYY"),
+                    totalRequirdDocs: item?.subsidy_ref?.requird_docs?.length
+                })),
 
-                pagination: {
-                    hasNextPage: stageCountObj?.hasNextPage,
-                    nextPage: stageCountObj?.nextPage,
-                    stageId: stageCountObj?.stageId,
-                    totalCount: stageCountObj?.totalCount,
-                    loadedCount: stageCountObj?.loadedCount,
-                }
-            })
-        }).sort((a: any, b: any) => a?.orderIndex - b?.orderIndex);
+            pagination: {
+                hasNextPage: stageCountObj?.hasNextPage,
+                nextPage: stageCountObj?.nextPage,
+                stageId: stageCountObj?.stageId,
+                totalCount: stageCountObj?.totalCount,
+                loadedCount: stageCountObj?.loadedCount,
+            }
+        })
+    }).sort((a: any, b: any) => a?.orderIndex - b?.orderIndex);
 
     const handleSeeMore = (data: any) => {
         setIsExpanded(true);
@@ -705,6 +709,23 @@ export default function ClientSubsidy() {
 
         await updateMutation.mutateAsync({ id: data?.row?.id, payload });
     }
+
+    const handleClose = () => {
+        setSearchParams({});
+        reset({
+            client: [],
+            stage: [],
+            assigned_executive: [],
+            status: [],
+            date: "",
+            startDate: null as Dayjs | null,
+            endDate: null as Dayjs | null,
+        });
+        setIsExpanded(false);
+        setFilterStage('');
+        setPages(1);
+        setSkip('');
+    };
 
     return (<>
         <Box
@@ -896,9 +917,9 @@ export default function ClientSubsidy() {
 
                                 </LocalizationProvider>
                             )}
-                            {(client?.length > 0 || stage?.length > 0 || date !== '' || assigned_executive?.length > 0) && <IconButton
+                            {(client?.length > 0 || (!isKanbanBoard && stage?.length > 0) || date !== '' || assigned_executive?.length > 0 || status?.length > 0) && <IconButton
                                 sx={{ fontSize: "20px", width: 26, height: 26 }}
-                                onClick={() => { reset(); setIsExpanded(false); setFilterStage(''); setPages(1); setSkip(''); }}
+                                onClick={handleClose}
                             >
                                 <CloseIcon sx={{ fontSize: 20 }} />
                             </IconButton>}
@@ -922,7 +943,6 @@ export default function ClientSubsidy() {
                             onPaginationModelChange={(newModel) => {
                                 setPaginationModel(newModel);
                             }}
-                            onRowClick={(row) => { navigate(`/client-subsidy/${row.id}`) }}
                         />)}
 
                     {OpenArchiveTable && <AppDataTable

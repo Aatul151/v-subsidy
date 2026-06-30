@@ -208,7 +208,8 @@ export default function ManageClient() {
                 width: 150,
                 order: orderMap.clientNo,
                 renderCell: (params: any) => {
-                    return params?.row?.client_number;
+                    const value = params?.row?.client_number || "";
+                    return value.charAt(0).toUpperCase() + value.slice(1);
                 },
             },
             {

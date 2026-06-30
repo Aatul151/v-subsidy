@@ -339,7 +339,8 @@ export const Dashboard = () => {
                     transition: ".3s",
                     background: `linear-gradient(135deg,  ${item.color}15,  ${item.color}05)`,
                     "&:hover": { transform: "translateY(-6px)", },
-                    cursor: 'pointer'
+                    cursor: 'pointer',
+                    height: "110px"
                   }}
                   onClick={item?.OnCardClick}
                 >
