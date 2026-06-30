@@ -417,38 +417,38 @@ export const FormEntries = () => {
   };
 
   // Export entries handler
-  const handleExport = async () => {
-    if (!decodedFormName) return;
+  // const handleExport = async () => {
+  //   if (!decodedFormName) return;
 
-    try {
-      // Call CSV export API
-      const csvBlob = await formEntriesAPI.exportCSV(
-        decodedFormName,
-        100000, // limit
-        Object.keys(filters).length > 0 ? filters : undefined
-      );
+  //   try {
+  //     // Call CSV export API
+  //     const csvBlob = await formEntriesAPI.exportCSV(
+  //       decodedFormName,
+  //       100000, // limit
+  //       Object.keys(filters).length > 0 ? filters : undefined
+  //     );
 
-      // Create download link for CSV file
-      const url = URL.createObjectURL(csvBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${decodedFormName}-entries-${new Date().toISOString().split('T')[0]}.csv`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+  //     // Create download link for CSV file
+  //     const url = URL.createObjectURL(csvBlob);
+  //     const link = document.createElement('a');
+  //     link.href = url;
+  //     link.download = `${decodedFormName}-entries-${new Date().toISOString().split('T')[0]}.csv`;
+  //     document.body.appendChild(link);
+  //     link.click();
+  //     document.body.removeChild(link);
+  //     URL.revokeObjectURL(url);
 
-      showAlert('success', 'Entries exported to CSV successfully');
-    } catch (error: any) {
-      console.error('Error exporting entries:', error);
-      showAlert('error', error.response?.data?.message || 'Failed to export entries');
-    }
-  };
+  //     showAlert('success', 'Entries exported to CSV successfully');
+  //   } catch (error: any) {
+  //     console.error('Error exporting entries:', error);
+  //     showAlert('error', error.response?.data?.message || 'Failed to export entries');
+  //   }
+  // };
 
   // Import entries handler - opens dialog
-  const handleImport = () => {
-    setImportDialogOpen(true);
-  };
+  // const handleImport = () => {
+  //   setImportDialogOpen(true);
+  // };
 
   // Download template CSV
   const handleDownloadTemplate = async () => {
