@@ -48,6 +48,7 @@ export const Dashboard = () => {
     {
       expireFrom: dayjs().startOf("day").format("YYYY-MM-DD"),
       expireTo: dayjs().endOf("day").format("YYYY-MM-DD"),
+      status: "active",
       sortBy: "expireOn",
       sortType: "ASC"
     }
@@ -57,6 +58,7 @@ export const Dashboard = () => {
     {
       expireFrom: dayjs().add(1, "day").format("YYYY-MM-DD"), // Tomorrow
       expireTo: dayjs().add(7, "day").format("YYYY-MM-DD"),// Next 7th day
+      status: "active",
       sortBy: "expireOn",
       sortType: "ASC",
     }
@@ -65,6 +67,7 @@ export const Dashboard = () => {
   const { data: expiredList } = getSubsidyQuery("client_expiredlist", 1, 10,
     {
       expireTo: dayjs().subtract(1, "day").format("YYYY-MM-DD"),
+      status: "active",
       sortBy: "expireOn",
     }
 
