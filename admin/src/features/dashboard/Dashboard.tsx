@@ -28,8 +28,18 @@ import ClientSubsidyDetail from "../client-subsidy/ClientSubsidyDetail";
 import { useState } from "react";
 import { getAvatarColor } from "@/utils/iconMap";
 import { clientsAPI } from "@/api/manageClient";
+import { useNavigate } from "react-router-dom";
 
 dayjs.extend(utc);
+
+type CountItem = {
+  title: string;
+  value: number;
+  icon: React.ReactNode;
+  color: string;
+  OnCardClick?: () => void;
+};
+
 
 export const Dashboard = () => {
   const queryClient = useQueryClient();
@@ -37,6 +47,7 @@ export const Dashboard = () => {
   const theme = useTheme();
   const [subsidyId, setSubsidyId] = useState<any>(false);
   const [clientId, setClientId] = useState<any>(false);
+  const navigate = useNavigate();
 
   const { data: dashboardCounts } = useQuery({
     queryKey: ['dashboard_count'],
@@ -157,30 +168,34 @@ export const Dashboard = () => {
     },
   ]
 
-  const counts = [
+  const counts: CountItem[] = [
     {
       title: "Total Clients",
       value: dashboardCounts?.data?.totalClients ?? 0,
       icon: <PeopleAltIcon />,
       color: theme.palette.secondary.main,
+      OnCardClick: () => { navigate('/manage-client') }
     },
     {
       title: "Total Subsidies",
       value: dashboardCounts?.data?.totalSubsidies ?? 0,
       icon: <FormatListBulletedIcon />,
       color: theme.palette.primary.main,
+      OnCardClick: () => { navigate('/client-subsidy') }
     },
     {
       title: "Active Subsidies",
       value: dashboardCounts?.data?.totalActiveSubsidies ?? 0,
       icon: <TrendingUpIcon />,
       color: theme.palette.success.main,
+      OnCardClick: () => { navigate('/client-subsidy?status=active') }
     },
     {
       title: "Inactive Subsidies",
       value: dashboardCounts?.data?.totalInactiveSubsidies ?? 0,
       icon: <TrendingDownIcon />,
       color: theme.palette.warning.main,
+      OnCardClick: () => { navigate('/client-subsidy?status=inactive') }
     },
     // {
     //   title: "Closed Subsidies",
@@ -193,6 +208,7 @@ export const Dashboard = () => {
       value: dashboardCounts?.data?.totalCompletedSubsidies ?? 0,
       icon: <CheckCircleIcon />,
       color: theme.palette.info.main,
+      OnCardClick: () => { navigate('/client-subsidy?status=completed') }
     },
     // {
     //   title: "Today's Due Subsidy",
@@ -205,6 +221,7 @@ export const Dashboard = () => {
       value: dashboardCounts?.data?.totalExpiredSubsidies ?? 0,
       icon: <ErrorOutlineIcon />,
       color: theme.palette.error.main,
+      OnCardClick: () => { navigate('/client-subsidy?expired=true') }
     }
   ];
 
@@ -322,7 +339,9 @@ export const Dashboard = () => {
                     transition: ".3s",
                     background: `linear-gradient(135deg,  ${item.color}15,  ${item.color}05)`,
                     "&:hover": { transform: "translateY(-6px)", },
+                    cursor: 'pointer'
                   }}
+                  onClick={item?.OnCardClick}
                 >
                   <CardContent>
                     <Stack direction="row" justifyContent="space-between" alignItems="center" >

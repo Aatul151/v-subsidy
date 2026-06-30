@@ -7,7 +7,7 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs, { Dayjs } from "dayjs";
 import { useForm, Controller } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Add as AddIcon, GridView as GridViewIcon, Edit as EditIcon, Refresh as RefreshIcon, Visibility as ViewIcon, Delete as DeleteIcon, } from '@mui/icons-material';
 import { useEffect, useState } from "react";
 import KanbanBoard from "@/components/kanban/KanbanBoard";
@@ -33,6 +33,10 @@ export default function ClientSubsidy() {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const { showAlert, AlertComponent } = useAppAlert();
+    const [searchParams] = useSearchParams();
+
+    const statusParam = searchParams.get('status');
+    const expiredParam = searchParams.get('expired');
 
     const [formDrawerOpen, setFormDrawerOpen] = useState(false);
     const [formMode, setFormMode] = useState<'add' | 'edit' | 'view'>('add');
@@ -52,8 +56,8 @@ export default function ClientSubsidy() {
             client: [],
             stage: [],
             assigned_executive: [],
-            status: [],
-            date: "",
+            status: statusParam ? [statusParam] : [],
+            date: expiredParam === "true" ? "expired" : "",
             startDate: null as Dayjs | null,
             endDate: null as Dayjs | null,
         },
@@ -155,6 +159,7 @@ export default function ClientSubsidy() {
     const filters = {
         client: Array.isArray(client) ? client?.join(",") : client,
         status: Array.isArray(status) ? status?.join(",") : status,
+        expired: date === "expired" ? true : null,
         assigned_executive: Array.isArray(assigned_executive) ? assigned_executive?.join(",") : assigned_executive,
         skip: skip && isKanbanBoard && isExpanded ? skip : undefined,
         ...(isKanbanBoard ? (isExpanded ? { current_stage: filterStage } : {}) : { current_stage: Array.isArray(stage) ? stage.join(",") : stage }),
@@ -838,7 +843,7 @@ export default function ClientSubsidy() {
                                 control={control}
                                 render={({ field }) => (
                                     <FormControl sx={{ width: 200 }} size="small">
-                                        <InputLabel id="date-label">  Expire On    </InputLabel>
+                                        <InputLabel id="date-label"> Expire On</InputLabel>
                                         <Select
                                             {...field}
                                             onChange={(e) => {
@@ -850,6 +855,7 @@ export default function ClientSubsidy() {
                                             label="Date"
                                         >
                                             <MenuItem value=""><em>None</em></MenuItem>
+                                            <MenuItem value="expired"> Expired </MenuItem>
                                             <MenuItem value="today"> Today </MenuItem>
                                             <MenuItem value="week">This Week</MenuItem>
                                             <MenuItem value="month"> This Month</MenuItem>
@@ -907,8 +913,8 @@ export default function ClientSubsidy() {
                             getRowId={(row) => row._id}
                             sx={{
                                 mt: date === "custom" ? 5 : 0,
-                                "@media (max-width:1487px)": { mt: "90px", },
-                                height: { xs: "auto", md: "500px", },
+                                "@media (max-width:1690px)": { mt: "40px", },
+                                height: "500px"
                             }}
                             serverPagination
                             rowCount={clientSubsidyPagination?.totalRecords || 0}
