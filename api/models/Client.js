@@ -62,7 +62,8 @@ const clientSchema = new mongoose.Schema(
     updatedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-    }
+    },
+    updatedAt: { type: Date, default: Date.now }
   },
   {
     timestamps: true,

@@ -56,6 +56,8 @@ const clientSubsidySchema = new mongoose.Schema(
       ref: "User",
     },
 
+    updatedAt: { type: Date, default: Date.now },
+
     isArchived: {
       type: Boolean,
       default: false,

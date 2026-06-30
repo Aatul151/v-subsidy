@@ -152,6 +152,7 @@ export const updateClient = async (req, res) => {
     }
 
     fieldToUpdate['updatedBy'] = req.user._id;
+    fieldToUpdate['updatedAt'] = new Date();
 
     const client = await Client.findByIdAndUpdate(id, fieldToUpdate, {
       new: true,

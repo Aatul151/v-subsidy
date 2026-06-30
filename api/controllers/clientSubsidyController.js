@@ -260,6 +260,7 @@ export const updateClientSubsidy = async (req, res) => {
         }
 
         fieldToUpdate['updatedBy'] = req?.user?._id;
+        fieldToUpdate['updatedAt'] = new Date();
 
         const clientSubsidy = await ClientSubsidy.findByIdAndUpdate(id,
             fieldToUpdate,
