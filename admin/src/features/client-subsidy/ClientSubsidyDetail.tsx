@@ -9,8 +9,12 @@ import {
     DialogContent,
     DialogTitle,
     Divider,
+    FormControl,
     IconButton,
+    InputLabel,
+    MenuItem,
     Paper,
+    Select,
     Stack,
     Step,
     StepContent,
@@ -24,8 +28,8 @@ import Grid from "@mui/material/Grid2";
 import { useEffect, useState } from "react";
 import { PageHeader } from "../../components/common/PageHeader";
 import { useNavigate, useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { clientSubsidyAPI } from "@/api/clientSubsidy";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { clientSubsidyAPI, UpdateClientSubsidyPayload } from "@/api/clientSubsidy";
 import { SYSTEM_FORM_NAMES } from "@/utils/formUtils";
 import { formEntriesAPI } from "@/api/forms";
 import dayjs from "dayjs";
@@ -33,10 +37,16 @@ import { AppDrawer } from "@/components/common/AppDrawer";
 import DocumentManager from "./DocumentManager";
 import { useAppAlert } from "@/components/common/AppAlert";
 import utc from "dayjs/plugin/utc";
+import { Controller, useForm } from "react-hook-form";
+import { STATUS_LIST } from "@/utils/types";
 
 dayjs.extend(utc);
 
 export default function ClientSubsidyDetail({ id: propId }: any) {
+    const navigate = useNavigate();
+    const { showAlert, AlertComponent } = useAppAlert();
+    const queryClient = useQueryClient();
+
     const { id: paramId } = useParams();
     const id = propId || paramId;
 
@@ -45,8 +55,11 @@ export default function ClientSubsidyDetail({ id: propId }: any) {
     const [openDocumentList, setOpenDocumentList] = useState(false);
     const [activeStage, setActiveStage] = useState(0);
 
-    const navigate = useNavigate();
-    const { showAlert } = useAppAlert();
+    const { control, watch, reset } = useForm({
+        defaultValues: { current_stage: '', status: '', },
+    });
+
+    const { current_stage, status }: any = watch();
 
     const { data: stagesList = [] } = useQuery({
         queryKey: ['formEntries', SYSTEM_FORM_NAMES.APPLICABLE_STAGES],
@@ -76,6 +89,18 @@ export default function ClientSubsidyDetail({ id: propId }: any) {
         },
     });
 
+    const updateMutation = useMutation({
+        mutationFn: ({ id, payload }: { id: string; payload: UpdateClientSubsidyPayload }) =>
+            clientSubsidyAPI.update(id, payload),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['client_subsidy'] });
+            showAlert('success', 'Case updated successfully!');
+        },
+        onError: (error: any) => {
+            showAlert('error', error.response?.data?.message || 'Failed to update case');
+        },
+    });
+
     const sortedStages = [...(stagesList || [])].sort((a: any, b: any) => a?.payload?.order_index - b?.payload?.order_index);
     const currentStageIndex = sortedStages.findIndex((stage: any) => stage?.payload?.label === subsidyDetail?.current_stage_ref?.label);
 
@@ -98,8 +123,15 @@ export default function ClientSubsidyDetail({ id: propId }: any) {
     });
 
     useEffect(() => {
-        setSubsidyDetail(clientSubsidydetail?.[0])
-    }, [clientSubsidydetail])
+        const data = clientSubsidydetail?.[0];
+        setSubsidyDetail(data);
+        if (data) {
+            reset({
+                status: data?.status,
+                current_stage: data?.current_stage,
+            });
+        }
+    }, [clientSubsidydetail, reset]);
 
     const handleStageStep = (selectedIdx: number, direction?: string) => {
         let nextStage = selectedIdx;
@@ -180,9 +212,18 @@ export default function ClientSubsidyDetail({ id: propId }: any) {
         if (item?.label === 'Current Stage') return subsidyDetail?.current_stage_ref?.bgColor;
         else return 'primary.main';
     }
+
+    const displayUpdateBtn = current_stage !== subsidyDetail?.current_stage || status !== subsidyDetail?.status;
+
+    const handleUpdate = async () => {
+        const payload = { status, current_stage }
+        await updateMutation.mutateAsync({ id, payload });
+    }
+
     return (
         <>
             <Box>
+                {AlertComponent}
                 <Stack spacing={3}>
                     {!propId && (
                         <PageHeader
@@ -236,7 +277,7 @@ export default function ClientSubsidyDetail({ id: propId }: any) {
                             spacing={1}
                             flexWrap="wrap"
                             useFlexGap
-                            sx={{ mt: 1 }}
+                            sx={{ mt: 2 }}
                         >
                             <Chip
                                 size="small"
@@ -288,6 +329,47 @@ export default function ClientSubsidyDetail({ id: propId }: any) {
                                 icon={<TrendingUp />}
                                 sx={{ p: 1, color: 'primary.main', borderColor: "primary.main", '& .MuiChip-icon': { color: 'primary.main' } }}
                             />
+
+                            <Box sx={{ ml: "auto", display: "flex", gap: 1, flexWrap: "wrap", }} >
+                                <Controller
+                                    name="current_stage"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <FormControl sx={{ width: 200 }} size="small">
+                                            <InputLabel>Stage</InputLabel>
+                                            <Select {...field} label="Stage">
+                                                {stagesList
+                                                    ?.sort((a: any, b: any) => a?.payload?.order_index - b?.payload?.order_index)
+                                                    ?.map((stage: any) => (
+                                                        <MenuItem key={stage?._id} value={stage?._id}>
+                                                            {stage?.payload?.label}
+                                                        </MenuItem>
+                                                    ))}
+                                            </Select>
+                                        </FormControl>
+                                    )}
+                                />
+
+                                <Controller
+                                    name="status"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <FormControl sx={{ width: 200 }} size="small">
+                                            <InputLabel>Status</InputLabel>
+                                            <Select {...field} label="Status" >
+                                                {STATUS_LIST?.map((val: any) => (<MenuItem value={val?.value}> {val?.label}</MenuItem>))}
+                                            </Select>
+                                        </FormControl>
+                                    )}
+                                />
+
+                                {displayUpdateBtn && (
+                                    <Button variant="contained" size="small" onClick={handleUpdate}>
+                                        Update
+                                    </Button>
+                                )}
+
+                            </Box>
                         </Stack>
                     </Card>
 

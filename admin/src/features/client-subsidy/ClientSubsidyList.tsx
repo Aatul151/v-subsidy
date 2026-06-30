@@ -25,6 +25,7 @@ import { clientsAPI } from "@/api/manageClient";
 import { usersAPI } from "@/api/users";
 import utc from "dayjs/plugin/utc";
 import { getAvatarColor } from "@/utils/iconMap";
+import { STATUS_LIST } from "@/utils/types";
 
 dayjs.extend(utc);
 
@@ -776,8 +777,13 @@ export default function ClientSubsidy() {
                                             labelId="stage-label"
                                             label="Stage"
                                         >
-                                            {[...new Map(stagesList?.map((r: any) => [r?._id, { label: r?.payload?.label, id: r?._id }])).values()]
-                                                .map((stage: any) => (<MenuItem key={stage?.id} value={stage?.id}   >    {stage?.label}  </MenuItem>))}
+                                            {stagesList
+                                                ?.sort((a: any, b: any) => a?.payload?.order_index - b?.payload?.order_index)
+                                                ?.map((stage: any) => (
+                                                    <MenuItem key={stage?._id} value={stage?._id}>
+                                                        {stage?.payload?.label}
+                                                    </MenuItem>
+                                                ))}
                                         </Select>
                                     </FormControl>
                                 )}
@@ -822,10 +828,7 @@ export default function ClientSubsidy() {
                                             labelId="status-label"
                                             label="status"
                                         >
-                                            <MenuItem value="active" >Active</MenuItem>
-                                            <MenuItem value="inactive" >Inactive</MenuItem>
-                                            <MenuItem value="completed" >Completed</MenuItem>
-                                            <MenuItem value="closed" >Closed</MenuItem>
+                                            {STATUS_LIST?.map((val: any) => (<MenuItem value={val?.value}>{val?.label}</MenuItem>))}
                                         </Select>
                                     </FormControl>
                                 )}
