@@ -299,7 +299,7 @@ export default function ManageClient() {
         >
             <Tooltip title="Refresh" placement="bottom" arrow>
                 <Button
-                    onClick={() => { }}
+                    onClick={() => { queryClient.invalidateQueries({ queryKey: ['manage-clients'] }) }}
                     disabled={isLoading}
                 >
                     <RefreshIcon fontSize="small" />

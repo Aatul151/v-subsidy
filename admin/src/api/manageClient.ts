@@ -82,6 +82,15 @@ export const clientsAPI = {
     },
 
     /**
+     * Get client by ID
+     * @param clientId - client ID
+     */
+    getById: async (clientId: string): Promise<Clients> => {
+        const response = await axiosInstance.get<ApiResponse<Clients>>(`/client/${clientId}`);
+        return response.data.data;
+    },
+
+    /**
      * Create a new Client
      * @param payload - Client data
      */

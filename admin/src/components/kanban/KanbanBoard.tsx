@@ -186,7 +186,7 @@ function KanbanItem({
                             }}
                         >
                             <Box sx={{ display: "flex", alignItems: 'center', justifyContent: 'space-between' }}>
-                                <Typography sx={{ fontWeight: 600, fontSize: 16 }}>
+                                <Typography sx={{ fontWeight: 600, fontSize: 12 }}>
                                     {item?.title}
                                 </Typography>
                                 <IconButton onClick={() => setSubsidyId(item?.id)}>
@@ -198,7 +198,7 @@ function KanbanItem({
                                 <Typography fontSize={12} color="primary"  >
                                     {item?.person}
                                 </Typography>
-                                <Typography fontSize={12} color="primary" sx={{ textTransform: "capitalize" }}>
+                                <Typography fontSize={10} color="primary" sx={{ textTransform: "capitalize" }}>
                                     {item?.case_number ?? "-"}
                                 </Typography>
                             </Box>

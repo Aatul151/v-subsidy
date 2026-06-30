@@ -1,4 +1,4 @@
-import { Box, Grid, Card, Typography, Avatar, Stack, Divider, useTheme, Chip, CardContent, IconButton, Tooltip } from "@mui/material";
+import { Box, Grid, Card, Typography, Avatar, Stack, Divider, useTheme, Chip, CardContent, IconButton, Tooltip, ButtonGroup, Button } from "@mui/material";
 import {
   PeopleAlt as PeopleAltIcon,
   CheckCircle as CheckCircleIcon,
@@ -7,7 +7,14 @@ import {
   FormatListBulleted as FormatListBulletedIcon,
   TrendingDown as TrendingDownIcon,
   SearchOff as SearchOffIcon,
-  Refresh as RefreshIcon
+  Refresh as RefreshIcon,
+  Business as BusinessIcon,
+  LocationOn as LocationOnIcon,
+  Email as EmailIcon,
+  Phone as PhoneIcon,
+  Receipt as ReceiptIcon,
+  Badge as BadgeIcon,
+  Notes as NotesIcon,
 } from '@mui/icons-material';
 import { Dashboard as DashboardIcon } from '@mui/icons-material';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -20,6 +27,7 @@ import { AppDrawer } from "@/components/common/AppDrawer";
 import ClientSubsidyDetail from "../client-subsidy/ClientSubsidyDetail";
 import { useState } from "react";
 import { getAvatarColor } from "@/utils/iconMap";
+import { clientsAPI } from "@/api/manageClient";
 
 dayjs.extend(utc);
 
@@ -28,9 +36,10 @@ export const Dashboard = () => {
 
   const theme = useTheme();
   const [subsidyId, setSubsidyId] = useState<any>(false);
+  const [clientId, setClientId] = useState<any>(false);
 
   const { data: dashboardCounts } = useQuery({
-    queryKey: ['dashboard-count'],
+    queryKey: ['dashboard_count'],
     queryFn: async () => { return await dashBoardAPI.getCounts() },
     placeholderData: (previousData) => previousData,
   });
@@ -73,9 +82,80 @@ export const Dashboard = () => {
 
   );
 
+  const {
+    data: clientDetail,
+  } = useQuery({
+    queryKey: ['client_detail', clientId],
+    queryFn: async () => {
+      if (!clientId) return;
+      return await clientsAPI.getById(clientId);
+
+    },
+    placeholderData: (previousData) => previousData,
+  });
+
   const onRefreshList = (key: string) => {
     queryClient.invalidateQueries({ queryKey: [key] });
   }
+
+  const actionButtons = (
+    <ButtonGroup
+      variant="outlined"
+      size={'small'}
+      sx={{
+        '& .MuiButtonGroup-grouped': {
+          minWidth: 'auto',
+          padding: '5px 10px',
+        },
+      }}
+    >
+      <Tooltip title="Refresh" placement="bottom" arrow>
+        <Button
+          onClick={() => { queryClient.invalidateQueries({ queryKey: ['dashboard_count'] }) }}
+        >
+          <RefreshIcon fontSize="small" />
+        </Button>
+      </Tooltip>
+    </ButtonGroup>
+  );
+
+  const clientDetails = [
+    {
+      label: "Company",
+      value: clientDetail?.company_name,
+      icon: <BusinessIcon fontSize="small" />,
+    },
+    {
+      label: "Address",
+      value: clientDetail?.address,
+      icon: <LocationOnIcon fontSize="small" />,
+    },
+    {
+      label: "Email",
+      value: clientDetail?.email,
+      icon: <EmailIcon fontSize="small" />,
+    },
+    {
+      label: "Mobile",
+      value: clientDetail?.mobile_number,
+      icon: <PhoneIcon fontSize="small" />,
+    },
+    {
+      label: "GST Number",
+      value: clientDetail?.gst_number,
+      icon: <ReceiptIcon fontSize="small" />,
+    },
+    {
+      label: "PAN Number",
+      value: clientDetail?.pan_number,
+      icon: <BadgeIcon fontSize="small" />,
+    },
+    {
+      label: "Remarks",
+      value: clientDetail?.remarks,
+      icon: <NotesIcon fontSize="small" />,
+    },
+  ]
 
   const counts = [
     {
@@ -178,7 +258,7 @@ export const Dashboard = () => {
                     {item?.client?.name?.charAt(0)?.toUpperCase()}
                   </Avatar>
                   <Box sx={{ minWidth: 0 }}>
-                    <Typography fontWeight={600} fontSize={14} noWrap >
+                    <Typography fontWeight={600} fontSize={14} noWrap onClick={(e) => { e?.preventDefault(); e?.stopPropagation(); setClientId(item?.client?._id) }} sx={{ cursor: "pointer" }}>
                       {item?.client?.name}
                     </Typography>
                     <Typography fontSize={12} color="text.secondary" noWrap  >
@@ -229,6 +309,7 @@ export const Dashboard = () => {
           icon="Dashboard"
           fallbackIcon={DashboardIcon}
           sx={{ mb: 0.5, borderRadius: '10px', padding: 1.5 }}
+          actions={actionButtons}
         />
         <Box paddingTop={1} sx={{ height: "70vh", }}
         >
@@ -305,6 +386,61 @@ export const Dashboard = () => {
       >
         <ClientSubsidyDetail id={subsidyId} />
       </AppDrawer>
+
+      {clientId &&
+        <AppDrawer
+          open={Boolean(clientId)}
+          onClose={() => setClientId(null)}
+          title={`Client detail`}
+          anchor="right"
+          width={1400}
+          displayExpandDrawer={true}
+        >
+          <Box sx={{ p: 4, borderRadius: 1, bgcolor: "background.paper", border: "1px solid", borderColor: "rgba(0,0,0,0.08)", boxShadow: "0px 8px 30px rgba(0,0,0,0.06)", overflow: "hidden", position: "relative" }}>
+            {/* Top Accent */}
+            <Box sx={{ position: "absolute", top: 0, left: 0, width: "100%", height: "5px", bgcolor: `${getAvatarColor(clientDetail?.name)}.light` }} />
+
+            {/* Header */}
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 1, flexWrap: "wrap", }}>
+              <Avatar sx={{ width: 45, height: 45, bgcolor: `${getAvatarColor(clientDetail?.name)}.light`, }}>
+                {clientDetail?.name?.charAt(0)?.toUpperCase()}
+              </Avatar>
+              <Box flex={1}>
+                <Typography fontSize={18} fontWeight={700} >
+                  {clientDetail?.name || "Client Details"}
+                </Typography>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5, flexWrap: "wrap" }}>
+                  <Typography fontSize={13} color="text.secondary"  >
+                    Client Number:
+                  </Typography>
+                  <Chip size="small" label={clientDetail?.client_number} color={'primary'} sx={{ bgcolor: `${getAvatarColor(clientDetail?.name)}.light` }} />
+                </Box>
+              </Box>
+            </Box>
+
+            <Divider sx={{ mb: 2 }} />
+            {/* Details */}
+            <Grid container spacing={2.5}>
+              {clientDetails.map((item, index) => (
+                <Grid xs={12} sm={6} md={4} key={index}>
+                  <Box sx={{ p: 1 }}  >
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, }}    >
+                      <Box sx={{ width: 40, height: 40, borderRadius: 1, color: `${getAvatarColor(clientDetail?.name)}.light`, display: "flex", alignItems: "center", justifyContent: "center", }}>
+                        {item.icon}
+                      </Box>
+                      <Typography fontSize={14} color="text.secondary" fontWeight={600}  >
+                        {item.label}
+                      </Typography>
+                    </Box>
+                    <Typography fontWeight={600} fontSize={14} sx={{ wordBreak: "break-word", lineHeight: 1.8, pl: 2 }}  >
+                      {item.value || "-"}
+                    </Typography>
+                  </Box>
+                </Grid>
+              ))}
+            </Grid>
+          </Box>
+        </AppDrawer >}
     </>
   );
 };

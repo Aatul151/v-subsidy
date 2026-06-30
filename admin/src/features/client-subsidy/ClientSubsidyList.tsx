@@ -343,7 +343,7 @@ export default function ClientSubsidy() {
         if (formMode == 'edit' && selectedClientSubsidy?._id) {
             await updateMutation.mutateAsync({ id: selectedClientSubsidy._id, payload });
         } else {
-            await createMutation.mutateAsync(data);
+            await createMutation.mutateAsync(payload);
         }
     };
     const orderMap: Record<string, number> = {
@@ -586,7 +586,7 @@ export default function ClientSubsidy() {
             >
                 <Tooltip title="Refresh" placement="bottom" arrow>
                     <Button
-                        onClick={() => { }}
+                        onClick={() => { queryClient.invalidateQueries({ queryKey: ['client_subsidy'] }) }}
                         disabled={isLoading}
                     >
                         <RefreshIcon fontSize="small" />
