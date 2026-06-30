@@ -181,6 +181,7 @@ function KanbanItem({
                                 p: 1.5,
                                 borderRadius: 1,
                                 flexShrink: 0,
+                                cursor: "move",
                                 border: "1px solid #F1F5F9",
                                 "&:hover": { boxShadow: "0px 10px 18px rgba(0,0,0,.08)", border: "1px solid black" },
                             }}
