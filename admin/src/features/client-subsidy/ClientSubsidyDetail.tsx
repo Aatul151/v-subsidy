@@ -1,11 +1,14 @@
+import { useEffect, useState } from "react";
 import { ArrowBack, ArrowForward, Assignment, DescriptionOutlined, TrendingUp, Visibility, Close as CloseIcon, DescriptionOutlined as DescriptionOutlinedIcon } from "@mui/icons-material";
 import {
     Box,
     Button,
     ButtonGroup,
     Card,
+    Checkbox,
     Chip,
     Dialog,
+    DialogActions,
     DialogContent,
     DialogTitle,
     Divider,
@@ -25,7 +28,6 @@ import {
 } from "@mui/material";
 
 import Grid from "@mui/material/Grid2";
-import { useEffect, useState } from "react";
 import { PageHeader } from "../../components/common/PageHeader";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -54,6 +56,7 @@ export default function ClientSubsidyDetail({ id: propId }: any) {
     const [documentMode, setDocumentMode] = useState<any>(null);
     const [openDocumentList, setOpenDocumentList] = useState(false);
     const [activeStage, setActiveStage] = useState(0);
+    const [submittedDocs, setSubmittedDocs] = useState<string[]>([]);
 
     const { control, watch, reset } = useForm({
         defaultValues: { current_stage: '', status: '', },
@@ -74,6 +77,12 @@ export default function ClientSubsidyDetail({ id: propId }: any) {
             }
         },
     });
+
+    useEffect(() => {
+        if (openDocumentList) {
+            setSubmittedDocs(subsidyDetail?.submitted_docs || []);
+        }
+    }, [openDocumentList, subsidyDetail]);
 
     const { data: documentsList = [] } = useQuery({
         queryKey: ['formEntries', SYSTEM_FORM_NAMES.DOCUMENT_MASTER],
@@ -220,6 +229,28 @@ export default function ClientSubsidyDetail({ id: propId }: any) {
         await updateMutation.mutateAsync({ id, payload });
     }
 
+    const handleDocumentCheck = (docId: string) => {
+        setSubmittedDocs((prev: any) =>
+            prev.includes(docId)
+                ? prev.filter((id: any) => id != docId)
+                : [...prev, docId]
+        );
+    };
+
+    const handleSaveDocuments = async () => {
+        try {
+            const payload = { submitted_docs: submittedDocs || [] }
+            await updateMutation.mutateAsync({ id, payload });
+            setOpenDocumentList(false);
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    const totalDocs = subsidyDetail?.subsidy_ref?.requird_docs?.length || 0;
+    const submittedCount = subsidyDetail?.submitted_docs?.length || 0;
+    const percentage = submittedCount > 0 ? Number(((submittedCount / totalDocs) * 100).toFixed(1)) : 0;
+
     return (
         <>
             <Box>
@@ -321,11 +352,7 @@ export default function ClientSubsidyDetail({ id: propId }: any) {
                             <Chip
                                 size="small"
                                 variant="outlined"
-                                label={`Progress: ${subsidyDetail?.subsidy_ref?.requird_docs?.length
-                                    ? Math.round(
-                                        ((subsidyDetail?.documents?.length || 0) /
-                                            subsidyDetail?.subsidy_ref?.requird_docs?.length) * 100
-                                    ) : 0}%`}
+                                label={`Progress: ${percentage || 0}%`}
                                 icon={<TrendingUp />}
                                 sx={{ p: 1, color: 'primary.main', borderColor: "primary.main", '& .MuiChip-icon': { color: 'primary.main' } }}
                             />
@@ -567,11 +594,26 @@ export default function ClientSubsidyDetail({ id: propId }: any) {
                                                 Document {index + 1}
                                             </Typography>
                                         </Box>
+
+                                        <Checkbox
+                                            checked={submittedDocs?.includes(docId)}
+                                            onChange={() => handleDocumentCheck(docId)}
+                                            color="primary"
+                                        />
                                     </Paper>
                                 )
                             })}
                         </Box>
                     </DialogContent >
+                    <DialogActions sx={{ px: 3, py: 2, borderTop: "1px solid", borderColor: "divider" }}>
+                        <Button variant="outlined" color="inherit" onClick={() => setOpenDocumentList(false)}>
+                            Cancel
+                        </Button>
+
+                        <Button variant="contained" color="primary" onClick={() => handleSaveDocuments()}>
+                            Save
+                        </Button>
+                    </DialogActions>
                 </Dialog >}
         </>
     );
