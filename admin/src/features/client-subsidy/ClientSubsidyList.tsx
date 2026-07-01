@@ -405,7 +405,19 @@ export default function ClientSubsidy() {
                     headerName: field.label,
                     width: 200,
                     order: orderMap.subsidy,
-                    valueGetter: (_value, row: any) => { return row?.subsidy_ref?.subsidy_name; }
+                    renderCell: (params: any) => {
+                        const expireDate = new Date(params?.row?.expireOn);
+                        const today = new Date();
+                        expireDate.setUTCHours(0, 0, 0, 0);
+                        today.setUTCHours(0, 0, 0, 0);
+                        const isExpired = expireDate.getTime() < today.getTime();
+                        return (
+                            <Box sx={{ color: isExpired ? "#e71d3b" : "", }}  >
+                                {params?.row?.subsidy_ref?.subsidy_name}
+                            </Box>
+                        );
+                    },
+                    valueGetter: (_value, row: any) => row?.subsidy_ref?.subsidy_name
                 });
             } else if (field.name.toLowerCase() === "current_stage") {
                 columns.push({
@@ -440,8 +452,21 @@ export default function ClientSubsidy() {
                 columns.push({
                     field: field.name,
                     headerName: field.label,
+                    headerAlign: "center",
                     width: 200,
                     order: orderMap.expireOn,
+                    renderCell: (params: any) => {
+                        const expireDate = new Date(params?.row?.expireOn);
+                        const today = new Date();
+                        expireDate.setUTCHours(0, 0, 0, 0);
+                        today.setUTCHours(0, 0, 0, 0);
+                        const isExpired = expireDate.getTime() < today.getTime();
+                        return (
+                            <Box sx={{ color: isExpired ? "#e71d3b" : "", width: "100%", textAlign: "center" }}  >
+                                {formatDateTime(params?.row?.expireOn, { datePickerMode: 'date' })}
+                            </Box>
+                        );
+                    },
                     valueGetter: (_value, row: any) => {
                         return formatDateTime(row?.expireOn, { datePickerMode: 'date' });
                     }
@@ -850,7 +875,7 @@ export default function ClientSubsidy() {
                                             labelId="status-label"
                                             label="status"
                                         >
-                                            {STATUS_LIST?.map((val: any) => (<MenuItem value={val?.value}>{val?.label}</MenuItem>))}
+                                            {STATUS_LIST?.map((val: any) => (<MenuItem key={val?.value} value={val?.value}>{val?.label}</MenuItem>))}
                                         </Select>
                                     </FormControl>
                                 )}
