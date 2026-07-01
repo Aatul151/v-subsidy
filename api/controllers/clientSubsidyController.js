@@ -226,7 +226,7 @@ export const getClientSubsidyById = async (req, res) => {
 export const updateClientSubsidy = async (req, res) => {
     try {
         const { id } = req.params;
-        const { client, subsidy, assigned_executive, current_stage, remarks, expireOn, documents, status, stageRemark } = req.body;
+        const { client, subsidy, assigned_executive, current_stage, remarks, expireOn, documents, status, submitted_docs, stageRemark } = req.body;
 
         const validation = await validateFormAccess(CLIENT_SUBSIDY_FORM, req.user?.role, "update");
         if (!validation.success) {
@@ -242,6 +242,7 @@ export const updateClientSubsidy = async (req, res) => {
         if (remarks !== undefined) fieldToUpdate.remarks = remarks;
         if (status !== undefined) fieldToUpdate.status = status;
         if (documents !== undefined) fieldToUpdate.documents = documents;
+        if (submitted_docs !== undefined) fieldToUpdate.submitted_docs = submitted_docs;
 
         if (current_stage !== undefined) {
             fieldToUpdate.current_stage = current_stage;
