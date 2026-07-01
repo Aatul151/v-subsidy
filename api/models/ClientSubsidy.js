@@ -44,7 +44,10 @@ const clientSubsidySchema = new mongoose.Schema(
       trim: true,
       default: "",
     },
+    
     documents: [], //upload aaray
+
+    submitted_docs: [],
 
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
