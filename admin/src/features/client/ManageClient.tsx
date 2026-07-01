@@ -172,6 +172,7 @@ export default function ManageClient() {
                             {clientName}
                         </>
                     },
+                    valueGetter: (_value, row: any) => { return row?.name; }
                 });
             } else if (field.name.toLowerCase() === "contact_person") {
                 columns.push({
@@ -183,6 +184,7 @@ export default function ManageClient() {
                         const clientName = params?.row?.contact_person?.name;
                         return clientName;
                     },
+                    valueGetter: (_value, row: any) => { return row?.contact_person?.name; }
                 });
             } else {
                 columns.push({
@@ -211,6 +213,7 @@ export default function ManageClient() {
                     const value = params?.row?.client_number || "";
                     return value.charAt(0).toUpperCase() + value.slice(1);
                 },
+                valueGetter: (_value, row: any) => { return row?.client_number; }
             },
             {
                 field: 'actions',

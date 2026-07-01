@@ -397,6 +397,7 @@ export default function ClientSubsidy() {
                             {clientName}
                         </>
                     },
+                    valueGetter: (_value, row: any) => { return row?.client?.name; }
                 });
             } else if (field.name.toLowerCase() === 'subsidy') {
                 columns.push({
@@ -404,10 +405,7 @@ export default function ClientSubsidy() {
                     headerName: field.label,
                     width: 200,
                     order: orderMap.subsidy,
-                    renderCell: (params: any) => {
-                        const subsidyName = params?.row?.subsidy_ref?.subsidy_name;
-                        return subsidyName;
-                    },
+                    valueGetter: (_value, row: any) => { return row?.subsidy_ref?.subsidy_name; }
                 });
             } else if (field.name.toLowerCase() === "current_stage") {
                 columns.push({
@@ -428,6 +426,7 @@ export default function ClientSubsidy() {
                             />
                         );
                     },
+                    valueGetter: (_value, row: any) => { return row?.current_stage_ref?.label; }
                 });
             } else if (field.name.toLowerCase() === "assigned_executive") {
                 columns.push({
@@ -435,10 +434,7 @@ export default function ClientSubsidy() {
                     headerName: field.label,
                     width: 200,
                     order: orderMap.assigned_executive,
-                    renderCell: (params: any) => {
-                        const clientName = params?.row?.assigned_executive_ref?.name;
-                        return clientName;
-                    },
+                    valueGetter: (_value, row: any) => { return row?.assigned_executive_ref?.name; }
                 });
             } else if (field.name === "expireOn") {
                 columns.push({
@@ -446,9 +442,9 @@ export default function ClientSubsidy() {
                     headerName: field.label,
                     width: 200,
                     order: orderMap.expireOn,
-                    renderCell: (params: any) => {
-                        return formatDateTime(params?.value, { datePickerMode: 'date' });
-                    },
+                    valueGetter: (_value, row: any) => {
+                        return formatDateTime(row?.expireOn, { datePickerMode: 'date' });
+                    }
                 });
             } else if (field.name.toLowerCase() === "remarks") {
                 columns.push({
@@ -456,9 +452,7 @@ export default function ClientSubsidy() {
                     headerName: field.label,
                     width: 250,
                     order: orderMap.remarks,
-                    renderCell: (params: any) => {
-                        return params?.row?.remarks;
-                    },
+                    valueGetter: (_value, row: any) => { return row?.remarks; }
                 });
             } else if (field.name === "status") {
                 columns.push({
@@ -470,6 +464,7 @@ export default function ClientSubsidy() {
                         const status = params?.row?.status;
                         return status ? status.charAt(0).toUpperCase() + status.slice(1) : "";
                     },
+                    valueGetter: (_value, row: any) => { return row?.status; }
                 });
             } else {
                 columns.push({
@@ -500,7 +495,8 @@ export default function ClientSubsidy() {
                             <Button sx={{ textTransform: "capitalize" }} onClick={() => { navigate(`/client-subsidy/${params?.row?._id}`) }}>{params?.row?.case_number}</Button>
                         </Tooltip >
                     </>)
-                }
+                },
+                valueGetter: (_value, row: any) => { return row?.case_number; }
             },
             {
                 field: 'actions',
