@@ -234,7 +234,7 @@ export default function ClientSubsidy() {
                     const matchesStatus = isStatusFilterEmpty || (
                         Array.isArray(s.status)
                             ? s.status.length === status.length && s.status.every((st: string) => status?.includes(st))
-                            : status.includes(s.client)
+                            : status.includes(s.status)
                     );
 
                     return matchesClient && matchesDate && matchesUser && matchesStatus;

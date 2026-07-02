@@ -211,7 +211,7 @@ function KanbanItem({
                                     alignItems: "center",
                                     gap: 0.5,
                                     fontWeight: 500,
-                                    color: dayjs(item?.expireOn).isBefore(dayjs()) ? "error.main" : "text.secondary",
+                                    color: dayjs(item?.expireOn).startOf("day").isBefore(dayjs().startOf("day")) ? "error.main" : "text.secondary",
                                     fontSize: 12
                                 }}
                             >
