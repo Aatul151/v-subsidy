@@ -13,6 +13,10 @@ export interface FormField {
   required?: boolean;
   placeholder?: string;
   allowFilter?: boolean; // Allow this field to be used for filtering
+  /** For text type: render as textarea when true */
+  multiline?: boolean;
+  /** For multiline text: visible row count (default: 2) */
+  rows?: number;
   options?: OptionItem[] | string[]; // For select, radio - supports both new format (OptionItem[]) and legacy (string[])
   validation?: {
     min?: number;

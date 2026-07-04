@@ -295,6 +295,19 @@ export const FieldConfigDrawer = ({
             />
           )}
 
+          {formData.type === 'text' && (
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={formData.multiline || false}
+                  onChange={(e) => handleChange('multiline', e.target.checked)}
+                />
+              }
+              label="Multiline"
+              sx={{ mt: 1 }}
+            />
+          )}
+
           {isFormReference && (
             <Box sx={{ mt: 2 }}>
               <Typography variant="subtitle2" gutterBottom>
