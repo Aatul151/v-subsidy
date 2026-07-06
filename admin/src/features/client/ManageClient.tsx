@@ -124,7 +124,6 @@ export default function ManageClient() {
     const handleFormSubmit = async (data: Record<string, any>) => {
         const payload = {
             ...data,
-            contact_person: data?.contact_person?._id,
         }
         if (formMode === 'edit' && selectedClient?._id) {
             await updateMutation.mutateAsync({ id: selectedClient._id, payload: payload });

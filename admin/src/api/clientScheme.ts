@@ -1,6 +1,6 @@
 import axiosInstance from "./axiosInstance";
 
-export interface ClientSubsidyType {
+export interface ClientSchemeType {
     _id?: string;
     case_number?: string;
     [key: string]: any; // Allow additional fields from dynamic form
@@ -10,7 +10,7 @@ export interface ClientSubsidyType {
 }
 
 export interface PaginatedClientSubsidyResponse {
-    data: ClientSubsidyType[];
+    data: ClientSchemeType[];
     pagination?: {
         currentPage: number;
         limit: number;
@@ -47,7 +47,7 @@ interface ApiResponse<T> {
     message?: string;
 }
 
-export interface UpdateClientSubsidyPayload {
+export interface UpdateClientSchemePayload {
     [key: string]: any; // Dynamic fields based on form definition
 }
 
@@ -74,7 +74,7 @@ export const clientSubsidyAPI = {
             }
         });
 
-        const response = await axiosInstance.get<PaginatedApiResponse<ClientSubsidyType[]>>('/client-subsidy', {
+        const response = await axiosInstance.get<PaginatedApiResponse<ClientSchemeType[]>>('/client-case', {
             params,
         });
 
@@ -101,39 +101,39 @@ export const clientSubsidyAPI = {
     },
 
     /**
-     * Get client subsidy by ID
-     * @param clientSubsidyId - client subsidy ID
+     * Get client scheme by ID
+     * @param clientCaseId - client scheme ID
      */
-    getById: async (clientSubsidyId: string): Promise<ClientSubsidyType> => {
-        const response = await axiosInstance.get<ApiResponse<ClientSubsidyType>>(`/client-subsidy/${clientSubsidyId}`);
+    getById: async (clientCaseId: string): Promise<ClientSchemeType> => {
+        const response = await axiosInstance.get<ApiResponse<ClientSchemeType>>(`/client-case/${clientCaseId}`);
         return response.data.data;
     },
 
 
     /**
-     * Create a new client subsidy
-     * @param payload - client subsidy data
+     * Create a new client scheme
+     * @param payload - client scheme data
      */
-    create: async (payload: CreateClientPayload): Promise<ClientSubsidyType> => {
-        const response = await axiosInstance.post<ApiResponse<ClientSubsidyType>>('/client-subsidy', payload);
+    create: async (payload: CreateClientPayload): Promise<ClientSchemeType> => {
+        const response = await axiosInstance.post<ApiResponse<ClientSchemeType>>('/client-case', payload);
         return response.data.data;
     },
 
     /**
-     * Update a client subsidy
-     * @param clientSubsidyId - Client subsidy ID
-     * @param payload - Client subsidy data to update
+     * Update a client scheme
+     * @param clientCaseId - Client scheme ID
+     * @param payload - Client scheme data to update
      */
-    update: async (clientSubsidyId: string, payload: UpdateClientSubsidyPayload): Promise<ClientSubsidyType> => {
-        const response = await axiosInstance.put<ApiResponse<ClientSubsidyType>>(`/client-subsidy/${clientSubsidyId}`, payload);
+    update: async (clientCaseId: string, payload: UpdateClientSchemePayload): Promise<ClientSchemeType> => {
+        const response = await axiosInstance.put<ApiResponse<ClientSchemeType>>(`/client-case/${clientCaseId}`, payload);
         return response.data.data;
     },
 
     /**
-     * Delete a client subsidy
-     * @param clientSubsidyId - client subsidy ID
+     * Delete a client scheme
+     * @param clientCaseId - client scheme ID
      */
-    delete: async (clientSubsidyId: string): Promise<void> => {
-        await axiosInstance.delete(`/client-subsidy/${clientSubsidyId}`);
+    delete: async (clientCaseId: string): Promise<void> => {
+        await axiosInstance.delete(`/client-subsidy/${clientCaseId}`);
     },
 }

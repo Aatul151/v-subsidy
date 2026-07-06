@@ -11,8 +11,8 @@ export const SYSTEM_FORM_NAMES = {
   COLLECTION: 'collections',
   CASE: 'cases',
   CLIENTS: 'clients',
-  APPLICABLE_STAGES: "applicable_stages",
-  APPLICABLE_STATUS: "applicable_status",
+  STAGES: "stage",
+  STATUS: "status",
   ALL_DOCUMENTS: "all_documents",
 
   // Add more system form names here as needed

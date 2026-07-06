@@ -18,14 +18,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDateTime, SYSTEM_FORM_NAMES, transformFormSchema } from "@/utils/formUtils";
 import { formEntriesAPI, formsAPI } from "@/api/forms";
 import { FormField, FormSection } from "@aatulwork/customform-renderer";
-import { clientSubsidyAPI, ClientSubsidyType, CreateClientPayload, UpdateClientSubsidyPayload } from "@/api/clientScheme";
+import { clientSubsidyAPI, ClientSchemeType, CreateClientPayload, UpdateClientSchemePayload } from "@/api/clientScheme";
 import { FormContainer } from "@/components/form-builder/FormContainer";
 import { useAppAlert } from "@/components/common/AppAlert";
 import { clientsAPI } from "@/api/manageClient";
 import { usersAPI } from "@/api/users";
 import utc from "dayjs/plugin/utc";
 import { getAvatarColor } from "@/utils/iconMap";
-import { STATUS_LIST } from "@/utils/types";
 
 dayjs.extend(utc);
 
@@ -40,7 +39,7 @@ export default function ClientScheme() {
 
     const [formDrawerOpen, setFormDrawerOpen] = useState(false);
     const [formMode, setFormMode] = useState<'add' | 'edit' | 'view'>('add');
-    const [selectedClientSubsidy, setSelectedClientSubsidy] = useState<ClientSubsidyType | null>(null)
+    const [selectedClientSubsidy, setSelectedClientSubsidy] = useState<ClientSchemeType | null>(null)
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [OpenArchiveTable, setOpenArchiveTable] = useState(false);
     const [isKanbanBoard, setIsKanbanBoard] = useState(false);
@@ -130,11 +129,28 @@ export default function ClientScheme() {
     });
 
     const { data: statusList = [] as any } = useQuery({
-        queryKey: ['formEntries', SYSTEM_FORM_NAMES.APPLICABLE_STATUS],
+        queryKey: ['formEntries', SYSTEM_FORM_NAMES.STATUS],
         queryFn: async () => {
             try {
                 const response = await formEntriesAPI.getAll({
-                    formName: SYSTEM_FORM_NAMES.APPLICABLE_STATUS,
+                    formName: SYSTEM_FORM_NAMES.STATUS,
+                    page: 1,
+                    limit: 10,
+                });
+                return response.data || [];
+            } catch (error) {
+                return [];
+            }
+        },
+
+    });
+
+    const { data: stageList = [] as any } = useQuery({
+        queryKey: ['formEntries', SYSTEM_FORM_NAMES.STAGES],
+        queryFn: async () => {
+            try {
+                const response = await formEntriesAPI.getAll({
+                    formName: SYSTEM_FORM_NAMES.STAGES,
                     page: 1,
                     limit: 10,
                 });
@@ -295,7 +311,7 @@ export default function ClientScheme() {
 
     // Update mutation
     const updateMutation = useMutation({
-        mutationFn: ({ id, payload }: { id: string; payload: UpdateClientSubsidyPayload }) =>
+        mutationFn: ({ id, payload }: { id: string; payload: UpdateClientSchemePayload }) =>
             clientSubsidyAPI.update(id, payload),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['client_subsidy'] });
@@ -324,7 +340,7 @@ export default function ClientScheme() {
         setSelectedClientSubsidy(client)
     }
 
-    const handleDelete = async (client: ClientSubsidyType) => {
+    const handleDelete = async (client: ClientSchemeType) => {
         setDeleteDialogOpen(true);
         setSelectedClientSubsidy(client);
     }
@@ -339,12 +355,12 @@ export default function ClientScheme() {
     const handleFormSubmit = async (data: Record<string, any>) => {
         const payload = {
             client: data?.client,
-            subsidy: data?.subsidy,
+            scheme_ids: data?.scheme,
             assigned_executive: data?.assigned_executive,
-            current_stage: data?.current_stage,
+            stage_id: data?.current_stage,
+            status_id: data?.status,
             expireOn: dayjs(data.expireOn).format("YYYY-MM-DD"),
-            remarks: data?.remarks,
-            status: data?.status
+            remarks: data?.remarks
         }
         if (formMode == 'edit' && selectedClientSubsidy?._id) {
             await updateMutation.mutateAsync({ id: selectedClientSubsidy._id, payload });
@@ -355,12 +371,13 @@ export default function ClientScheme() {
     const orderMap: Record<string, number> = {
         client: 1,
         case_number: 2,
-        subsidy: 3,
-        expireOn: 4,
-        current_stage: 5,
-        status: 5,
-        assigned_executive: 6,
-        remarks: 8,
+        expireOn: 3,
+        subsidy: 4,
+        scheme: 5,
+        current_stage: 6,
+        status: 7,
+        assigned_executive: 8,
+        remarks: 9,
     };
 
     // Build columns dynamically from form schema
@@ -446,7 +463,24 @@ export default function ClientScheme() {
                     headerName: field.label,
                     width: 200,
                     order: orderMap.assigned_executive,
-                    valueGetter: (_value, row: any) => { return row?.assigned_executive_ref?.name; }
+                    valueGetter: (_value, row: any) => { return row?.assigned_executive_ref?.name; },
+                });
+            } else if (field.name.toLowerCase() === "scheme") {
+                columns.push({
+                    field: field.name,
+                    headerName: field.label,
+                    width: 200,
+                    order: orderMap.scheme,
+                    valueGetter: (_value, row: any) => { return row?.scheme_ref?.[0]?.scheme_name },
+                    renderCell: (params: any) => {
+                        const assign_executive = params?.row?.scheme_ref?.[0]?.scheme_name;
+                        return (
+                            <Box sx={{ display: "flex", gap: "5px", alignItems: "center" }}>
+                                <Typography>{assign_executive}</Typography>
+                                <Typography fontSize="12px">({params?.row?.scheme_ref?.length - 1}+ More)</Typography>
+                            </Box>
+                        );
+                    },
                 });
             } else if (field.name === "expireOn") {
                 columns.push({
@@ -497,7 +531,7 @@ export default function ClientScheme() {
                     headerName: field.label,
                     flex: 1,
                     minWidth: 150,
-                    valueGetter: (_value, row: ClientSubsidyType) => {
+                    valueGetter: (_value, row: ClientSchemeType) => {
                         const fieldValue = row[field.name];
                         if (fieldValue === null || fieldValue === undefined) return '';
                         if (typeof fieldValue === 'object') return JSON.stringify(fieldValue);
@@ -858,12 +892,12 @@ export default function ClientScheme() {
                                     </FormControl>
                                 )}
                             />
-                            {/* <Controller
-                                name="status"
+                            <Controller
+                                name="stage"
                                 control={control}
                                 render={({ field }) => (
                                     <FormControl sx={{ width: 200 }} size="small">
-                                        <InputLabel id="client-label">Status </InputLabel>
+                                        <InputLabel id="client-label">Stage </InputLabel>
                                         <Select
                                             {...field}
                                             onChange={(e) => {
@@ -872,14 +906,14 @@ export default function ClientScheme() {
                                                 setIsExpanded(false);
                                             }}
                                             multiple={true}
-                                            labelId="status-label"
-                                            label="status"
+                                            labelId="stage-label"
+                                            label="stage"
                                         >
-                                            {STATUS_LIST?.map((val: any) => (<MenuItem key={val?.value} value={val?.value}>{val?.label}</MenuItem>))}
+                                            {stageList?.map((val: any) => (<MenuItem key={val?._id} value={val?._id}>{val?.payload?.name}</MenuItem>))}
                                         </Select>
                                     </FormControl>
                                 )}
-                            /> */}
+                            />
                             <Controller
                                 name="date"
                                 control={control}

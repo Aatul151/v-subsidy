@@ -197,7 +197,7 @@ export const Sidebar = ({ open, onClose, collapsed }: SidebarProps) => {
 
   const masterMenuItems: SubMenuItem[] = [
     { icon: <VerifiedIcon />, path: '/forms/status', title: 'Status' },
-    { icon: <AccountTreeIcon />, path: '/forms/stage', title: 'Satges' },
+    { icon: <AccountTreeIcon />, path: '/forms/stage', title: 'Stages' },
     { icon: <AssignmentIcon />, path: '/forms/scheme', title: 'Scheme' },
     { icon: <LibraryBooksIcon />, path: '/forms/all_documents', title: 'All Documents' },
   ];

@@ -1,10 +1,22 @@
 import { Theme } from "@emotion/react";
-import { Box, Card, Typography, Button, Chip, SxProps, IconButton } from "@mui/material";
+import { Box, Card, Typography, Button, Chip, SxProps, IconButton, Divider, Grid, Avatar } from "@mui/material";
 import { useEffect, useState } from "react";
 import { Refresh as RefreshIcon, Launch as LaunchIcon, AccessTime as AccessTimeIcon, PostAdd } from '@mui/icons-material';
 import dayjs from "dayjs";
 import { AppDrawer } from "../common/AppDrawer";
 import ClientSchemeDetail from "@/features/client-scheme/ClientSchemeDetail";
+import { clientsAPI } from "@/api/manageClient";
+import { useQuery } from "@tanstack/react-query";
+import {
+    Business as BusinessIcon,
+    LocationOn as LocationOnIcon,
+    Email as EmailIcon,
+    Phone as PhoneIcon,
+    Receipt as ReceiptIcon,
+    Badge as BadgeIcon,
+    Notes as NotesIcon,
+} from '@mui/icons-material';
+import { getAvatarColor } from "@/utils/iconMap";
 
 type KanbanContainerProps = {
     value: string;
@@ -111,6 +123,57 @@ function KanbanItem({
 }: KanbanContainerProps) {
     const { hasNextPage, totalCount } = pagination;
     const [subsidyId, setSubsidyId] = useState<any>(false);
+    const [clientId, setClientId] = useState<any>(false);
+
+    const {
+        data: clientDetail,
+    } = useQuery({
+        queryKey: ['client_detail', clientId],
+        queryFn: async () => {
+            if (!clientId) return;
+            return await clientsAPI.getById(clientId);
+
+        },
+        placeholderData: (previousData) => previousData,
+    });
+
+    const clientDetails = [
+        {
+            label: "Company",
+            value: clientDetail?.company_name,
+            icon: <BusinessIcon fontSize="small" />,
+        },
+        {
+            label: "Address",
+            value: clientDetail?.address,
+            icon: <LocationOnIcon fontSize="small" />,
+        },
+        {
+            label: "Email",
+            value: clientDetail?.email,
+            icon: <EmailIcon fontSize="small" />,
+        },
+        {
+            label: "Mobile",
+            value: clientDetail?.mobile_number,
+            icon: <PhoneIcon fontSize="small" />,
+        },
+        {
+            label: "GST Number",
+            value: clientDetail?.gst_number,
+            icon: <ReceiptIcon fontSize="small" />,
+        },
+        {
+            label: "PAN Number",
+            value: clientDetail?.pan_number,
+            icon: <BadgeIcon fontSize="small" />,
+        },
+        {
+            label: "Remarks",
+            value: clientDetail?.remarks,
+            icon: <NotesIcon fontSize="small" />,
+        },
+    ]
     return (
         <>
             <Box
@@ -196,7 +259,7 @@ function KanbanItem({
                             </Box>
 
                             <Box sx={{ display: "flex", alignItems: 'center', justifyContent: 'space-between' }}>
-                                <Typography fontSize={12} color="primary"  >
+                                <Typography fontSize={12} color="primary" onClick={(e) => { e?.preventDefault(); e?.stopPropagation(); setClientId(item?.client?._id) }} sx={{ cursor: "pointer" }} >
                                     {item?.person}
                                 </Typography>
                                 <Typography fontSize={10} color="primary" sx={{ textTransform: "capitalize" }}>
@@ -257,6 +320,61 @@ function KanbanItem({
             >
                 <ClientSchemeDetail id={subsidyId} />
             </AppDrawer>
+
+            {clientId &&
+                <AppDrawer
+                    open={Boolean(clientId)}
+                    onClose={() => setClientId(null)}
+                    title={`Client detail`}
+                    anchor="right"
+                    width={1400}
+                    displayExpandDrawer={true}
+                >
+                    <Box sx={{ p: 4, borderRadius: 1, bgcolor: "background.paper", border: "1px solid", borderColor: "rgba(0,0,0,0.08)", boxShadow: "0px 8px 30px rgba(0,0,0,0.06)", overflow: "hidden", position: "relative" }}>
+                        {/* Top Accent */}
+                        <Box sx={{ position: "absolute", top: 0, left: 0, width: "100%", height: "5px", bgcolor: `${getAvatarColor(clientDetail?.name)}.light` }} />
+
+                        {/* Header */}
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 1, flexWrap: "wrap", }}>
+                            <Avatar sx={{ width: 45, height: 45, bgcolor: `${getAvatarColor(clientDetail?.name)}.light`, }}>
+                                {clientDetail?.name?.charAt(0)?.toUpperCase()}
+                            </Avatar>
+                            <Box flex={1}>
+                                <Typography fontSize={18} fontWeight={700} >
+                                    {clientDetail?.name || "Client Details"}
+                                </Typography>
+                                <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5, flexWrap: "wrap" }}>
+                                    <Typography fontSize={13} color="text.secondary"  >
+                                        Client Number:
+                                    </Typography>
+                                    <Chip size="small" label={clientDetail?.client_number} color={'primary'} sx={{ bgcolor: `${getAvatarColor(clientDetail?.name)}.light` }} />
+                                </Box>
+                            </Box>
+                        </Box>
+
+                        <Divider sx={{ mb: 2 }} />
+                        {/* Details */}
+                        <Grid container spacing={2.5}>
+                            {clientDetails.map((item, index) => (
+                                <Grid xs={12} sm={6} md={4} key={index}>
+                                    <Box sx={{ p: 1 }}  >
+                                        <Box sx={{ display: "flex", alignItems: "center", gap: 1, }}    >
+                                            <Box sx={{ width: 40, height: 40, borderRadius: 1, color: `${getAvatarColor(clientDetail?.name)}.light`, display: "flex", alignItems: "center", justifyContent: "center", }}>
+                                                {item.icon}
+                                            </Box>
+                                            <Typography fontSize={14} color="text.secondary" fontWeight={600}  >
+                                                {item.label}
+                                            </Typography>
+                                        </Box>
+                                        <Typography fontWeight={600} fontSize={14} sx={{ wordBreak: "break-word", lineHeight: 1.8, pl: 2 }}  >
+                                            {item.value || "-"}
+                                        </Typography>
+                                    </Box>
+                                </Grid>
+                            ))}
+                        </Grid>
+                    </Box>
+                </AppDrawer >}
         </>
     );
 }

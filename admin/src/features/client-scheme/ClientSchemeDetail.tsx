@@ -31,7 +31,7 @@ import Grid from "@mui/material/Grid2";
 import { PageHeader } from "../../components/common/PageHeader";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { clientSubsidyAPI, UpdateClientSubsidyPayload } from "@/api/clientScheme";
+import { clientSubsidyAPI, UpdateClientSchemePayload } from "@/api/clientScheme";
 import { SYSTEM_FORM_NAMES } from "@/utils/formUtils";
 import { formEntriesAPI } from "@/api/forms";
 import dayjs from "dayjs";
@@ -65,11 +65,11 @@ export default function ClientSchemeDetail({ id: propId }: any) {
     const { current_stage, status }: any = watch();
 
     const { data: statusList = [] } = useQuery({
-        queryKey: ['formEntries', SYSTEM_FORM_NAMES.APPLICABLE_STATUS],
+        queryKey: ['formEntries', SYSTEM_FORM_NAMES.STATUS],
         queryFn: async () => {
             try {
                 const response = await formEntriesAPI.getAll({
-                    formName: SYSTEM_FORM_NAMES.APPLICABLE_STATUS, page: 1, limit: 10,
+                    formName: SYSTEM_FORM_NAMES.STATUS, page: 1, limit: 10,
                 });
                 return response.data || [];
             } catch (error: any) {
@@ -99,7 +99,7 @@ export default function ClientSchemeDetail({ id: propId }: any) {
     });
 
     const updateMutation = useMutation({
-        mutationFn: ({ id, payload }: { id: string; payload: UpdateClientSubsidyPayload }) =>
+        mutationFn: ({ id, payload }: { id: string; payload: UpdateClientSchemePayload }) =>
             clientSubsidyAPI.update(id, payload),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['client_subsidy'] });
