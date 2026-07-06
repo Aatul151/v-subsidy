@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Refresh as RefreshIcon, Launch as LaunchIcon, AccessTime as AccessTimeIcon, PostAdd } from '@mui/icons-material';
 import dayjs from "dayjs";
 import { AppDrawer } from "../common/AppDrawer";
-import ClientSubsidyDetail from "@/features/client-subsidy/ClientSubsidyDetail";
+import ClientSchemeDetail from "@/features/client-scheme/ClientSchemeDetail";
 
 type KanbanContainerProps = {
     value: string;
@@ -255,7 +255,7 @@ function KanbanItem({
                 anchor="right"
                 width={1400}
             >
-                <ClientSubsidyDetail id={subsidyId} />
+                <ClientSchemeDetail id={subsidyId} />
             </AppDrawer>
         </>
     );

@@ -14,9 +14,9 @@ import { Settings } from '@/features/settings/Settings';
 import { LoadingScreen } from '@/components/loading/LoadingScreen';
 import { AuthGuard } from './AuthGuard';
 import { RoleGuard } from './RoleGuard';
-import ClientSubsidy from '@/features/client-subsidy/ClientSubsidyList';
-import ClientSubsidyDetail from '@/features/client-subsidy/ClientSubsidyDetail';
 import ManageClient from '@/features/client/ManageClient';
+import ClientSchemeDetail from '@/features/client-scheme/ClientSchemeDetail';
+import ClientScheme from '@/features/client-scheme/ClientSchemeList';
 
 export type RouteConfigItem = {
   path: string;
@@ -197,19 +197,19 @@ export const protectedRoutesConfig: RouteConfigItem[] = [
     useLayout: true,
   },
   {
-    path: '/client-subsidy',
-    element: <ClientSubsidy />,
+    path: '/client-case',
+    element: <ClientScheme />,
     requiresAuth: true,
     useLayout: true,
   },
   {
-    path: '/client-subsidy/:id',
-    element: <ClientSubsidyDetail />,
+    path: '/client-case/:id',
+    element: <ClientSchemeDetail />,
     requiresAuth: true,
     useLayout: true,
   },
   {
-    path: '/manage-client',
+    path: '/client',
     element: <ManageClient />,
     requiresAuth: true,
     useLayout: true,

@@ -44,7 +44,7 @@ import { STATUS_LIST } from "@/utils/types";
 
 dayjs.extend(utc);
 
-export default function ClientSubsidyDetail({ id: propId }: any) {
+export default function ClientSchemeDetail({ id: propId }: any) {
     const navigate = useNavigate();
     const { showAlert, AlertComponent } = useAppAlert();
     const queryClient = useQueryClient();
@@ -64,12 +64,12 @@ export default function ClientSubsidyDetail({ id: propId }: any) {
 
     const { current_stage, status }: any = watch();
 
-    const { data: stagesList = [] } = useQuery({
-        queryKey: ['formEntries', SYSTEM_FORM_NAMES.APPLICABLE_STAGES],
+    const { data: statusList = [] } = useQuery({
+        queryKey: ['formEntries', SYSTEM_FORM_NAMES.APPLICABLE_STATUS],
         queryFn: async () => {
             try {
                 const response = await formEntriesAPI.getAll({
-                    formName: SYSTEM_FORM_NAMES.APPLICABLE_STAGES, page: 1, limit: 10,
+                    formName: SYSTEM_FORM_NAMES.APPLICABLE_STATUS, page: 1, limit: 10,
                 });
                 return response.data || [];
             } catch (error: any) {
@@ -85,11 +85,11 @@ export default function ClientSubsidyDetail({ id: propId }: any) {
     }, [openDocumentList, subsidyDetail]);
 
     const { data: documentsList = [] } = useQuery({
-        queryKey: ['formEntries', SYSTEM_FORM_NAMES.DOCUMENT_MASTER],
+        queryKey: ['formEntries', SYSTEM_FORM_NAMES.ALL_DOCUMENTS],
         queryFn: async () => {
             try {
                 const response = await formEntriesAPI.getAll({
-                    formName: SYSTEM_FORM_NAMES.DOCUMENT_MASTER, page: 1, limit: 100,
+                    formName: SYSTEM_FORM_NAMES.ALL_DOCUMENTS, page: 1, limit: 100,
                 });
                 return response.data || [];
             } catch (error: any) {
@@ -110,7 +110,7 @@ export default function ClientSubsidyDetail({ id: propId }: any) {
         },
     });
 
-    const sortedStages = [...(stagesList || [])].sort((a: any, b: any) => a?.payload?.order_index - b?.payload?.order_index);
+    const sortedStages = [...(statusList || [])].sort((a: any, b: any) => a?.payload?.order_index - b?.payload?.order_index);
     const currentStageIndex = sortedStages.findIndex((stage: any) => stage?.payload?.label === subsidyDetail?.current_stage_ref?.label);
 
     useEffect(() => {
@@ -145,7 +145,7 @@ export default function ClientSubsidyDetail({ id: propId }: any) {
     const handleStageStep = (selectedIdx: number, direction?: string) => {
         let nextStage = selectedIdx;
         if (direction) nextStage = direction === '+' ? selectedIdx + 1 : selectedIdx - 1
-        setActiveStage((nextStage) % stagesList?.length);
+        setActiveStage((nextStage) % statusList?.length);
     };
 
     const headerFields = [
@@ -192,7 +192,7 @@ export default function ClientSubsidyDetail({ id: propId }: any) {
         },
     ];
 
-    const goToListingPage = () => { navigate('/client-subsidy') }
+    const goToListingPage = () => { navigate('/client-case') }
 
     const actionButton = (
         <ButtonGroup
@@ -365,7 +365,7 @@ export default function ClientSubsidyDetail({ id: propId }: any) {
                                         <FormControl sx={{ width: 200 }} size="small">
                                             <InputLabel>Stage</InputLabel>
                                             <Select {...field} label="Stage">
-                                                {stagesList
+                                                {statusList
                                                     ?.sort((a: any, b: any) => a?.payload?.order_index - b?.payload?.order_index)
                                                     ?.map((stage: any) => (
                                                         <MenuItem key={stage?._id} value={stage?._id}>

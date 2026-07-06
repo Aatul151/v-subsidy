@@ -32,10 +32,10 @@ export default function ManageClient() {
         isLoading: formDefLoading,
         error: formDefError
     } = useQuery({
-        queryKey: ['formDefinition', SYSTEM_FORM_NAMES.MANAGE_CLIENTS],
+        queryKey: ['formDefinition', SYSTEM_FORM_NAMES.CLIENTS],
         queryFn: async () => {
             try {
-                const form = await formsAPI.getByName(SYSTEM_FORM_NAMES.MANAGE_CLIENTS);
+                const form = await formsAPI.getByName(SYSTEM_FORM_NAMES.CLIENTS);
                 return transformFormSchema(form);
             } catch (error: any) {
                 console.error('Error fetching role form:', error);
@@ -271,7 +271,7 @@ export default function ManageClient() {
                         {errorMessage}
                     </Typography>
                     <Typography variant="caption" sx={{ display: 'block', mt: 1 }}>
-                        Please create a form definition with system name: <strong>{SYSTEM_FORM_NAMES.MANAGE_CLIENTS}</strong>
+                        Please create a form definition with system name: <strong>{SYSTEM_FORM_NAMES.CLIENTS}</strong>
                     </Typography>
                 </Alert>
             </Box>
@@ -282,7 +282,7 @@ export default function ManageClient() {
         return (
             <Box>
                 <Alert severity="warning" sx={{ mb: 2 }}>
-                    Manage client form definition not found. Please create a form definition with system name: <strong>{SYSTEM_FORM_NAMES.MANAGE_CLIENTS}</strong>
+                    Manage client form definition not found. Please create a form definition with system name: <strong>{SYSTEM_FORM_NAMES.CLIENTS}</strong>
                 </Alert>
             </Box>
         );
@@ -348,7 +348,7 @@ export default function ManageClient() {
             {AlertComponent}
 
             <PageHeader
-                title="Manage Clients"
+                title="Clients"
                 icon="FormatListBulleted"
                 fallbackIcon={FormatListBulletedIcon}
                 sx={{ mb: 0.5, borderRadius: '10px', padding: 1.5 }}
@@ -379,7 +379,7 @@ export default function ManageClient() {
                         handleActions(false, null, 'view');
                     }
                 }}
-                formSysName={SYSTEM_FORM_NAMES.MANAGE_CLIENTS}
+                formSysName={SYSTEM_FORM_NAMES.CLIENTS}
                 onSubmit={handleFormSubmit}
                 initialValues={(formMode === 'edit' || formMode === 'view') && selectedClient ? (() => {
                     const { createdAt, updatedAt, contact_person: { name } = {}, ...client } = selectedClient;

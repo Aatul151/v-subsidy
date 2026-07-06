@@ -9,10 +9,12 @@ export const SYSTEM_FORM_NAMES = {
   USER: 'user',
   ROLE: 'roles',
   COLLECTION: 'collections',
-  CLIENT_SUBSIDY: 'client_subsidy',
-  MANAGE_CLIENTS: 'manage_clients',
+  CASE: 'cases',
+  CLIENTS: 'clients',
   APPLICABLE_STAGES: "applicable_stages",
-  DOCUMENT_MASTER: "document_master"
+  APPLICABLE_STATUS: "applicable_status",
+  ALL_DOCUMENTS: "all_documents",
+
   // Add more system form names here as needed
   // EXAMPLE: 'product', 'order', etc.
 } as const;

@@ -42,6 +42,10 @@ import { getAppDynamicIcon } from '@/components/common/AppDynamicIcon';
 import { getInitialSubmenuState } from '@/utils/navigationUtils';
 import { capitalizeText } from '@/utils/formUtils';
 import { FormatListBulleted as FormatListBulletedIcon, AccountCircle as AccountCircleIcon } from '@mui/icons-material';
+import VerifiedIcon from "@mui/icons-material/Verified";
+import AccountTreeIcon from "@mui/icons-material/AccountTree";
+import AssignmentIcon from "@mui/icons-material/Assignment";
+import LibraryBooksIcon from "@mui/icons-material/LibraryBooks";
 
 const DRAWER_WIDTH_EXPANDED = 256;
 const DRAWER_WIDTH_COLLAPSED = 80;
@@ -191,18 +195,31 @@ export const Sidebar = ({ open, onClose, collapsed }: SidebarProps) => {
     return items;
   }, [formsByModule, allModules]);
 
+  const masterMenuItems: SubMenuItem[] = [
+    { icon: <VerifiedIcon />, path: '/forms/status', title: 'Status' },
+    { icon: <AccountTreeIcon />, path: '/forms/stage', title: 'Satges' },
+    { icon: <AssignmentIcon />, path: '/forms/scheme', title: 'Scheme' },
+    { icon: <LibraryBooksIcon />, path: '/forms/all_documents', title: 'All Documents' },
+  ];
+
   // Combine menu items with dynamic module menus
   const menuItems: MenuItem[] = useMemo(() => {
     const items: MenuItem[] = [
       { icon: <DashboardIcon />, path: '/dashboard', title: 'Dashboard' },
-      { icon: <AccountCircleIcon />, path: '/manage-client', title: 'Manage Clients' },
-      { icon: <FormatListBulletedIcon />, path: '/client-subsidy', title: 'Client Subsidy' },
+      { icon: <AccountCircleIcon />, path: '/client', title: 'Clients' },
+      { icon: <FormatListBulletedIcon />, path: '/client-case', title: 'Cases' },
     ];
 
     // Add module menu items after Dashboard (each module with its forms as submenu)
-    if (moduleMenuItems.length > 0) {
-      items.push(...moduleMenuItems);
-    }
+    // if (moduleMenuItems.length > 0) {
+    //   items.push(...moduleMenuItems);
+    // }
+
+    items.push({
+      icon: <DescriptionIcon />,
+      title: 'Master',
+      submenu: masterMenuItems,
+    });
 
     // Add Admin menu if user is admin or superadmin
     if (isAdmin) {

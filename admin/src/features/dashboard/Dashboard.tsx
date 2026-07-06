@@ -24,11 +24,11 @@ import { clientSubsidyAPI } from "@/api/clientSubsidy";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { AppDrawer } from "@/components/common/AppDrawer";
-import ClientSubsidyDetail from "../client-subsidy/ClientSubsidyDetail";
 import { useState } from "react";
 import { getAvatarColor } from "@/utils/iconMap";
 import { clientsAPI } from "@/api/manageClient";
 import { useNavigate } from "react-router-dom";
+import ClientSchemeDetail from "../client-scheme/ClientSchemeDetail";
 
 dayjs.extend(utc);
 
@@ -64,10 +64,10 @@ export const Dashboard = () => {
     });
   };
 
-  const { data: todayExpireList } = getSubsidyQuery("client_today_list", 1, 100,
+  const { data: monthExpireList } = getSubsidyQuery("client_month_list", 1, 100,
     {
-      expireFrom: dayjs().startOf("day").format("YYYY-MM-DD"),
-      expireTo: dayjs().endOf("day").format("YYYY-MM-DD"),
+      expireFrom: dayjs().startOf("month").format("YYYY-MM-DD"),
+      expireTo: dayjs().endOf("month").format("YYYY-MM-DD"),
       status: "active",
       sortBy: "expireOn",
       sortType: "ASC"
@@ -174,28 +174,28 @@ export const Dashboard = () => {
       value: dashboardCounts?.data?.totalClients ?? 0,
       icon: <PeopleAltIcon />,
       color: theme.palette.secondary.main,
-      OnCardClick: () => { navigate('/manage-client') }
+      OnCardClick: () => { navigate('/client') }
     },
     {
       title: "Total Subsidies",
       value: dashboardCounts?.data?.totalSubsidies ?? 0,
       icon: <FormatListBulletedIcon />,
       color: theme.palette.primary.main,
-      OnCardClick: () => { navigate('/client-subsidy') }
+      OnCardClick: () => { navigate('/client-case') }
     },
     {
       title: "Active Subsidies",
       value: dashboardCounts?.data?.totalActiveSubsidies ?? 0,
       icon: <TrendingUpIcon />,
       color: theme.palette.success.main,
-      OnCardClick: () => { navigate('/client-subsidy?status=active') }
+      OnCardClick: () => { navigate('/client-case?status=active') }
     },
     {
       title: "Inactive Subsidies",
       value: dashboardCounts?.data?.totalInactiveSubsidies ?? 0,
       icon: <TrendingDownIcon />,
       color: theme.palette.warning.main,
-      OnCardClick: () => { navigate('/client-subsidy?status=inactive') }
+      OnCardClick: () => { navigate('/client-case?status=inactive') }
     },
     // {
     //   title: "Closed Subsidies",
@@ -208,7 +208,7 @@ export const Dashboard = () => {
       value: dashboardCounts?.data?.totalCompletedSubsidies ?? 0,
       icon: <CheckCircleIcon />,
       color: theme.palette.info.main,
-      OnCardClick: () => { navigate('/client-subsidy?status=completed') }
+      OnCardClick: () => { navigate('/client-case?status=completed') }
     },
     // {
     //   title: "Today's Due Subsidy",
@@ -221,7 +221,7 @@ export const Dashboard = () => {
       value: dashboardCounts?.data?.totalExpiredSubsidies ?? 0,
       icon: <ErrorOutlineIcon />,
       color: theme.palette.error.main,
-      OnCardClick: () => { navigate('/client-subsidy?expired=true') }
+      OnCardClick: () => { navigate('/client-case?expired=true') }
     }
   ];
 
@@ -368,19 +368,19 @@ export const Dashboard = () => {
           <Grid container spacing={1} mt={0.5}>
             <Grid item xs={12} md={6} lg={4}>
               <SubsidyListCard
-                title="Today's Expire Subsidy"
-                data={todayExpireList?.data}
-                color="info"
-                onRefresh={() => { onRefreshList("client_today_list") }}
+                title="Expiring This Week"
+                data={weekExpireList?.data}
+                color="warning"
+                onRefresh={() => { onRefreshList("client_weekexpire_list") }}
               />
             </Grid>
 
             <Grid item xs={12} md={6} lg={4}>
               <SubsidyListCard
-                title="Expiring This Week"
-                data={weekExpireList?.data}
+                title="Expiring This Month"
+                data={monthExpireList?.data}
                 color="warning"
-                onRefresh={() => { onRefreshList("client_weekexpire_list") }}
+                onRefresh={() => { onRefreshList("client_month_list") }}
               />
             </Grid>
 
@@ -404,7 +404,7 @@ export const Dashboard = () => {
         width={1400}
         displayExpandDrawer={true}
       >
-        <ClientSubsidyDetail id={subsidyId} />
+        <ClientSchemeDetail id={subsidyId} />
       </AppDrawer>
 
       {clientId &&

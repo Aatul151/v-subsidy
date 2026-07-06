@@ -29,7 +29,7 @@ import { STATUS_LIST } from "@/utils/types";
 
 dayjs.extend(utc);
 
-export default function ClientSubsidy() {
+export default function ClientScheme() {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const { showAlert, AlertComponent } = useAppAlert();
@@ -104,10 +104,10 @@ export default function ClientSubsidy() {
         isLoading: formDefLoading,
         error: formDefError
     } = useQuery({
-        queryKey: ['formDefinition', SYSTEM_FORM_NAMES.CLIENT_SUBSIDY],
+        queryKey: ['formDefinition', SYSTEM_FORM_NAMES.CASE],
         queryFn: async () => {
             try {
-                const form = await formsAPI.getByName(SYSTEM_FORM_NAMES.CLIENT_SUBSIDY);
+                const form = await formsAPI.getByName(SYSTEM_FORM_NAMES.CASE);
                 return transformFormSchema(form);
             } catch (error: any) {
                 console.error('Error fetching role form:', error);
@@ -129,12 +129,12 @@ export default function ClientSubsidy() {
         placeholderData: (previousData) => previousData,
     });
 
-    const { data: stagesList = [] as any } = useQuery({
-        queryKey: ['formEntries', SYSTEM_FORM_NAMES.APPLICABLE_STAGES],
+    const { data: statusList = [] as any } = useQuery({
+        queryKey: ['formEntries', SYSTEM_FORM_NAMES.APPLICABLE_STATUS],
         queryFn: async () => {
             try {
                 const response = await formEntriesAPI.getAll({
-                    formName: SYSTEM_FORM_NAMES.APPLICABLE_STAGES,
+                    formName: SYSTEM_FORM_NAMES.APPLICABLE_STATUS,
                     page: 1,
                     limit: 10,
                 });
@@ -517,7 +517,7 @@ export default function ClientSubsidy() {
                 renderCell: (params) => {
                     return (<>
                         <Tooltip title="View Client Subsidy Detail" placement="bottom" arrow>
-                            <Button sx={{ textTransform: "capitalize" }} onClick={() => { navigate(`/client-subsidy/${params?.row?._id}`) }}>{params?.row?.case_number}</Button>
+                            <Button sx={{ textTransform: "capitalize" }} onClick={() => { navigate(`/client-case/${params?.row?._id}`) }}>{params?.row?.case_number}</Button>
                         </Tooltip >
                     </>)
                 },
@@ -582,7 +582,7 @@ export default function ClientSubsidy() {
                         {errorMessage}
                     </Typography>
                     <Typography variant="caption" sx={{ display: 'block', mt: 1 }}>
-                        Please create a form definition with system name: <strong>{SYSTEM_FORM_NAMES.CLIENT_SUBSIDY}</strong>
+                        Please create a form definition with system name: <strong>{SYSTEM_FORM_NAMES.CASE}</strong>
                     </Typography>
                 </Alert>
             </Box>
@@ -593,7 +593,7 @@ export default function ClientSubsidy() {
         return (
             <Box>
                 <Alert severity="warning" sx={{ mb: 2 }}>
-                    Client Subsidy form definition not found. Please create a form definition with system name: <strong>{SYSTEM_FORM_NAMES.CLIENT_SUBSIDY}</strong>
+                    Client Subsidy form definition not found. Please create a form definition with system name: <strong>{SYSTEM_FORM_NAMES.CASE}</strong>
                 </Alert>
             </Box>
         );
@@ -657,7 +657,7 @@ export default function ClientSubsidy() {
         </>
     );
 
-    const boardData = (stagesList || [])?.map((data: any) => {
+    const boardData = (statusList || [])?.map((data: any) => {
         const stageCountObj = defaultSubsidyCount?.stageCounts?.find((e: any) => e?.stageId == data?._id);
         return ({
             _id: data?._id,
@@ -735,7 +735,7 @@ export default function ClientSubsidy() {
         setSearchParams({});
         reset({
             client: [],
-            stage: [],
+            // stage: [],
             assigned_executive: [],
             status: [],
             date: "",
@@ -759,7 +759,7 @@ export default function ClientSubsidy() {
             }}
         >
             <PageHeader
-                title={OpenArchiveTable ? "Archive Data" : "Client Subsidies"}
+                title={OpenArchiveTable ? "Archive Data" : "Cases"}
                 icon="FormatListBulleted"
                 fallbackIcon={FormatListBulletedIcon}
                 sx={{ mb: 0.5, borderRadius: '10px', padding: 1.5 }}
@@ -807,11 +807,11 @@ export default function ClientSubsidy() {
                                 )}
                             />
                             {!isKanbanBoard && <Controller
-                                name="stage"
+                                name="status"
                                 control={control}
                                 render={({ field }) => (
                                     <FormControl sx={{ width: 200 }} size="small">
-                                        <InputLabel id="stage-label">  Stage  </InputLabel>
+                                        <InputLabel id="status-label">  Status  </InputLabel>
                                         <Select
                                             {...field}
                                             onChange={(e) => {
@@ -821,10 +821,10 @@ export default function ClientSubsidy() {
                                                 setFilterStage('');
                                             }}
                                             multiple={true}
-                                            labelId="stage-label"
-                                            label="Stage"
+                                            labelId="status-label"
+                                            label="status"
                                         >
-                                            {stagesList
+                                            {statusList
                                                 ?.sort((a: any, b: any) => a?.payload?.order_index - b?.payload?.order_index)
                                                 ?.map((stage: any) => (
                                                     <MenuItem key={stage?._id} value={stage?._id}>
@@ -858,7 +858,7 @@ export default function ClientSubsidy() {
                                     </FormControl>
                                 )}
                             />
-                            <Controller
+                            {/* <Controller
                                 name="status"
                                 control={control}
                                 render={({ field }) => (
@@ -879,7 +879,7 @@ export default function ClientSubsidy() {
                                         </Select>
                                     </FormControl>
                                 )}
-                            />
+                            /> */}
                             <Controller
                                 name="date"
                                 control={control}
@@ -971,7 +971,7 @@ export default function ClientSubsidy() {
                         columns={columns}
                         loading={clientLoading}
                         getRowId={(row) => row._id}
-                        onRowClick={(row) => { navigate(`/client-subsidy/${row.id}`) }}
+                        onRowClick={(row) => { navigate(`/client-case/${row.id}`) }}
                     />}
                 </Box>
             </PageContent >
@@ -984,7 +984,7 @@ export default function ClientSubsidy() {
                         handleActions(false, null, 'view');
                     }
                 }}
-                formSysName={SYSTEM_FORM_NAMES.CLIENT_SUBSIDY}
+                formSysName={SYSTEM_FORM_NAMES.CASE}
                 onSubmit={handleFormSubmit}
                 initialValues={(formMode === 'edit' || formMode === 'view') && selectedClientSubsidy ? (() => {
                     const { createdAt, updatedAt,
