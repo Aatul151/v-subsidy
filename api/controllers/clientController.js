@@ -8,7 +8,7 @@ const CLIENT_FORM = FORM.CLIENT_FORM;
 // Fetch clints
 export const getClients = async (req, res) => {
   try {
-    const { client_number, name, company_name, mobile_number, email, contact_person, isActive, page = 1, limit = 10 } = req.query;
+    const { client_number, name, company_name, mobile_number, email, isActive, page = 1, limit = 10 } = req.query;
 
     const validation = await validateFormAccess(CLIENT_FORM, req.user?.role, "read");
     if (!validation.success) {
@@ -20,7 +20,6 @@ export const getClients = async (req, res) => {
     if (client_number) { filter.client_number = { $regex: client_number, $options: "i" }; }
     if (name) { filter.name = { $regex: name, $options: "i" }; }
     if (company_name) { filter.company_name = { $regex: company_name, $options: "i" }; }
-    if (contact_person) { filter.contact_person = { $in: contact_person?.split(",") }; }
     if (mobile_number) { filter.mobile_number = { $regex: mobile_number, $options: "i", }; }
     if (email) { filter.email = { $regex: email, $options: "i" }; }
     if (isActive !== undefined) { filter.isActive = isActive === "true"; }
@@ -33,7 +32,6 @@ export const getClients = async (req, res) => {
     // fetch
     const [clients, totalRecords] = await Promise.all([
       Client.find(filter)
-        .populate("contact_person", "name email role")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(pageSize),
@@ -68,7 +66,7 @@ export const getClientById = async (req, res) => {
       return res.status(validation.statusCode).json({ success: false, message: validation.message });
     }
 
-    const client = await Client.findById(id).populate("contact_person", "name email role")
+    const client = await Client.findById(id)
     if (!client) {
       return res.status(404).json({ success: false, message: "Client not found." });
     }
@@ -83,7 +81,7 @@ export const getClientById = async (req, res) => {
 // Create Client
 export const createClient = async (req, res) => {
   try {
-    const { name, company_name, contact_person, mobile_number, email, gst_number, pan_number, address, remarks } = req.body;
+    const { name, company_name, contact_person_name, contact_person_number, mobile_number, email, gst_number, pan_number, address, remarks } = req.body;
 
     // Validation
     const validation = await validateFormAccess(CLIENT_FORM, req.user?.role, "create");
@@ -103,14 +101,16 @@ export const createClient = async (req, res) => {
       client_number: clientNo,
       name,
       company_name,
-      contact_person,
       mobile_number,
       email,
+      contact_person_name,
+      contact_person_number,
       gst_number,
       pan_number,
       address,
       remarks,
-      createdBy: req.user._id
+      createdBy: req.user._id,
+      createdAt: new Date()
     });
 
     return res.status(200).json({ success: true, message: "Client created successfully.", data: client });
@@ -129,7 +129,7 @@ export const createClient = async (req, res) => {
 export const updateClient = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, company_name, contact_person, mobile_number, email, gst_number, pan_number, address, remarks, isActive } = req.body;
+    const { name, company_name, mobile_number, contact_person_name, contact_person_number, email, gst_number, pan_number, address, remarks, isActive } = req.body;
 
     const validation = await validateFormAccess(CLIENT_FORM, req.user?.role, "update");
     if (!validation.success) {
@@ -139,7 +139,8 @@ export const updateClient = async (req, res) => {
     const fieldToUpdate = {};
     if (name !== undefined) fieldToUpdate.name = name;
     if (company_name !== undefined) fieldToUpdate.company_name = company_name;
-    if (contact_person !== undefined) fieldToUpdate.contact_person = contact_person;
+    if (contact_person_name !== undefined) fieldToUpdate.contact_person_name = contact_person_name;
+    if (contact_person_number !== undefined) fieldToUpdate.contact_person_number = contact_person_number;
     if (mobile_number !== undefined) fieldToUpdate.mobile_number = mobile_number;
     if (email !== undefined) fieldToUpdate.email = email;
     if (gst_number !== undefined) fieldToUpdate.gst_number = gst_number;

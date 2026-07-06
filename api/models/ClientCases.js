@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const clientSubsidySchema = new mongoose.Schema(
+const clientCasesSchema = new mongoose.Schema(
   {
     case_number: {
       type: String,
@@ -36,8 +36,36 @@ const clientSubsidySchema = new mongoose.Schema(
       default: "",
     },
 
+    current_status : [{
+      scheme_id: {
+        type: mongoose.Schema.Types.ObjectId,
+        // ref: "Scheme"
+      },
+      stage_id: {
+        type: mongoose.Schema.Types.ObjectId,
+        // ref: "Stage"
+      },
+      status_id: {
+        type: mongoose.Schema.Types.ObjectId,
+        // ref: "Status"
+      }
+    }],
+
+    current_stage :[{
+      scheme_id: {
+        type: mongoose.Schema.Types.ObjectId,
+        // ref: "Scheme"
+      },
+      stage_id: {
+        type: mongoose.Schema.Types.ObjectId,
+        // ref: "Stage"
+      },
+    }],
+
+
     documents: [], //upload aaray
     submitted_docs: [],
+
 
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
@@ -50,6 +78,7 @@ const clientSubsidySchema = new mongoose.Schema(
     },
 
     updatedAt: { type: Date, default: Date.now },
+    createdaAt: { type: Date, default: Date.now },
 
     isArchived: {
       type: Boolean,
@@ -66,28 +95,12 @@ const clientSubsidySchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
-
-    stageHistory: [
-      {
-        stageId: {
-          type: mongoose.Schema.Types.ObjectId,
-          required: true
-        },
-        updatedBy: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "User",
-          required: true
-        },
-        updatedAt: { type: Date, default: Date.now },
-        remarks: { type: String, default: "" }
-      }
-    ]
   },
   {
     timestamps: true,
   }
 );
 
-const ClientScheme = mongoose.model("Client_Scheme", clientSubsidySchema);
+const ClientCases = mongoose.model("Client_Cases", clientCasesSchema);
 
-export default ClientScheme;
+export default ClientCases;

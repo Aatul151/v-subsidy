@@ -1,26 +1,28 @@
 import mongoose from "mongoose";
 import getFormEntryModel from "../helpers/formEntryModelFactory.js";
-import ClientScheme from "../models/ClientScheme.js";
+import ClientCases from "../models/ClientCases.js";
 import FormDefinition from "../models/FormDefinition.js";
 import { deleteFile, sanitizeFileName, uploadFile } from "../services/fileUploadService.js";
 import { validateFormAccess } from "../services/permissionService.js";
 import { buildMongoFilter } from "../utils/buildMongoFilter.js";
-import { generateUniqueNo } from "../utils/commonFunctions.js";
+import { buildCaseFilter, generateUniqueNo, getCaseProgressData, saveCaseStageProgress, saveCaseStatusProgress, updateCurrentStage, updateCurrentStatus } from "../utils/commonFunctions.js";
 import { populateReferencesBatch } from "../utils/populateReferences.js";
 import fs from 'fs/promises';
 import path from 'path';
 import { FORM } from "../utils/codes.js";
+import { log } from "console";
+import CaseStatusProgress from "../models/case/StatusProgress.js";
 
 const CLIENT_CASE_FORM = FORM.CLIENT_CASES_FORM;
 
 // Create
-export const createClientSubsidy = async (req, res) => {
+export const createClientCase = async (req, res) => {
     try {
-        const { client, subsidy, assigned_executive, current_stage, status, remarks, expireOn } = req.body;
+        const { client, scheme_ids, assigned_executive, stage_id, status_id, remarks, expireOn } = req.body;
 
         // Validation
-        if (!client || !subsidy) {
-            return res.status(400).json({ success: false, message: "Please provide required fields (client, subsidy)" });
+        if (!client || !scheme_ids || !stage_id || !status_id) {
+            return res.status(400).json({ success: false, message: "Please provide required fields (client, scheme, stage, status )" });
         }
 
         const validation = await validateFormAccess(CLIENT_CASE_FORM, req.user?.role, "create");
@@ -29,39 +31,79 @@ export const createClientSubsidy = async (req, res) => {
         }
 
         // Generate dynamically
-        const case_number = await generateUniqueNo("subsidySequence", "Case", true);
+        const case_number = await generateUniqueNo("caseSequence", "Case", true);
 
-        const resScheme = await ClientScheme.create({
+        let current_status = [];
+        let current_stage = [];
+
+        for (let i = 0; i < scheme_ids?.length; i++) {
+            const eachSchemeId = scheme_ids[i];
+
+            current_status?.push({
+                scheme_id: eachSchemeId,
+                stage_id: stage_id,
+                status_id: status_id
+            })
+
+            current_stage?.push({
+                scheme_id: eachSchemeId,
+                stage_id: stage_id,
+            })
+        }
+
+        const resScheme = await ClientCases.create({
             case_number,
             client,
-            subsidy,
+            scheme: scheme_ids,
             assigned_executive,
-            current_stage,
             expireOn,
             remarks,
-            status,
-            stageHistory: [
-                {
-                    stageId: current_stage,
-                    updatedBy: req.user._id
-                }
-            ],
-            createdBy: req.user._id
+            current_status,
+            current_stage,
+            createdBy: req.user?._id,
+            createdaAt: new Date()
         });
 
+        const reqUser = req.user
+        await Promise.all(
+            scheme_ids?.flatMap((schemeId) => [
+                saveCaseStatusProgress({
+                    case_id: resScheme._id,
+                    scheme_id: schemeId,
+                    stage_id: stage_id,
+                    status_id: status_id,
+                    submitted_date: new Date(),
+                    remarks: remarks,
+                    reqUser
+                }),
+
+                saveCaseStageProgress({
+                    case_id: resScheme._id,
+                    scheme_id: schemeId,
+                    stage_id: stage_id,
+                    start_date: new Date(),
+                    end_date: null,
+                    date: null,
+                    remarks: remarks,
+                    reqUser
+                }),
+            ])
+        );
+
+
         return res.status(201).json({
-            success: true, message: "Client subsidy created successfully."
+            success: true, message: "Case created successfully.", date: resScheme,
         });
 
     } catch (error) {
-        return res.status(500).json({ success: false, message: "Failed to create client subsidy.", error: error.message });
+        return res.status(500).json({ success: false, message: "Failed to create case.", error: error.message });
     }
 };
 
 // Fetch All
-export const getClientSubsidies = async (req, res) => {
+export const getClientCases = async (req, res) => {
     try {
-        const { client, subsidy, assigned_executive, current_stage, case_number, expireFrom, expireTo, expired, sortBy = "createdAt", sortType = "DESC", status, page = 1, limit = 10, skip: customSkip, isArchived = false } = req.query;
+        const { case_number, client, scheme, status_id, assigned_executive, stage_id, sortBy = "createdAt", sortType = "DESC", page = 1, limit = 10, isArchived = false } = req.query;
 
         const validation = await validateFormAccess(CLIENT_CASE_FORM, req.user?.role, "read");
         if (!validation.success) {
@@ -69,102 +111,30 @@ export const getClientSubsidies = async (req, res) => {
         }
 
         //#region Filter
-        const filter = { isArchived: isArchived };
-        if (case_number) { filter.case_number = { $regex: case_number, $options: "i" }; }
-        if (client) { filter.client = { $in: client.split(",")?.map(id => new mongoose.Types.ObjectId(id)) } }
-        if (subsidy) { filter.subsidy = { $in: subsidy.split(",")?.map(id => new mongoose.Types.ObjectId(id)) } }
-        if (assigned_executive) { filter.assigned_executive = { $in: assigned_executive.split(",")?.map(id => new mongoose.Types.ObjectId(id)) } }
-        if (current_stage) { filter.current_stage = { $in: current_stage.split(",")?.map(id => new mongoose.Types.ObjectId(id)) } }
-        if (status) { filter.status = { $in: status?.split(",")?.map(status => status) } }
-        // Expire Date Range
-        if (expireFrom || expireTo) {
-            filter.expireOn = {};
-            if (expireFrom) {
-                const fromDate = new Date(expireFrom);
-                fromDate.setHours(0, 0, 0, 0);
-                filter.expireOn.$gte = fromDate;
-            }
-
-            if (expireTo) {
-                const toDate = new Date(expireTo);
-                toDate.setHours(23, 59, 59, 999);
-                filter.expireOn.$lte = toDate;
-            }
-        }
-        if (expired == "true") {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            filter.expireOn = { $lt: today, $ne: null };
-        }
+        const filter = buildCaseFilter({
+            case_number,
+            client,
+            scheme,
+            stage_id,
+            status_id,
+            assigned_executive,
+            isArchived: isArchived
+        });
         //#endregion
 
         const currentPage = Number(page);
         const pageSize = Number(limit);
-        // If the frontend explicitly sends a skip value (Kanban scroll), use it. 
-        // Otherwise fallback to traditional page calculations (Table View).
-        const skip = customSkip !== undefined ? Number(customSkip) : (currentPage - 1) * pageSize;
         const sortDirection = sortType?.toUpperCase() === "DESC" ? -1 : 1;
 
-        const [records, totalRecords, stageCounts] = await Promise.all([
-            ClientScheme.find(filter)
+        const [records, totalRecords] = await Promise.all([
+            ClientCases.find(filter)
                 .select("-stageHistory -isArchived -archivedBy -archivedAt")
                 .populate("client")
                 .sort({ [sortBy]: sortDirection })
-                .skip(skip)
                 .limit(pageSize),
 
-            ClientScheme.countDocuments(filter),
-
-            ClientScheme.aggregate([
-                { $match: filter },
-                {
-                    $group: {
-                        _id: "$current_stage",
-                        count: { $sum: 1 }
-                    }
-                }
-            ])
+            ClientCases.countDocuments(filter)
         ]);
-
-        // Track what actually got loaded in this specific batch payload
-        const loadedStageCounts = {};
-        records.forEach(record => {
-            const stageId = record?.current_stage?.toString();
-            if (stageId) { loadedStageCounts[stageId] = (loadedStageCounts[stageId] || 0) + 1; }
-        });
-
-        const stageCountsWithPagination = stageCounts?.map(stage => {
-            const stageId = stage._id?.toString();
-            const totalStageCount = stage?.count;
-            const loadedInThisSlice = loadedStageCounts[stageId] || 0;
-
-            let nextSkip = 0;
-            let hasNextPage = false;
-
-            if (current_stage) {
-                // Scenario A: Loading more items for a single targeted column
-                // const currentSkipped = customSkip !== undefined ? Number(customSkip) : (currentPage - 1) * pageSize;
-                const totalLoadedSoFar = skip + loadedInThisSlice;
-
-                hasNextPage = totalLoadedSoFar < totalStageCount;
-                nextSkip = totalLoadedSoFar;
-            } else {
-                // Scenario B: Initial load pool (mixed records)
-                hasNextPage = totalStageCount > loadedInThisSlice;
-                nextSkip = loadedInThisSlice;
-            }
-
-            return {
-                stageId: stage._id,
-                totalCount: totalStageCount,
-                loadedCount: nextSkip, // The frontend will pass this value directly back as ?skip=
-                hasNextPage: hasNextPage,
-                client: client?.split(','),
-                expireFrom, expireTo,
-                assigned_executive: assigned_executive?.split(','),
-                status: status?.split(',')
-            };
-        });
 
         // Populate Fields
         const data = records.map((e) => ({ payload: e?._doc }));
@@ -178,9 +148,8 @@ export const getClientSubsidies = async (req, res) => {
                 limit: pageSize,
                 totalRecords,
                 totalPages: Math.ceil(totalRecords / pageSize),
-                hasNextPage: customSkip !== undefined ? (Number(customSkip) + records.length) < totalRecords : (currentPage * pageSize) < totalRecords,
-                hasPrevPage: customSkip !== undefined ? Number(customSkip) > 0 : currentPage > 1,
-                stageCounts: stageCountsWithPagination,
+                hasNextPage: (currentPage * pageSize) < totalRecords,
+                hasPrevPage: currentPage > 1,
             },
             data: formateEntries
         });
@@ -191,7 +160,7 @@ export const getClientSubsidies = async (req, res) => {
 };
 
 // Fetch By Id
-export const getClientSubsidyById = async (req, res) => {
+export const getCaseById = async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -200,10 +169,10 @@ export const getClientSubsidyById = async (req, res) => {
             return res.status(validation.statusCode).json({ success: false, message: validation.message });
         }
 
-        const resScheme = await ClientScheme.findById(id).populate("client").populate("assigned_executive");
+        const resScheme = await ClientCases.findById(id).populate("client").populate("assigned_executive");
 
         if (!resScheme) {
-            return res.status(404).json({ success: false, message: "Client subsidy not found." });
+            return res.status(404).json({ success: false, message: "Case not found." });
         }
 
         const populatedEntries = await populateReferencesBatch([{ payload: resScheme?._doc }], validation?.form);
@@ -217,17 +186,17 @@ export const getClientSubsidyById = async (req, res) => {
     } catch (error) {
         return res.status(500).json({
             success: false,
-            message: "Failed to fetch client subsidy.",
+            message: "Failed to fetch case",
             error: error.message
         });
     }
 };
 
 // Update
-export const updateClientSubsidy = async (req, res) => {
+export const updateClientCase = async (req, res) => {
     try {
         const { id } = req.params;
-        const { client, subsidy, assigned_executive, current_stage, remarks, expireOn, documents, status, submitted_docs, stageRemark } = req.body;
+        const { client, assigned_executive, remarks, expireOn, documents, submitted_docs, stage, status } = req.body;
 
         const validation = await validateFormAccess(CLIENT_CASE_FORM, req.user?.role, "update");
         if (!validation.success) {
@@ -237,23 +206,31 @@ export const updateClientSubsidy = async (req, res) => {
         const fieldToUpdate = {};
 
         if (client !== undefined) fieldToUpdate.client = client;
-        if (subsidy !== undefined) fieldToUpdate.subsidy = subsidy;
         if (assigned_executive !== undefined) fieldToUpdate.assigned_executive = assigned_executive;
         if (expireOn !== undefined) fieldToUpdate.expireOn = expireOn;
         if (remarks !== undefined) fieldToUpdate.remarks = remarks;
-        if (status !== undefined) fieldToUpdate.status = status;
         if (documents !== undefined) fieldToUpdate.documents = documents;
         if (submitted_docs !== undefined) fieldToUpdate.submitted_docs = submitted_docs;
 
-        if (current_stage !== undefined) {
-            fieldToUpdate.current_stage = current_stage;
-            fieldToUpdate.$push = {
-                stageHistory: {
-                    stageId: current_stage,
-                    updatedBy: req.user._id,
-                    updatedAt: new Date(),
-                    remark: stageRemark || ""
-                }
+        //update current status or stage field
+        if (stage?.scheme_id || status?.scheme_id) {
+            const clientCase = await ClientCases.findById(id);
+
+            if (stage?.scheme_id != undefined) {
+                fieldToUpdate['current_stage'] = updateCurrentStage(
+                    clientCase.current_stage,
+                    stage?.scheme_id,
+                    stage?.stage_id
+                );
+            };
+
+            if (status?.scheme_id != undefined && status?.stage_id != undefined) {
+                fieldToUpdate['current_status'] = updateCurrentStatus(
+                    clientCase.current_status,
+                    status?.scheme_id,
+                    status?.stage_id,
+                    status?.status_id
+                );
             };
         }
 
@@ -264,7 +241,7 @@ export const updateClientSubsidy = async (req, res) => {
         fieldToUpdate['updatedBy'] = req?.user?._id;
         fieldToUpdate['updatedAt'] = new Date();
 
-        const resScheme = await ClientScheme.findByIdAndUpdate(id,
+        const resScheme = await ClientCases.findByIdAndUpdate(id,
             fieldToUpdate,
             {
                 new: true,
@@ -272,18 +249,77 @@ export const updateClientSubsidy = async (req, res) => {
             }
         );
 
-        if (!resScheme) { return res.status(404).json({ success: false, message: "Client subsidy not found.", }); }
+        if (!resScheme || !resScheme._id) { return res.status(404).json({ success: false, message: "Case not found.", }); }
 
-        return res.status(200).json({ success: true, message: "Client subsidy updated successfully.", data: resScheme });
+        const promises = [];
+        if (status?.scheme_id && status?.stage_id && status?.status_id) {
+            const reqUser = req.user
+
+            promises.push(
+                saveCaseStatusProgress({
+                    case_id: resScheme._id,
+                    scheme_id: status.scheme_id,
+                    stage_id: status.stage_id,
+                    status_id: status.status_id,
+                    remarks: status.remarks ?? "",
+                    reqUser
+                })
+            );
+        }
+        if (stage?.scheme_id && stage?.stage_id) {
+            promises.push(
+                saveCaseStageProgress({
+                    case_id: resScheme._id,
+                    scheme_id: stage.scheme_id,
+                    stage_id: stage.stage_id,
+                    end_date: stage.end_date ?? null,
+                    date: null,
+                    remarks: stage.remarks ?? "",
+                    reqUser
+                })
+            );
+        }
+
+        await Promise.all(promises);
+        return res.status(200).json({ success: true, message: "Case updated successfully.", data: resScheme });
 
     } catch (error) {
 
-        return res.status(500).json({ success: false, message: "Failed to update client subsidy.", error: error.message, });
+        return res.status(500).json({ success: false, message: "Failed to update case.", error: error.message, });
     }
 };
 
+// Get Status History
+export const fetchStatusHistory = async (req, res) => {
+    try {
+        const { case_id } = req.params;
+        const { scheme_id, stage_id } = req.query;
+
+        if (!scheme_id) {
+            return res.status(400).json({ success: false, message: "scheme_id are required." });
+        }
+
+        const filter = { case_id, scheme_id };
+        if (stage_id) { filter.stage_id = stage_id; }
+
+        const history = await CaseStatusProgress.find(filter)
+            .sort({ createdAt: 1 }) // or createdAt: 1
+            .lean();
+
+        return res.status(200).json({ success: true, data: history });
+
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: "Failed to fetch status history",
+            error: error.message
+        });
+    }
+};
+
+
 // Delete - Archived
-export const archivedClientSubsidy = async (req, res) => {
+export const archivedCase = async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -292,7 +328,7 @@ export const archivedClientSubsidy = async (req, res) => {
             return res.status(validation.statusCode).json({ success: false, message: validation.message });
         }
 
-        const resScheme = await ClientScheme.findOneAndUpdate(
+        const resScheme = await ClientCases.findOneAndUpdate(
             {
                 _id: id,
                 isArchived: false
@@ -308,13 +344,13 @@ export const archivedClientSubsidy = async (req, res) => {
         );
 
         if (!resScheme) {
-            return res.status(404).json({ success: false, message: "Client subsidy not found or already archived." });
+            return res.status(404).json({ success: false, message: "Case not found or already archived." });
         }
 
-        return res.status(200).json({ success: true, message: "Client subsidy archived successfully." });
+        return res.status(200).json({ success: true, message: "Case archived successfully." });
 
     } catch (error) {
-        return res.status(500).json({ success: false, message: "Failed to archive client subsidy.", error: error.message });
+        return res.status(500).json({ success: false, message: "Failed to archive client Case.", error: error.message });
     }
 };
 

@@ -1,6 +1,6 @@
 import express from 'express';
 import { protect, requireRoles } from '../middleware/auth.js';
-import { createClientSubsidy, getClientSubsidies, getClientSubsidyById, updateClientSubsidy, archivedClientSubsidy, uploadDocument, deleteClientDocument } from '../controllers/clientSubsidyController.js';
+import { createClientCase, getClientCases, getCaseById, updateClientCase, archivedCase, uploadDocument, deleteClientDocument, fetchStatusHistory } from '../controllers/clientSubsidyController.js';
 import { uploadMultiple, handleUploadError } from '../middleware/upload.js';
 
 const router = express.Router();
@@ -8,15 +8,17 @@ const router = express.Router();
 // All routes are protected
 router.use(protect);
 
-router.get('/', getClientSubsidies);
+router.get('/', getClientCases);
 
-router.get('/:id', getClientSubsidyById);
+router.get('/:id', getCaseById);
 
-router.post('/', createClientSubsidy);
+router.post('/', createClientCase);
 
-router.put('/:id', updateClientSubsidy);
+router.put('/:id', updateClientCase);
 
-router.delete('/:id', archivedClientSubsidy);
+router.delete('/:id', archivedCase);
+
+router.get('/status-history/:case_id', fetchStatusHistory);
 
 // Doc upload
 

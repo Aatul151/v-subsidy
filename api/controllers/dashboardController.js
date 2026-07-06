@@ -1,5 +1,5 @@
 import Client from "../models/Client.js";
-import ClientScheme from "../models/ClientScheme.js";
+import ClientCases from "../models/ClientCases.js";
 
 
 export const getCount = async (req, res) => {
@@ -12,14 +12,14 @@ export const getCount = async (req, res) => {
 
     const [totalClients, statusCounts, expiryCounts] = await Promise.all([
       Client.countDocuments(),
-      ClientScheme.aggregate([
+      ClientCases.aggregate([
         { $match: { isArchived: false } },
         {
           $group: { _id: "$status", count: { $sum: 1 }, },
         },
       ]),
 
-      ClientScheme.aggregate([
+      ClientCases.aggregate([
         {
           $match: { isArchived: false, expireOn: { $ne: null }, },
         },

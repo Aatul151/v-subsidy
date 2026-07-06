@@ -79,7 +79,7 @@ app.use('/api/file-upload', fileUploadRoutes);
 
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/client', clientRoutes);
-app.use('/api/client-subsidy', subsidyRoutes);
+app.use('/api/client-case', subsidyRoutes);
 
 // Health check route
 app.get('/', (req, res) => {
