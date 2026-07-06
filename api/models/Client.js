@@ -54,6 +54,7 @@ const clientSchema = new mongoose.Schema(
         type: mongoose.Schema.Types.ObjectId,
         required: [true, "Please select a scheme"],
       },
+      
       remark: {
         type: String,
         trim: true,

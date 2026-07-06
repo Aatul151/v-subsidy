@@ -60,13 +60,17 @@ export const getClients = async (req, res) => {
 export const getClientById = async (req, res) => {
   try {
     const { id } = req.params;
+    const { fields } = req.query
 
     const validation = await validateFormAccess(CLIENT_FORM, req.user?.role, "read");
     if (!validation.success) {
       return res.status(validation.statusCode).json({ success: false, message: validation.message });
     }
 
-    const client = await Client.findById(id)
+    let query = Client.findById(id);
+    if (fields) { query = query.select(fields.split(",").join(" ")); }
+    const client = await query.lean();
+
     if (!client) {
       return res.status(404).json({ success: false, message: "Client not found." });
     }
@@ -129,7 +133,7 @@ export const createClient = async (req, res) => {
 export const updateClient = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, company_name, mobile_number, contact_person_name, contact_person_number, email, gst_number, pan_number, address, remarks, isActive } = req.body;
+    const { name, company_name, mobile_number, contact_person_name, contact_person_number, email, gst_number, pan_number, address, remarks, isActive, case_todos } = req.body;
 
     const validation = await validateFormAccess(CLIENT_FORM, req.user?.role, "update");
     if (!validation.success) {
@@ -148,6 +152,35 @@ export const updateClient = async (req, res) => {
     if (address !== undefined) fieldToUpdate.address = address;
     if (remarks !== undefined) fieldToUpdate.remarks = remarks;
     if (isActive !== undefined) fieldToUpdate.isActive = isActive;
+    if (case_todos) {
+      const resClient = await Client.findById(id);
+      if (!resClient) { return res.status(404).json({ success: false, message: "Client not found." }); }
+      const todos = [...client.case_todos];
+
+      const index = todos.findIndex(
+        item =>
+          item?.case_id?.toString() == case_todos?.case_id?.toString() &&
+          item?.scheme_id?.toString() == case_todos?.scheme_id?.toString()
+      );
+
+      if (case_todos?.taskCompleted) {
+        // Remove todo
+        if (index > -1) { todos.splice(index, 1); }
+      } else {
+        // Update or Add
+        if (index > -1) {
+          todos[index].remark = case_todos.remark;
+        } else {
+          todos.push({
+            case_id: case_todos.case_id,
+            scheme_id: case_todos.scheme_id,
+            remark: case_todos.remark
+          });
+        }
+      }
+
+      fieldToUpdate['case_todos'] = todos;
+    }
 
     if (Object.keys(fieldToUpdate).length === 0) {
       return res.status(400).json({ success: false, message: "Please provide at least one field to update." });
