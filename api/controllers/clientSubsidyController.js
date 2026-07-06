@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import getFormEntryModel from "../helpers/formEntryModelFactory.js";
-import ClientSubsidy from "../models/ClientSubsidy.js";
+import ClientScheme from "../models/ClientScheme.js";
 import FormDefinition from "../models/FormDefinition.js";
 import { deleteFile, sanitizeFileName, uploadFile } from "../services/fileUploadService.js";
 import { validateFormAccess } from "../services/permissionService.js";
@@ -9,8 +9,9 @@ import { generateUniqueNo } from "../utils/commonFunctions.js";
 import { populateReferencesBatch } from "../utils/populateReferences.js";
 import fs from 'fs/promises';
 import path from 'path';
+import { FORM } from "../utils/codes.js";
 
-const CLIENT_SUBSIDY_FORM = "client_subsidy";
+const CLIENT_CASE_FORM = FORM.CLIENT_CASES_FORM;
 
 // Create
 export const createClientSubsidy = async (req, res) => {
@@ -22,7 +23,7 @@ export const createClientSubsidy = async (req, res) => {
             return res.status(400).json({ success: false, message: "Please provide required fields (client, subsidy)" });
         }
 
-        const validation = await validateFormAccess(CLIENT_SUBSIDY_FORM, req.user?.role, "create");
+        const validation = await validateFormAccess(CLIENT_CASE_FORM, req.user?.role, "create");
         if (!validation.success) {
             return res.status(validation.statusCode).json({ success: false, message: validation.message });
         }
@@ -30,7 +31,7 @@ export const createClientSubsidy = async (req, res) => {
         // Generate dynamically
         const case_number = await generateUniqueNo("subsidySequence", "Case", true);
 
-        const clientSubsidy = await ClientSubsidy.create({
+        const resScheme = await ClientScheme.create({
             case_number,
             client,
             subsidy,
@@ -62,7 +63,7 @@ export const getClientSubsidies = async (req, res) => {
     try {
         const { client, subsidy, assigned_executive, current_stage, case_number, expireFrom, expireTo, expired, sortBy = "createdAt", sortType = "DESC", status, page = 1, limit = 10, skip: customSkip, isArchived = false } = req.query;
 
-        const validation = await validateFormAccess(CLIENT_SUBSIDY_FORM, req.user?.role, "read");
+        const validation = await validateFormAccess(CLIENT_CASE_FORM, req.user?.role, "read");
         if (!validation.success) {
             return res.status(validation.statusCode).json({ success: false, message: validation.message });
         }
@@ -105,16 +106,16 @@ export const getClientSubsidies = async (req, res) => {
         const sortDirection = sortType?.toUpperCase() === "DESC" ? -1 : 1;
 
         const [records, totalRecords, stageCounts] = await Promise.all([
-            ClientSubsidy.find(filter)
+            ClientScheme.find(filter)
                 .select("-stageHistory -isArchived -archivedBy -archivedAt")
                 .populate("client")
                 .sort({ [sortBy]: sortDirection })
                 .skip(skip)
                 .limit(pageSize),
 
-            ClientSubsidy.countDocuments(filter),
+            ClientScheme.countDocuments(filter),
 
-            ClientSubsidy.aggregate([
+            ClientScheme.aggregate([
                 { $match: filter },
                 {
                     $group: {
@@ -194,18 +195,18 @@ export const getClientSubsidyById = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const validation = await validateFormAccess(CLIENT_SUBSIDY_FORM, req.user?.role, "read");
+        const validation = await validateFormAccess(CLIENT_CASE_FORM, req.user?.role, "read");
         if (!validation.success) {
             return res.status(validation.statusCode).json({ success: false, message: validation.message });
         }
 
-        const clientSubsidy = await ClientSubsidy.findById(id).populate("client").populate("assigned_executive");
+        const resScheme = await ClientScheme.findById(id).populate("client").populate("assigned_executive");
 
-        if (!clientSubsidy) {
+        if (!resScheme) {
             return res.status(404).json({ success: false, message: "Client subsidy not found." });
         }
 
-        const populatedEntries = await populateReferencesBatch([{ payload: clientSubsidy?._doc }], validation?.form);
+        const populatedEntries = await populateReferencesBatch([{ payload: resScheme?._doc }], validation?.form);
         const formateEntries = populatedEntries?.map((e) => { return e?.payload });
 
         return res.status(200).json({
@@ -228,7 +229,7 @@ export const updateClientSubsidy = async (req, res) => {
         const { id } = req.params;
         const { client, subsidy, assigned_executive, current_stage, remarks, expireOn, documents, status, submitted_docs, stageRemark } = req.body;
 
-        const validation = await validateFormAccess(CLIENT_SUBSIDY_FORM, req.user?.role, "update");
+        const validation = await validateFormAccess(CLIENT_CASE_FORM, req.user?.role, "update");
         if (!validation.success) {
             return res.status(validation.statusCode).json({ success: false, message: validation.message });
         }
@@ -263,7 +264,7 @@ export const updateClientSubsidy = async (req, res) => {
         fieldToUpdate['updatedBy'] = req?.user?._id;
         fieldToUpdate['updatedAt'] = new Date();
 
-        const clientSubsidy = await ClientSubsidy.findByIdAndUpdate(id,
+        const resScheme = await ClientScheme.findByIdAndUpdate(id,
             fieldToUpdate,
             {
                 new: true,
@@ -271,9 +272,9 @@ export const updateClientSubsidy = async (req, res) => {
             }
         );
 
-        if (!clientSubsidy) { return res.status(404).json({ success: false, message: "Client subsidy not found.", }); }
+        if (!resScheme) { return res.status(404).json({ success: false, message: "Client subsidy not found.", }); }
 
-        return res.status(200).json({ success: true, message: "Client subsidy updated successfully.", data: clientSubsidy });
+        return res.status(200).json({ success: true, message: "Client subsidy updated successfully.", data: resScheme });
 
     } catch (error) {
 
@@ -286,12 +287,12 @@ export const archivedClientSubsidy = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const validation = await validateFormAccess(CLIENT_SUBSIDY_FORM, req.user?.role, "delete");
+        const validation = await validateFormAccess(CLIENT_CASE_FORM, req.user?.role, "delete");
         if (!validation.success) {
             return res.status(validation.statusCode).json({ success: false, message: validation.message });
         }
 
-        const clientSubsidy = await ClientSubsidy.findOneAndUpdate(
+        const resScheme = await ClientScheme.findOneAndUpdate(
             {
                 _id: id,
                 isArchived: false
@@ -306,7 +307,7 @@ export const archivedClientSubsidy = async (req, res) => {
             { new: true }
         );
 
-        if (!clientSubsidy) {
+        if (!resScheme) {
             return res.status(404).json({ success: false, message: "Client subsidy not found or already archived." });
         }
 

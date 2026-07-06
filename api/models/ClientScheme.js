@@ -15,23 +15,14 @@ const clientSubsidySchema = new mongoose.Schema(
       required: [true, "Please select a client"],
     },
 
-    subsidy: {
+    scheme: [{
       type: mongoose.Schema.Types.ObjectId,
       required: [true, "Please select a subsidy"],
-    },
+    }],
 
     assigned_executive: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-    },
-
-    current_stage: {
-      type: mongoose.Schema.Types.ObjectId,
-    },
-
-    status: {
-      type: String,
-      default: null,
+      ref: "User"
     },
 
     expireOn: {
@@ -44,9 +35,8 @@ const clientSubsidySchema = new mongoose.Schema(
       trim: true,
       default: "",
     },
-    
-    documents: [], //upload aaray
 
+    documents: [], //upload aaray
     submitted_docs: [],
 
     createdBy: {
@@ -98,6 +88,6 @@ const clientSubsidySchema = new mongoose.Schema(
   }
 );
 
-const ClientSubsidy = mongoose.model("Client_Subsidy", clientSubsidySchema);
+const ClientScheme = mongoose.model("Client_Scheme", clientSubsidySchema);
 
-export default ClientSubsidy;
+export default ClientScheme;

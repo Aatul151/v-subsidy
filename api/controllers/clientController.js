@@ -1,15 +1,16 @@
 import Client from "../models/Client.js";
 import { validateFormAccess, validateModuleAccess } from "../services/permissionService.js";
+import { FORM } from "../utils/codes.js";
 import { generateUniqueNo } from "../utils/commonFunctions.js";
 
-const MANAGE_CLIENT_FORM = "manage_clients";
+const CLIENT_FORM = FORM.CLIENT_FORM;
 
 // Fetch clints
 export const getClients = async (req, res) => {
   try {
     const { client_number, name, company_name, mobile_number, email, contact_person, isActive, page = 1, limit = 10 } = req.query;
 
-    const validation = await validateFormAccess(MANAGE_CLIENT_FORM, req.user?.role, "read");
+    const validation = await validateFormAccess(CLIENT_FORM, req.user?.role, "read");
     if (!validation.success) {
       return res.status(validation.statusCode).json({ success: false, message: validation.message });
     }
@@ -62,7 +63,7 @@ export const getClientById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const validation = await validateFormAccess(MANAGE_CLIENT_FORM, req.user?.role, "read");
+    const validation = await validateFormAccess(CLIENT_FORM, req.user?.role, "read");
     if (!validation.success) {
       return res.status(validation.statusCode).json({ success: false, message: validation.message });
     }
@@ -85,7 +86,7 @@ export const createClient = async (req, res) => {
     const { name, company_name, contact_person, mobile_number, email, gst_number, pan_number, address, remarks } = req.body;
 
     // Validation
-    const validation = await validateFormAccess(MANAGE_CLIENT_FORM, req.user?.role, "create");
+    const validation = await validateFormAccess(CLIENT_FORM, req.user?.role, "create");
     if (!validation.success) {
       return res.status(validation.statusCode).json({ success: false, message: validation.message });
     }
@@ -130,7 +131,7 @@ export const updateClient = async (req, res) => {
     const { id } = req.params;
     const { name, company_name, contact_person, mobile_number, email, gst_number, pan_number, address, remarks, isActive } = req.body;
 
-    const validation = await validateFormAccess(MANAGE_CLIENT_FORM, req.user?.role, "update");
+    const validation = await validateFormAccess(CLIENT_FORM, req.user?.role, "update");
     if (!validation.success) {
       return res.status(validation.statusCode).json({ success: false, message: validation.message });
     }
@@ -180,7 +181,7 @@ export const deleteClient = async (req, res) => {
     const { id } = req.params;
     const client = await Client.findById(id);
 
-    const validation = await validateFormAccess(MANAGE_CLIENT_FORM, req.user?.role, "delete");
+    const validation = await validateFormAccess(CLIENT_FORM, req.user?.role, "delete");
     if (!validation.success) {
       return res.status(validation.statusCode).json({ success: false, message: validation.message });
     }

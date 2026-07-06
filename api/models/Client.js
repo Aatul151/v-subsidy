@@ -18,10 +18,8 @@ const clientSchema = new mongoose.Schema(
       required: [true, 'Please add an company name'],
       trim: true,
     },
-    contact_person: { // string??
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-    },
+
+
     mobile_number: {
       type: String,
       unique: true,
@@ -35,6 +33,33 @@ const clientSchema = new mongoose.Schema(
         'Please add a valid email',
       ],
     },
+
+    contact_person_name: {
+      type: String,
+      trim: true,
+    },
+
+    contact_person_number: {
+      type: String,
+      trim: true,
+    },
+
+    case_todos: [{
+      case_id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Client_Scheme",
+        required: [true, "Please select a case"],
+      },
+      scheme_id: {
+        type: mongoose.Schema.Types.ObjectId,
+        required: [true, "Please select a scheme"],
+      },
+      remark: {
+        type: String,
+        trim: true,
+      }
+    }],
+
     gst_number: {
       type: String,
       trim: true
