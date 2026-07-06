@@ -1,4 +1,4 @@
-import { clientSubsidyAPI, UpdateClientSubsidyPayload } from "@/api/clientSubsidy";
+import { clientSubsidyAPI, UpdateClientSubsidyPayload } from "@/api/clientScheme";
 import { fileUploadAPI } from "@/api/fileUpload";
 import { useAppAlert } from "@/components/common/AppAlert";
 import { FileDisplay } from "@/components/common/FileDisplay";

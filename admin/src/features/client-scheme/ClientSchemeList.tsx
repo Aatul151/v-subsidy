@@ -18,7 +18,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDateTime, SYSTEM_FORM_NAMES, transformFormSchema } from "@/utils/formUtils";
 import { formEntriesAPI, formsAPI } from "@/api/forms";
 import { FormField, FormSection } from "@aatulwork/customform-renderer";
-import { clientSubsidyAPI, ClientSubsidyType, CreateClientPayload, UpdateClientSubsidyPayload } from "@/api/clientSubsidy";
+import { clientSubsidyAPI, ClientSubsidyType, CreateClientPayload, UpdateClientSubsidyPayload } from "@/api/clientScheme";
 import { FormContainer } from "@/components/form-builder/FormContainer";
 import { useAppAlert } from "@/components/common/AppAlert";
 import { clientsAPI } from "@/api/manageClient";

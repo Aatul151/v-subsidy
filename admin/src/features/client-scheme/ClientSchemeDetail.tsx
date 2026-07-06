@@ -31,7 +31,7 @@ import Grid from "@mui/material/Grid2";
 import { PageHeader } from "../../components/common/PageHeader";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { clientSubsidyAPI, UpdateClientSubsidyPayload } from "@/api/clientSubsidy";
+import { clientSubsidyAPI, UpdateClientSubsidyPayload } from "@/api/clientScheme";
 import { SYSTEM_FORM_NAMES } from "@/utils/formUtils";
 import { formEntriesAPI } from "@/api/forms";
 import dayjs from "dayjs";

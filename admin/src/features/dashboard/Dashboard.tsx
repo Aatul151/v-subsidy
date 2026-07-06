@@ -20,7 +20,7 @@ import { Dashboard as DashboardIcon } from '@mui/icons-material';
 import { PageHeader } from '@/components/common/PageHeader';
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { dashBoardAPI } from "@/api/dashboard";
-import { clientSubsidyAPI } from "@/api/clientSubsidy";
+import { clientSubsidyAPI } from "@/api/clientScheme";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { AppDrawer } from "@/components/common/AppDrawer";
