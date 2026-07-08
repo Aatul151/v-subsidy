@@ -1,5 +1,8 @@
+import getFormEntryModel from "../helpers/formEntryModelFactory.js";
 import Client from "../models/Client.js";
 import ClientCases from "../models/ClientCases.js";
+import FormDefinition from "../models/FormDefinition.js";
+import { FORM } from "../utils/codes.js";
 
 
 export const getCount = async (req, res) => {
@@ -10,15 +13,9 @@ export const getCount = async (req, res) => {
     const endOfDay = new Date(today);
     endOfDay.setHours(23, 59, 59, 999);
 
-    const [totalClients, statusCounts, expiryCounts] = await Promise.all([
+    const [totalClients, totalCases, expiryCounts, totalStatusCount] = await Promise.all([
       Client.countDocuments(),
-      ClientCases.aggregate([
-        { $match: { isArchived: false } },
-        {
-          $group: { _id: "$status", count: { $sum: 1 }, },
-        },
-      ]),
-
+      ClientCases.countDocuments(),
       ClientCases.aggregate([
         {
           $match: { isArchived: false, expireOn: { $ne: null }, },
@@ -49,17 +46,20 @@ export const getCount = async (req, res) => {
           },
         },
       ]),
+      ClientCases.aggregate([
+        {
+          $unwind: "$current_status"
+        },
+        {
+          $group: {
+            _id: "$current_status.status_id",
+            count: { $sum: 1 }
+          }
+        }
+      ])
     ]);
 
-    const counts = {
-      active: 0,
-      inactive: 0,
-      completed: 0,
-      closed: 0,
-    };
-
-    statusCounts.forEach((item) => { counts[item?._id] = item?.count; });
-
+    //#region  Date count 
     let todayExpiry = 0;
     let expired = 0;
 
@@ -72,24 +72,33 @@ export const getCount = async (req, res) => {
         expired = item?.count;
       }
     });
+    //#endregion
+
+    //#region Status Count 
+    const countMap = new Map(
+      totalStatusCount.map(item => [item?._id.toString(), item?.count])
+    );
+
+    const statusForm = await FormDefinition.findOne({ name: FORM.STATUS_FORM }).populate('module');
+    if (!statusForm) { return res.status(404).json({ success: false, message: 'Status Form definition not found' }); }
+
+    const EntryModel = getFormEntryModel(statusForm);
+    const statuses = await EntryModel.find({ formId: statusForm?._id })
+
+    const statusCount = {};
+    statuses?.forEach(status => {
+      statusCount[status?.payload?.value] = countMap?.get(status?._id?.toString()) || 0;
+    });
+    //#endregion
 
     return res.status(200).json({
       success: true,
       data: {
         totalClients,
-        totalSubsidies:
-          counts.active +
-          counts.inactive +
-          counts.completed +
-          counts.closed,
-
-        totalActiveSubsidies: counts.active,
-        totalInactiveSubsidies: counts.inactive,
-        totalCompletedSubsidies: counts.completed,
-        totalClosedSubsidies: counts.closed,
-
-        todayExpirySubsidies: todayExpiry,
-        totalExpiredSubsidies: expired,
+        totalCases: totalCases,
+        totalExpiredCase: expired,
+        todayExpiryCase: todayExpiry,
+        statusCount
       },
     });
   } catch (error) {
