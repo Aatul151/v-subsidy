@@ -255,6 +255,53 @@ export const getCaseById = async (req, res) => {
         const populatedEntries = await populateReferencesBatch([{ payload: resScheme?._doc }], validation?.form);
         const formateEntries = populatedEntries?.map((e) => { return e?.payload });
 
+        //#region  Populate current stage and status 
+        const referenceFields = extractReferenceFields(validation?.form);
+        const ref_statusField = referenceFields?.find((f) => f?.referenceFormName == FORM?.STATUS_FORM)
+        const ref_stageField = referenceFields?.find((f) => f?.referenceFormName == FORM?.STAGE_FORM)
+
+        for (const eachData of formateEntries) {
+            if (eachData.current_status) {
+                eachData.current_status = await Promise.all(
+                    eachData.current_status.map(async (status) => {
+                        const refStatus = await populateFormReference(
+                            status.status_id,
+                            ref_statusField
+                        );
+
+                        const refStage = await populateFormReference(
+                            status.stage_id,
+                            ref_stageField
+                        );
+
+                        return {
+                            ...status.toObject(),
+                            ref_status: refStatus,
+                            ref_stage: refStage
+                        };
+                    })
+                );
+            }
+
+            if (eachData.current_stage) {
+                eachData.current_stage = await Promise.all(
+                    eachData.current_stage.map(async (status) => {
+                        const refStage = await populateFormReference(
+                            status.stage_id,
+                            ref_stageField
+                        );
+
+                        return {
+                            ...status.toObject(),
+                            ref_stage: refStage
+                        };
+                    })
+                );
+            }
+        }
+        //#endregion
+
+
         return res.status(200).json({
             success: true,
             data: formateEntries
