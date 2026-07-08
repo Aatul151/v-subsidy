@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowBack, Assignment, DescriptionOutlined, TrendingUp, Visibility, Close as CloseIcon, DescriptionOutlined as DescriptionOutlinedIcon } from "@mui/icons-material";
 import {
     Box,
@@ -68,14 +68,24 @@ export default function ClientSchemeDetail({ id: propId }: any) {
     const { control, watch, reset, getValues } = useForm({
         defaultValues: {
             selectedSchemeId: '',
-            loan_sanction_date: null as Dayjs | null,
-            first_disbursement_date: null as Dayjs | null,
-            first_sale_bill_amount: '',
-            loan_amount: '',
-            disbursement_amount: '',
-            sanction_amount: '',
-            stage: "",
-            status: ""
+            sectionForm: {
+                loan_sanction_date: null as Dayjs | null,
+                first_disbursement_date: null as Dayjs | null,
+                first_sale_bill_amount: '',
+                loan_amount: '',
+                disbursement_amount: '',
+                sanction_amount: '',
+            },
+            stausForm: {
+                stage: "",
+                status: "",
+                remark: ""
+            },
+            stageForm: {
+                stage: "",
+                end_date: null as Dayjs | null,
+                remark: ""
+            }
         },
     });
 
@@ -134,22 +144,52 @@ export default function ClientSchemeDetail({ id: propId }: any) {
         placeholderData: (previousData) => previousData, // Keep previous data while fetching new page
     });
 
+    const currentStage = useMemo(() => {
+        return caseDetail?.current_stage?.find((item: any) => item.scheme_id == selectedSchemeId);
+    }, [caseDetail, selectedSchemeId]);
+
+    const currentStatus = useMemo(() => {
+        return caseDetail?.current_status?.find(
+            (item: any) =>
+                item.scheme_id == selectedSchemeId &&
+                item.stage_id == currentStage?.stage_id
+        );
+    }, [caseDetail, currentStage, selectedSchemeId]);
+
+
     useEffect(() => {
         const data = clientSubsidydetail?.[0];
         setCaseDetail(data);
         if (data) {
-            console.log("datatyuiyui",data)
             reset({
-                selectedSchemeId: data?.scheme_ref?.[0]?._id,  //default selected Scheme
-                loan_sanction_date: data?.loan_sanction_date ? dayjs(data.loan_sanction_date) : null,
-                first_disbursement_date: data?.first_disbursement_date ? dayjs(data.first_disbursement_date) : null,
-                first_sale_bill_amount: data?.first_sale_bill_amount,
-                loan_amount: data?.loan_amount,
-                disbursement_amount: data?.disbursement_amount,
-                sanction_amount: data?.sanction_amount,
+                selectedSchemeId: selectedSchemeId || data?.scheme_ref?.[0]?._id || "",
+                sectionForm: {
+                    loan_sanction_date: data?.loan_sanction_date ? dayjs(data.loan_sanction_date) : null,
+                    first_disbursement_date: data?.first_disbursement_date ? dayjs(data.first_disbursement_date) : null,
+                    first_sale_bill_amount: data?.first_sale_bill_amount || "",
+                    loan_amount: data?.loan_amount || "",
+                    disbursement_amount: data?.disbursement_amount || "",
+                    sanction_amount: data?.sanction_amount || "",
+                },
             });
         }
     }, [clientSubsidydetail, reset]);
+
+    useEffect(() => {
+        reset({
+            ...getValues(),
+            stausForm: {
+                stage: currentStatus?.stage_id || "",
+                status: currentStatus?.status_id || "",
+                remark: currentStatus?.remarks || "",
+            },
+            stageForm: {
+                stage: currentStage?.stage_id || "",
+                end_date: currentStage?.end_date ? dayjs(currentStage.end_date) : null,
+                remark: currentStage?.remarks || "",
+            }
+        });
+    }, [currentStage, currentStatus]);
 
     const handleStageStep = (selectedIdx: number, direction?: string) => {
         let nextStage = selectedIdx;
@@ -180,11 +220,11 @@ export default function ClientSchemeDetail({ id: propId }: any) {
         },
         {
             label: "Current Stage",
-            value: caseDetail?.current_stage?.find((d: any) => d?.scheme_id == selectedSchemeId)?.ref_stage?.name || '-',
+            value: currentStage?.ref_stage?.name,
         },
         {
             label: "Status",
-            value: caseDetail?.current_status?.find((d: any) => d?.scheme_id == selectedSchemeId)?.ref_status?.label || '-',
+            value: currentStatus?.ref_status?.label,
             isStatus: true
         },
         {
@@ -275,106 +315,181 @@ export default function ClientSchemeDetail({ id: propId }: any) {
     const renderTabContent = () => {
         switch (tab) {
             case "loan_form_tab":
+                const formFields = [
+                    { name: "loan_sanction_date", label: "Loan Sanction Date", type: "date" },
+                    { name: "first_disbursement_date", label: "First Disbursement Date", type: "date" },
+                    { name: "first_sale_bill_amount", label: "First Sale Bill Amount", type: "number" },
+                    { name: "loan_amount", label: "Loan Amount", type: "number" },
+                    { name: "disbursement_amount", label: "Disbursement Amount", type: "number" },
+                    { name: "sanction_amount", label: "Sanction Amount", type: "number" }
+                ];
+
                 return (
                     <>
-                        <Box sx={{ display: "flex", gap: "4px" }}>
+                        <Box
+                            sx={{
+                                display: "grid",
+                                gridTemplateColumns: "repeat(1, 1fr)",
+                                gap: 2,
+
+                            }}
+                        >
                             <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                <Controller
-                                    name="loan_sanction_date"
-                                    control={control}
-                                    render={({ field }) => (
-                                        <DatePicker
-                                            label="Loan Sanction Date"
-                                            value={field.value}
-                                            slotProps={{ textField: { size: "small" } }}
-                                            format="DD/MM/YYYY"
-                                            onChange={(value) => field.onChange(value)}
-                                        />
-                                    )}
-                                />
+                                {formFields?.map(({ name, label, type }: any) => (
+                                    <Controller
+                                        key={name}
+                                        name={`sectionForm.${name}` as any}
+                                        control={control}
+                                        render={({ field }) =>
 
-                                <Controller
-                                    name="first_disbursement_date"
-                                    control={control}
-                                    render={({ field }) => (
-                                        <DatePicker
-                                            label="First Disbursement Date"
-                                            value={field.value}
-                                            slotProps={{ textField: { size: "small" } }}
-                                            format="DD/MM/YYYY"
-                                            onChange={(value) => field.onChange(value)}
-                                        />
-                                    )}
-                                />
+                                            type === "date" ? (
+                                                <DatePicker
+                                                    label={label}
+                                                    value={field.value}
+                                                    format="DD/MM/YYYY"
+                                                    slotProps={{
+                                                        textField: {
+                                                            size: "small",
+                                                            fullWidth: true,
+                                                        },
+                                                    }}
+                                                    onChange={field.onChange}
+                                                />
+                                            ) : (
+                                                <TextField
+                                                    {...field}
+                                                    label={label}
+                                                    type={type}
+                                                    size="small"
+                                                    fullWidth
+                                                    value={field.value ?? ""}
+                                                    onChange={(e) => field.onChange(e.target.value)}
+                                                />
+                                            )
+                                        }
+                                    />
+                                ))}
                             </LocalizationProvider>
-                        </Box >
-
-                        <Controller
-                            name="first_sale_bill_amount"
-                            control={control}
-                            render={({ field }) => (
-                                <TextField
-                                    {...field}
-                                    label="First Sale Bill Amount"
-                                    type="number"
-                                    size="small"
-                                    onChange={(value) => field.onChange(value)}
-                                    fullWidth
-                                />
-                            )}
-                        />
-                        <Controller
-                            name="loan_amount"
-                            control={control}
-                            render={({ field }) => (
-                                <TextField
-                                    {...field}
-                                    label="Loan Amount"
-                                    type="number"
-                                    size="small"
-                                    onChange={(value) => field.onChange(value)}
-                                    fullWidth
-                                />
-                            )}
-                        />
-                        <Controller
-                            name="disbursement_amount"
-                            control={control}
-                            render={({ field }) => (
-                                <TextField
-                                    {...field}
-                                    label="Disbursement Amount"
-                                    type="number"
-                                    size="small"
-                                    onChange={(value) => field.onChange(value)}
-                                    fullWidth
-                                />
-                            )}
-                        />
-                        <Controller
-                            name="sanction_amount"
-                            control={control}
-                            render={({ field }) => (
-                                <TextField
-                                    {...field}
-                                    label="Sanction Amount"
-                                    type="number"
-                                    size="small"
-                                    onChange={(value) => field.onChange(value)}
-                                    fullWidth
-                                />
-                            )}
-                        />
-
+                        </Box>
                     </>
                 );
 
             case "manage_status_tab":
-                return <>Manage Status Content
-                </>;
+                const statusFormField = [
+                    { name: "stage", label: "Stage", type: "dropdown", options: stageList, disabled: true },
+                    { name: "status", label: "Status", type: "dropdown", options: statusList },
+                    { name: "remark", label: "Remark", type: "text" },
 
+                ];
+                return <>
+                    <Box
+                        sx={{
+                            display: "grid",
+                            gridTemplateColumns: "repeat(1, 1fr)",
+                            gap: 2,
+                        }}
+                    >
+                        {statusFormField?.map(({ name, label, type, options, disabled = false }: any) => (
+                            <Controller
+                                key={name}
+                                name={`stausForm.${name}` as any}
+                                control={control}
+                                render={({ field }) =>
+                                    type === "dropdown" ? (
+                                        <FormControl size="small" fullWidth>
+                                            <InputLabel id="client-label">{label}</InputLabel>
+                                            <Select
+                                                {...field}
+                                                onChange={(value) => field.onChange(value)}
+                                                labelId="stage-label"
+                                                label="stage"
+                                                disabled={disabled}
+                                            >
+                                                {options?.map((val: any) => (<MenuItem key={val?._id} value={val?._id}>{val?.payload?.name || val?.payload?.label}</MenuItem>))}
+                                            </Select>
+                                        </FormControl>
+                                    ) : (
+                                        <TextField
+                                            {...field}
+                                            label={label}
+                                            type={type}
+                                            size="small"
+                                            fullWidth
+                                            value={field.value ?? ""}
+                                            onChange={(e) => field.onChange(e.target.value)}
+                                        />
+                                    )
+                                }
+                            />
+                        ))}
+                    </Box>
+                </>;
             case "manage_stage_tab":
-                return <>Manage Stage Content</>;
+                const stageFormField = [
+                    { name: "stage", label: "Stage", type: "dropdown", options: stageList },
+                    { name: "end_date", label: "End date", type: "date" },
+                    { name: "remark", label: "Remark", type: "text" },
+
+                ];
+                return <>
+                    <Box
+                        sx={{
+                            display: "grid",
+                            gridTemplateColumns: "repeat(1, 1fr)",
+                            gap: 2,
+                        }}
+                    >
+                        <LocalizationProvider dateAdapter={AdapterDayjs}>
+                            {stageFormField?.map(({ name, label, type, options, disabled = false }: any) => (
+                                <Controller
+                                    key={name}
+                                    name={`stageForm.${name}` as any}
+                                    control={control}
+                                    render={({ field }) =>
+                                        type === "dropdown" ? (
+                                            <FormControl size="small" fullWidth>
+                                                <InputLabel id="client-label">{label}</InputLabel>
+                                                <Select
+                                                    {...field}
+                                                    onChange={(value) => field.onChange(value)}
+                                                    labelId="stage-label"
+                                                    label="stage"
+                                                    disabled={disabled}
+                                                >
+                                                    {options?.map((val: any) => (<MenuItem key={val?._id} value={val?._id}>{val?.payload?.name || val?.payload?.label}</MenuItem>))}
+                                                </Select>
+                                            </FormControl>
+                                        ) : type === "date" ? (
+                                            <DatePicker
+                                                label={label}
+                                                value={field.value}
+                                                format="DD/MM/YYYY"
+                                                slotProps={{
+                                                    textField: {
+                                                        size: "small",
+                                                        fullWidth: true,
+                                                    },
+                                                }}
+                                                onChange={field.onChange}
+                                            />
+                                        ) : (
+                                            <TextField
+                                                {...field}
+                                                label={label}
+                                                type={type}
+                                                size="small"
+                                                fullWidth
+                                                value={field.value ?? ""}
+                                                onChange={(e) => field.onChange(e.target.value)}
+                                            />
+                                        )
+                                    }
+                                />
+                            ))}
+                        </LocalizationProvider>
+
+                    </Box>
+                </>;
 
             default:
                 return null;
@@ -384,18 +499,45 @@ export default function ClientSchemeDetail({ id: propId }: any) {
     const handleSave = async () => {
         try {
             let payload: any = {};
-            if (tab === "loan_form_tab") {
-                const formValues = getValues();
-                console.log("formValues", formValues)
-                payload = {
-                    loan_sanction_date: dayjs(formValues.loan_sanction_date).format("YYYY-MM-DD"),
-                    first_disbursement_date: dayjs(formValues.first_disbursement_date).format("YYYY-MM-DD"),
-                    first_sale_bill_amount: formValues.first_sale_bill_amount,
-                    loan_amount: formValues.loan_amount,
-                    disbursement_amount: formValues.disbursement_amount,
-                    sanction_amount: formValues.sanction_amount,
-                };
+
+            switch (tab) {
+                case 'loan_form_tab':
+                    const formValues = getValues()?.sectionForm;
+                    payload = {
+                        loan_sanction_date: dayjs(formValues.loan_sanction_date).format("YYYY-MM-DD"),
+                        first_disbursement_date: dayjs(formValues.first_disbursement_date).format("YYYY-MM-DD"),
+                        first_sale_bill_amount: formValues.first_sale_bill_amount,
+                        loan_amount: formValues.loan_amount,
+                        disbursement_amount: formValues.disbursement_amount,
+                        sanction_amount: formValues.sanction_amount,
+                    };
+                    break;
+
+                case 'manage_status_tab':
+                    const statusValues = getValues()?.stausForm;
+                    payload = {
+                        status: {
+                            scheme_id: selectedSchemeId,
+                            stage_id: statusValues?.stage,
+                            status_id: statusValues?.status,
+                            remarks: statusValues?.remark,
+                        }
+                    }
+                    break;
+
+                case 'manage_stage_tab':
+                    const stageValues = getValues()?.stageForm;
+                    payload = {
+                        stage: {
+                            scheme_id: selectedSchemeId,
+                            stage_id: stageValues?.stage,
+                            end_date: stageValues?.end_date,
+                            remarks: stageValues?.remark,
+                        }
+                    }
+                    break;
             }
+
             await updateMutation.mutateAsync({ id, payload });
             queryClient.invalidateQueries({ queryKey: ['clientSubsidydetail'] })
         } catch (error) {
@@ -607,24 +749,19 @@ export default function ClientSchemeDetail({ id: propId }: any) {
                                 </Box>
 
                                 <Divider sx={{ mb: 1 }} />
-                                <Box
-                                    component="form"
-                                    width={500}
-                                    display="flex"
-                                    flexDirection="column"
-                                    alignItems="center"
-                                    gap={2}
-                                >
-                                    {renderTabContent()}
-
-                                    <Button
-                                        type="button"
-                                        variant="contained"
-                                        sx={{ alignSelf: "flex-end" }}
-                                        onClick={handleSave}
-                                    >
-                                        Save
-                                    </Button>
+                                <Box component="form" sx={{ width: "500px" }}>
+                                    <Box sx={{ marginTop: "20px", marginBottom: "10px", display: "flex", gap: 3, flexDirection: "column" }}>
+                                        {renderTabContent()}
+                                    </Box>
+                                    <Box sx={{ display: "flex", justifyContent: "end" }}>
+                                        <Button
+                                            type="button"
+                                            variant="contained"
+                                            onClick={handleSave}
+                                        >
+                                            Save
+                                        </Button>
+                                    </Box>
                                 </Box>
                             </Paper>
                         </Grid>

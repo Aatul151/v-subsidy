@@ -352,7 +352,9 @@ export const updateClientCase = async (req, res) => {
                 fieldToUpdate['current_stage'] = updateCurrentStage(
                     clientCase.current_stage,
                     stage?.scheme_id,
-                    stage?.stage_id
+                    stage?.stage_id,
+                    stage?.end_date,
+                    stage?.remarks ?? "",
                 );
             };
 
@@ -361,7 +363,8 @@ export const updateClientCase = async (req, res) => {
                     clientCase.current_status,
                     status?.scheme_id,
                     status?.stage_id,
-                    status?.status_id
+                    status?.status_id,
+                    status?.remarks ?? "",
                 );
             };
         }
@@ -384,8 +387,8 @@ export const updateClientCase = async (req, res) => {
         if (!resScheme || !resScheme._id) { return res.status(404).json({ success: false, message: "Case not found.", }); }
 
         const promises = [];
-        if (status?.scheme_id && status?.stage_id && status?.status_id) {
             const reqUser = req.user
+        if (status?.scheme_id && status?.stage_id && status?.status_id) {
 
             promises.push(
                 saveCaseStatusProgress({

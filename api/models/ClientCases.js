@@ -48,7 +48,12 @@ const clientCasesSchema = new mongoose.Schema(
       status_id: {
         type: mongoose.Schema.Types.ObjectId,
         // ref: "Status"
-      }
+      },
+      remarks: {
+        type: String,
+        trim: true,
+        default: "",
+      },
     }],
 
     current_stage: [{
@@ -59,6 +64,15 @@ const clientCasesSchema = new mongoose.Schema(
       stage_id: {
         type: mongoose.Schema.Types.ObjectId,
         // ref: "Stage"
+      },
+      end_date: {
+        type: Date,
+        default: null,
+      },
+      remarks: {
+        type: String,
+        trim: true,
+        default: "",
       },
     }],
 
