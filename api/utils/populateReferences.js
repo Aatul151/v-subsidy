@@ -42,7 +42,7 @@ const toPlainObject = (entry) => {
  * @param {Object} refField - The reference field configuration
  * @returns {Promise<Object|Array|null>} - Populated form entry data or null if not found
  */
-const populateFormReference = async (fieldValue, refField) => {
+export const populateFormReference = async (fieldValue, refField) => {
   if (!refField.referenceFormName) {
     return null;
   }

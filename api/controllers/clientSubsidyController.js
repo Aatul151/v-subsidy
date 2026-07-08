@@ -6,12 +6,13 @@ import { deleteFile, sanitizeFileName, uploadFile } from "../services/fileUpload
 import { validateFormAccess } from "../services/permissionService.js";
 import { buildMongoFilter } from "../utils/buildMongoFilter.js";
 import { buildCaseFilter, generateUniqueNo, getCaseProgressData, saveCaseStageProgress, saveCaseStatusProgress, updateCurrentStage, updateCurrentStatus } from "../utils/commonFunctions.js";
-import { populateReferencesBatch } from "../utils/populateReferences.js";
+import { populateFormReference, populateReferencesBatch } from "../utils/populateReferences.js";
 import fs from 'fs/promises';
 import path from 'path';
 import { FORM } from "../utils/codes.js";
 import { log } from "console";
 import CaseStatusProgress from "../models/case/StatusProgress.js";
+import extractReferenceFields from "../utils/extractReferenceFields.js";
 
 const CLIENT_CASE_FORM = FORM.CLIENT_CASES_FORM;
 
@@ -377,10 +378,29 @@ export const fetchStatusHistory = async (req, res) => {
 
         const filter = { case_id, scheme_id };
         if (stage_id) { filter.stage_id = stage_id; }
+        const history = await CaseStatusProgress.find(filter).sort({ createdAt: 1 }).lean();
 
-        const history = await CaseStatusProgress.find(filter)
-            .sort({ createdAt: 1 }) // or createdAt: 1
-            .lean();
+        const status_form = await validateFormAccess(CLIENT_CASE_FORM, req.user?.role, "read");
+        const referenceFields = extractReferenceFields(status_form?.form);
+
+        const ref_statusField = referenceFields?.find((f) => f?.referenceFormName == FORM?.STATUS_FORM)
+        const ref_stageField = referenceFields?.find((f) => f?.referenceFormName == FORM?.STAGE_FORM)
+        const ref_schemeField = referenceFields?.find((f) => f?.referenceFormName == FORM?.SCHEME_FORM)
+
+        for (let index = 0; index < history?.length; index++) {
+            const eachData = history?.[index];
+
+            if (eachData?.status_id) {
+                eachData['ref_status'] = await populateFormReference(eachData?.status_id, ref_statusField)
+            }
+            if (eachData?.stage_id) {
+                eachData['ref_stage'] = await populateFormReference(eachData?.stage_id, ref_stageField)
+            }
+            if (eachData?.scheme_id) {
+                const resData = await populateFormReference(eachData?.scheme_id, ref_schemeField)
+                eachData['ref_scheme'] = resData?.[0]
+            }
+        }
 
         return res.status(200).json({ success: true, data: history });
 
