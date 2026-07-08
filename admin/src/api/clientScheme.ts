@@ -134,6 +134,6 @@ export const clientSubsidyAPI = {
      * @param clientCaseId - client scheme ID
      */
     delete: async (clientCaseId: string): Promise<void> => {
-        await axiosInstance.delete(`/client-subsidy/${clientCaseId}`);
+        await axiosInstance.delete(`/client-case/${clientCaseId}`);
     },
 }

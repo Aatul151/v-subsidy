@@ -16,7 +16,7 @@ import { PageHeader } from "@/components/common/PageHeader";
 import { PageContent } from "@/components/common/PageContent";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDateTime, SYSTEM_FORM_NAMES, transformFormSchema } from "@/utils/formUtils";
-import { formEntriesAPI, formsAPI } from "@/api/forms";
+import { formsAPI } from "@/api/forms";
 import { FormField, FormSection } from "@aatulwork/customform-renderer";
 import { clientSubsidyAPI, ClientSchemeType, CreateClientPayload, UpdateClientSchemePayload } from "@/api/clientScheme";
 import { FormContainer } from "@/components/form-builder/FormContainer";
@@ -25,6 +25,7 @@ import { clientsAPI } from "@/api/manageClient";
 import { usersAPI } from "@/api/users";
 import utc from "dayjs/plugin/utc";
 import { getAvatarColor } from "@/utils/iconMap";
+import { useMasterData } from "@/context/MasterData";
 
 dayjs.extend(utc);
 
@@ -50,6 +51,7 @@ export default function ClientScheme() {
     const [filterStage, setFilterStage] = useState("");
     const [isExpanded, setIsExpanded] = useState(false);
 
+    const { statusList, stageList } = useMasterData();
     const { control, watch, reset } = useForm({
         defaultValues: {
             client: [],
@@ -126,40 +128,6 @@ export default function ClientScheme() {
         queryKey: ['users'],
         queryFn: async () => { return await usersAPI.getAll(1, 10); },
         placeholderData: (previousData) => previousData,
-    });
-
-    const { data: statusList = [] as any } = useQuery({
-        queryKey: ['formEntries', SYSTEM_FORM_NAMES.STATUS],
-        queryFn: async () => {
-            try {
-                const response = await formEntriesAPI.getAll({
-                    formName: SYSTEM_FORM_NAMES.STATUS,
-                    page: 1,
-                    limit: 10,
-                });
-                return response.data || [];
-            } catch (error) {
-                return [];
-            }
-        },
-
-    });
-
-    const { data: stageList = [] as any } = useQuery({
-        queryKey: ['formEntries', SYSTEM_FORM_NAMES.STAGES],
-        queryFn: async () => {
-            try {
-                const response = await formEntriesAPI.getAll({
-                    formName: SYSTEM_FORM_NAMES.STAGES,
-                    page: 1,
-                    limit: 10,
-                });
-                return response.data || [];
-            } catch (error) {
-                return [];
-            }
-        },
-
     });
 
     const formSchema = formSchemaRaw;
@@ -443,17 +411,8 @@ export default function ClientScheme() {
                     width: 250,
                     order: orderMap.current_stage,
                     renderCell: (params: any) => {
-                        const stage = params?.row?.current_stage_ref?.label;
-                        const bgColor = params?.row?.current_stage_ref?.bgColor;
-                        return (
-                            <Chip
-                                label={stage || "-"}
-                                size="small"
-                                sx={{
-                                    backgroundColor: bgColor,
-                                }}
-                            />
-                        );
+                        const stage = stageList?.filter((list) => list?._id === params?.row?.current_stage?.[0]?.stage_id)?.[0]?.payload?.name;
+                        return stage;
                     },
                     valueGetter: (_value, row: any) => { return row?.current_stage_ref?.label; }
                 });
@@ -477,7 +436,7 @@ export default function ClientScheme() {
                         return (
                             <Box sx={{ display: "flex", gap: "5px", alignItems: "center" }}>
                                 <Typography>{assign_executive}</Typography>
-                                <Typography fontSize="12px">({params?.row?.scheme_ref?.length - 1}+ More)</Typography>
+                                {params?.row?.scheme_ref?.length > 1 && (<Typography fontSize="12px">({params?.row?.scheme_ref?.length - 1}+ More)</Typography>)}
                             </Box>
                         );
                     },
@@ -520,8 +479,17 @@ export default function ClientScheme() {
                     width: 200,
                     order: orderMap.status,
                     renderCell: (params: any) => {
-                        const status = params?.row?.status;
-                        return status ? status.charAt(0).toUpperCase() + status.slice(1) : "";
+                        const status = statusList?.filter((list) => list?._id === params?.row?.current_status?.[0]?.status_id);
+                        const stageLabel = status?.[0]?.payload?.label;
+                        const bgColor = status?.[0]?.payload?.bgColor;
+                        return (
+                            <Chip
+                                label={stageLabel || "-"}
+                                size="small"
+                                sx={{
+                                    backgroundColor: bgColor,
+                                }}
+                            />)
                     },
                     valueGetter: (_value, row: any) => { return row?.status; }
                 });
@@ -701,17 +669,18 @@ export default function ClientScheme() {
             orderIndex: data?.payload?.order_index,
 
             data: (allClientSubsidy || [])
-                ?.filter((item: any) => item?.current_stage == data?._id)
+                ?.filter((item: any) => item?.current_status?.[0]?.status_id == data?._id)
                 ?.map((item: any) => ({
                     id: item?._id,
-                    title: item?.subsidy_ref?.subsidy_name,
-                    description: item?.subsidy_ref?.description,
+                    scheme_ref: item?.scheme_ref,
+                    description: item?.scheme_ref?.[0]?.description,
                     person: item?.client?.name,
                     createdAt: item?.createdAt,
                     current_stage: item?.current_stage,
                     case_number: item?.case_number,
                     expireOn: dayjs.utc(item?.expireOn).format("DD-MMM-YYYY"),
-                    totalRequirdDocs: item?.subsidy_ref?.requird_docs?.length
+                    totalRequirdDocs: item?.scheme_ref?.requird_docs?.length,
+                    clientId: item?.client?._id
                 })),
 
             pagination: {
@@ -1031,9 +1000,7 @@ export default function ClientScheme() {
                 title={formMode === 'edit' ? "Edit Case" : formMode === 'view' ? "View Case" : 'Add Case'}
                 mode={formMode}
                 isLoading={createMutation.isPending || updateMutation.isPending}
-                onSuccess={() => {
-                    handleActions(false, null, 'view');
-                }}
+                onSuccess={() => { handleActions(false, null, 'view'); }}
                 anchor="right"
                 drawerWidth={1000}
             />

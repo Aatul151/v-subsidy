@@ -6,6 +6,7 @@ import { useAuthStore } from './store/authStore';
 import { useThemeStore } from './store/themeStore';
 import { useSettingsStore } from './store/settingsStore';
 import { createAppTheme } from './theme/theme';
+import { MasterDataProvider } from './context/MasterData';
 
 // Create a client for React Query
 const queryClient = new QueryClient({
@@ -103,7 +104,9 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <AppRouter />
+        <MasterDataProvider>
+          <AppRouter />
+        </MasterDataProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );
