@@ -320,7 +320,7 @@ export const getCaseById = async (req, res) => {
 export const updateClientCase = async (req, res) => {
     try {
         const { id } = req.params;
-        const { client, assigned_executive, remarks, expireOn, documents, submitted_docs, stage, status } = req.body;
+        const { client, assigned_executive, remarks, expireOn, documents, submitted_docs, stage, status, loan_sanction_date, first_disbursement_date, first_sale_bill_amount, loan_amount, disbursement_amount, sanction_amount } = req.body;
 
         const validation = await validateFormAccess(CLIENT_CASE_FORM, req.user?.role, "update");
         if (!validation.success) {
@@ -335,6 +335,14 @@ export const updateClientCase = async (req, res) => {
         if (remarks !== undefined) fieldToUpdate.remarks = remarks;
         if (documents !== undefined) fieldToUpdate.documents = documents;
         if (submitted_docs !== undefined) fieldToUpdate.submitted_docs = submitted_docs;
+
+        // FORM SECTION
+        if (loan_sanction_date !== undefined) fieldToUpdate.loan_sanction_date = loan_sanction_date;
+        if (first_disbursement_date !== undefined) fieldToUpdate.first_disbursement_date = first_disbursement_date;
+        if (first_sale_bill_amount !== undefined) fieldToUpdate.first_sale_bill_amount = first_sale_bill_amount;
+        if (loan_amount !== undefined) fieldToUpdate.loan_amount = loan_amount;
+        if (disbursement_amount !== undefined) fieldToUpdate.disbursement_amount = disbursement_amount;
+        if (sanction_amount !== undefined) fieldToUpdate.sanction_amount = sanction_amount;
 
         //update current status or stage field
         if (stage?.scheme_id || status?.scheme_id) {

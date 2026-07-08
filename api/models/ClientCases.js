@@ -36,7 +36,7 @@ const clientCasesSchema = new mongoose.Schema(
       default: "",
     },
 
-    current_status : [{
+    current_status: [{
       scheme_id: {
         type: mongoose.Schema.Types.ObjectId,
         // ref: "Scheme"
@@ -51,7 +51,7 @@ const clientCasesSchema = new mongoose.Schema(
       }
     }],
 
-    current_stage :[{
+    current_stage: [{
       scheme_id: {
         type: mongoose.Schema.Types.ObjectId,
         // ref: "Scheme"
@@ -66,6 +66,12 @@ const clientCasesSchema = new mongoose.Schema(
     documents: [], //upload aaray
     submitted_docs: [],
 
+    loan_sanction_date: { type: Date, default: null },
+    first_disbursement_date: { type: Date, default: null },
+    first_sale_bill_amount: { type: Number, default: null },
+    loan_amount: { type: Number, default: null },
+    disbursement_amount: { type: Number, default: null },
+    sanction_amount: { type: Number, default: null },
 
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
