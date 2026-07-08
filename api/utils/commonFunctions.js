@@ -36,7 +36,10 @@ export const buildCaseFilter = ({
     stage_id,
     status_id,
     assigned_executive,
-    isArchived = false
+    isArchived = false,
+    expireFrom,
+    expireTo,
+    expired
 }) => {
     const filter = { isArchived };
     const andConditions = [];
@@ -76,6 +79,26 @@ export const buildCaseFilter = ({
         andConditions.push({
             current_status: { $elemMatch: statusMatch }
         });
+    }
+
+    if (expireFrom || expireTo) {
+        filter.expireOn = {};
+        if (expireFrom) {
+            const fromDate = new Date(expireFrom);
+            fromDate.setHours(0, 0, 0, 0);
+            filter.expireOn.$gte = fromDate;
+        }
+
+        if (expireTo) {
+            const toDate = new Date(expireTo);
+            toDate.setHours(23, 59, 59, 999);
+            filter.expireOn.$lte = toDate;
+        }
+    }
+    if (expired == "true") {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        filter.expireOn = { $lt: today, $ne: null };
     }
 
     if (andConditions.length) { filter.$and = andConditions }

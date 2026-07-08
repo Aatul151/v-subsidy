@@ -103,7 +103,7 @@ export const createClientCase = async (req, res) => {
 // Fetch All
 export const getClientCases = async (req, res) => {
     try {
-        const { case_number, client, scheme, status_id, assigned_executive, stage_id, sortBy = "createdAt", sortType = "DESC", page = 1, limit = 10, isArchived = false } = req.query;
+        const { case_number, client, scheme, status_id, assigned_executive, stage_id, skip: customSkip, expireFrom, expireTo, expired, sortBy = "createdAt", sortType = "DESC", page = 1, limit = 10, isArchived = false } = req.query;
 
         const validation = await validateFormAccess(CLIENT_CASE_FORM, req.user?.role, "read");
         if (!validation.success) {
@@ -118,6 +118,9 @@ export const getClientCases = async (req, res) => {
             stage_id,
             status_id,
             assigned_executive,
+            expireFrom,
+            expireTo,
+            expired,
             isArchived: isArchived
         });
         //#endregion
@@ -125,16 +128,88 @@ export const getClientCases = async (req, res) => {
         const currentPage = Number(page);
         const pageSize = Number(limit);
         const sortDirection = sortType?.toUpperCase() === "DESC" ? -1 : 1;
+        const skip = customSkip !== undefined ? Number(customSkip) : (currentPage - 1) * pageSize;
 
-        const [records, totalRecords] = await Promise.all([
+        const [records, totalRecords, statusCombinations] = await Promise.all([
             ClientCases.find(filter)
                 .select("-stageHistory -isArchived -archivedBy -archivedAt")
                 .populate("client")
                 .sort({ [sortBy]: sortDirection })
+                .skip(skip)
                 .limit(pageSize),
 
-            ClientCases.countDocuments(filter)
+            ClientCases.countDocuments(filter),
+
+            ClientCases.aggregate([
+                { $match: filter },
+                { $unwind: "$current_status" },
+                ...(scheme ? [{ $match: { "current_status.scheme_id": new mongoose.Types.ObjectId(scheme) } }] : []),
+                {
+                    $group: {
+                        _id: "$_id",
+                        statusIds: { $addToSet: { $toString: "$current_status.status_id" } }
+                    }
+                },
+                { $unwind: "$statusIds" },
+                { $sort: { "statusIds": 1 } },
+                {
+                    $group: {
+                        _id: "$_id",
+                        statusCombination: { $push: "$statusIds" }
+                    }
+                },
+                {
+                    $group: {
+                        _id: "$statusCombination",
+                        count: { $sum: 1 }
+                    }
+                }
+            ])
         ]);
+
+        // Track what actually got loaded in this specific batch payload
+        const loadedCombinationCounts = {};
+
+        records.forEach(record => {
+            if (Array.isArray(record.current_status)) {
+                // Collect, sanitize, and sort current status string items
+                const rawArray = record.current_status
+                    ?.filter(stat => !scheme || stat?.scheme_id?.toString() === scheme.toString())
+                    ?.map(stat => stat.status_id?.toString())
+                    ?.filter(Boolean);
+
+                const sortedCombinationString = rawArray.sort().join(",");
+
+                if (sortedCombinationString) {
+                    loadedCombinationCounts[sortedCombinationString] = (loadedCombinationCounts[sortedCombinationString] || 0) + 1;
+                }
+            }
+        });
+
+        const statusCountsWithPagination = statusCombinations?.map(comboItem => {
+            const comboKey = [...comboItem._id].sort().join(",");
+            const totalComboCount = comboItem?.count || 0;
+            const loadedInThisSlice = loadedCombinationCounts[comboKey] || 0;
+
+            let nextSkip = 0;
+            let hasNextPage = false;
+
+            if (status_id) {
+                const totalLoadedSoFar = skip + loadedInThisSlice;
+                hasNextPage = totalLoadedSoFar < totalComboCount;
+                nextSkip = totalLoadedSoFar;
+            } else {
+                hasNextPage = totalComboCount > loadedInThisSlice;
+                nextSkip = loadedInThisSlice;
+            }
+
+            return {
+                statusId: comboItem?._id, // Returns the clean array format requested
+                totalCount: totalComboCount,
+                loadedCount: nextSkip,
+                hasNextPage: hasNextPage
+            };
+        });
 
         // Populate Fields
         const data = records.map((e) => ({ payload: e?._doc }));
@@ -150,12 +225,13 @@ export const getClientCases = async (req, res) => {
                 totalPages: Math.ceil(totalRecords / pageSize),
                 hasNextPage: (currentPage * pageSize) < totalRecords,
                 hasPrevPage: currentPage > 1,
+                statusCounts: statusCountsWithPagination, // Swapped field payload tracking to status metrics
             },
             data: formateEntries
         });
 
     } catch (error) {
-        return res.status(500).json({ success: false, message: "Failed to fetch client subsidies.", error: error.message });
+        return res.status(500).json({ success: false, message: "Failed to fetch case.", error: error.message });
     }
 };
 
