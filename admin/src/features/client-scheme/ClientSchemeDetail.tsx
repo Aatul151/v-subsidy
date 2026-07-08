@@ -52,17 +52,17 @@ export default function ClientSchemeDetail({ id: propId }: any) {
     const { id: paramId } = useParams();
     const id = propId || paramId;
 
-    const [subsidyDetail, setSubsidyDetail] = useState<any>(null);
+    const [schemeDetail, setSchemeDetail] = useState<any>(null);
     const [documentMode, setDocumentMode] = useState<any>(null);
     const [openDocumentList, setOpenDocumentList] = useState(false);
     const [activeStage, setActiveStage] = useState(0);
     const [submittedDocs, setSubmittedDocs] = useState<string[]>([]);
 
     const { control, watch, reset } = useForm({
-        defaultValues: { current_stage: '', status: '', },
+        defaultValues: { current_stage: '', status: '', selectedSchemeId: '' },
     });
 
-    const { current_stage, status }: any = watch();
+    const { current_stage, status, selectedSchemeId }: any = watch();
 
     const { data: statusList = [] } = useQuery({
         queryKey: ['formEntries', SYSTEM_FORM_NAMES.STATUS],
@@ -80,9 +80,9 @@ export default function ClientSchemeDetail({ id: propId }: any) {
 
     useEffect(() => {
         if (openDocumentList) {
-            setSubmittedDocs(subsidyDetail?.submitted_docs || []);
+            setSubmittedDocs(schemeDetail?.submitted_docs || []);
         }
-    }, [openDocumentList, subsidyDetail]);
+    }, [openDocumentList, schemeDetail]);
 
     const { data: documentsList = [] } = useQuery({
         queryKey: ['formEntries', SYSTEM_FORM_NAMES.ALL_DOCUMENTS],
@@ -111,7 +111,7 @@ export default function ClientSchemeDetail({ id: propId }: any) {
     });
 
     const sortedStages = [...(statusList || [])].sort((a: any, b: any) => a?.payload?.order_index - b?.payload?.order_index);
-    const currentStageIndex = sortedStages.findIndex((stage: any) => stage?.payload?.label === subsidyDetail?.current_stage_ref?.label);
+    const currentStageIndex = sortedStages.findIndex((stage: any) => stage?.payload?.label === schemeDetail?.current_stage_ref?.label);
 
     useEffect(() => {
         if (currentStageIndex >= 0) {
@@ -133,11 +133,12 @@ export default function ClientSchemeDetail({ id: propId }: any) {
 
     useEffect(() => {
         const data = clientSubsidydetail?.[0];
-        setSubsidyDetail(data);
+        setSchemeDetail(data);
         if (data) {
             reset({
                 status: data?.status,
                 current_stage: data?.current_stage,
+                selectedSchemeId: data?.scheme_ref?.[0]?._id  //default selected
             });
         }
     }, [clientSubsidydetail, reset]);
@@ -151,78 +152,97 @@ export default function ClientSchemeDetail({ id: propId }: any) {
     const headerFields = [
         {
             label: "Case No",
-            value: subsidyDetail?.case_number || '-',
+            value: schemeDetail?.case_number || '-',
         },
         {
-            label: "Subsidy Name",
-            value: subsidyDetail?.subsidy_ref?.subsidy_name || '-',
+            label: "Scheme",
+            value: schemeDetail?.scheme_ref?.find((e: any) => e?._id == selectedSchemeId)?.scheme_name || '-',
         },
         {
             label: "Client Name",
-            value: subsidyDetail?.client?.name || '-',
+            value: schemeDetail?.client?.name || '-',
         },
         {
             label: "Assigned Executive",
-            value: subsidyDetail?.assigned_executive?.name || '-',
+            value: schemeDetail?.assigned_executive?.name || '-',
         },
         {
             label: "Expire On",
-            value: dayjs.utc(subsidyDetail?.expireOn).format("DD-MM-YYYY") || '-',
+            value: dayjs.utc(schemeDetail?.expireOn).format("DD-MMM-YYYY") || '-',
         },
         {
             label: "Current Stage",
-            value: subsidyDetail?.current_stage_ref?.label || '-',
-            isStatus: true
+            value: schemeDetail?.current_stage?.find((d: any) => d?.scheme_id == selectedSchemeId)?.ref_stage?.name || '-',
         },
         {
             label: "Status",
-            value: subsidyDetail?.status || '-',
+            value: schemeDetail?.current_status?.find((d: any) => d?.scheme_id == selectedSchemeId)?.ref_status?.label || '-',
+            isStatus: true
         },
         {
             label: "Department",
-            value: subsidyDetail?.subsidy_ref?.government_department || '-',
+            value: schemeDetail?.scheme_ref?.find((d: any) => d?._id == selectedSchemeId)?.government_department || '-',
         },
         {
             label: "Created At",
-            value: dayjs(subsidyDetail?.createdAt).format("DD-MM-YYYY") || '-',
+            value: dayjs(schemeDetail?.createdAt).format("DD-MM-YYYY") || '-',
         },
         {
             label: "Updated At",
-            value: dayjs(subsidyDetail?.updatedAt).format("DD-MM-YYYY") || '-',
+            value: dayjs(schemeDetail?.updatedAt).format("DD-MM-YYYY") || '-',
         },
     ];
 
     const goToListingPage = () => { navigate('/client-case') }
 
     const actionButton = (
-        <ButtonGroup
-            variant="outlined"
-            size={'small'}
-            sx={{
-                '& .MuiButtonGroup-grouped': {
-                    minWidth: 'auto',
-                    padding: '5px 10px',
-                },
-            }}
-        >
-            <Tooltip title="Go Back" placement="bottom" arrow>
-                <Button
-                    onClick={goToListingPage}
-                    variant={'contained'}
-                    color="primary"
-                >
-                    <ArrowBack fontSize="small" />
-                </Button>
-            </Tooltip>
-        </ButtonGroup>
+        <>
+            <Controller
+                name="selectedSchemeId"
+                control={control}
+                render={({ field }) => (
+                    <FormControl sx={{ width: 200 }} size="small">
+                        <InputLabel id="client-label">Scheme </InputLabel>
+                        <Select
+                            {...field}
+                            onChange={(e) => { field.onChange(e); }}
+                            labelId="scheme-label"
+                            label="scheme"
+                        >
+                            {schemeDetail?.scheme_ref?.map((val: any) => (<MenuItem key={val?._id} value={val?._id}>{val?.scheme_name}</MenuItem>))}
+                        </Select>
+                    </FormControl>
+                )}
+            />
+            <ButtonGroup
+                variant="outlined"
+                size={'small'}
+                sx={{
+                    '& .MuiButtonGroup-grouped': {
+                        minWidth: 'auto',
+                        padding: '5px 10px',
+                    },
+                }}
+            >
+                <Tooltip title="Go Back" placement="bottom" arrow>
+                    <Button
+                        onClick={goToListingPage}
+                        variant={'contained'}
+                        color="primary"
+                    >
+                        <ArrowBack fontSize="small" />
+                    </Button>
+                </Tooltip>
+            </ButtonGroup>
+        </>
     );
 
     const getColor = (item: any) => {
-        if (item?.label === 'Current Stage') return subsidyDetail?.current_stage_ref?.bgColor;
+        if (item?.label === 'Status') return schemeDetail?.current_status?.filter((d: any) => d?.scheme_id == selectedSchemeId)?.[0]?.ref_status?.bgColor;
         else return 'primary.main';
     }
 
-    const displayUpdateBtn = current_stage !== subsidyDetail?.current_stage || status !== subsidyDetail?.status;
+    const displayUpdateBtn = current_stage !== schemeDetail?.current_stage || status !== schemeDetail?.status;
 
     const handleUpdate = async () => {
         const payload = { status, current_stage }
@@ -247,8 +267,8 @@ export default function ClientSchemeDetail({ id: propId }: any) {
         }
     };
 
-    const totalDocs = subsidyDetail?.subsidy_ref?.requird_docs?.length || 0;
-    const submittedCount = subsidyDetail?.submitted_docs?.length || 0;
+    const totalDocs = schemeDetail?.subsidy_ref?.requird_docs?.length || 0;
+    const submittedCount = schemeDetail?.submitted_docs?.length || 0;
     const percentage = submittedCount > 0 ? Number(((submittedCount / totalDocs) * 100).toFixed(1)) : 0;
 
     return (
@@ -316,9 +336,9 @@ export default function ClientSchemeDetail({ id: propId }: any) {
                                 icon={<DescriptionOutlined />}
                                 label={
                                     <Stack direction="row" alignItems="center" spacing={1}>
-                                        <Typography variant="body2">Documents: {(subsidyDetail?.subsidy_ref?.requird_docs?.length || 0)} required</Typography>
+                                        <Typography variant="body2">Documents: {(schemeDetail?.subsidy_ref?.requird_docs?.length || 0)} required</Typography>
 
-                                        {subsidyDetail?.subsidy_ref?.requird_docs?.length > 0 && <Tooltip title="View Documents" placement="bottom" arrow>
+                                        {schemeDetail?.subsidy_ref?.requird_docs?.length > 0 && <Tooltip title="View Documents" placement="bottom" arrow>
                                             <Visibility fontSize="small" sx={{ cursor: 'pointer' }}
                                                 onClick={(e) => {
                                                     e.stopPropagation();
@@ -441,7 +461,7 @@ export default function ClientSchemeDetail({ id: propId }: any) {
 
                                                 {stage?.createdAt && (
                                                     <Typography variant="body2" sx={{ mt: 1 }} >
-                                                        {dayjs(subsidyDetail?.createdAt).format("DD-MM-YYYY")}
+                                                        {dayjs(schemeDetail?.createdAt).format("DD-MM-YYYY")}
                                                     </Typography>
                                                 )}
                                             </StepLabel>
@@ -545,7 +565,7 @@ export default function ClientSchemeDetail({ id: propId }: any) {
 
             <AppDrawer open={Boolean(documentMode)} onClose={() => setDocumentMode(null)} title={`${documentMode == "edit" ? "Edit" : "View"} Document`} anchor="right" width={600}>
                 <DocumentManager
-                    caseDetail={subsidyDetail}
+                    caseDetail={schemeDetail}
                     documentMode={documentMode}
                     onClose={() => setDocumentMode(false)}
                 />
@@ -566,7 +586,7 @@ export default function ClientSchemeDetail({ id: propId }: any) {
 
                     <DialogContent dividers sx={{ p: 3 }}>
                         <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-                            {subsidyDetail?.subsidy_ref?.requird_docs?.map((docId: string, index: number) => {
+                            {schemeDetail?.subsidy_ref?.requird_docs?.map((docId: string, index: number) => {
                                 const document = documentsList?.find((d: any) => d?._id == docId);
                                 return (
                                     <Paper
