@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ArrowBack, ArrowForward, Assignment, DescriptionOutlined, TrendingUp, Visibility, Close as CloseIcon, DescriptionOutlined as DescriptionOutlinedIcon } from "@mui/icons-material";
+import { ArrowBack, Assignment, DescriptionOutlined, TrendingUp, Visibility, Close as CloseIcon, DescriptionOutlined as DescriptionOutlinedIcon } from "@mui/icons-material";
 import {
     Box,
     Button,
@@ -23,6 +23,9 @@ import {
     StepContent,
     StepLabel,
     Stepper,
+    Tab,
+    Tabs,
+    TextField,
     Tooltip,
     Typography,
 } from "@mui/material";
@@ -34,13 +37,15 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { clientSubsidyAPI, UpdateClientSchemePayload } from "@/api/clientScheme";
 import { SYSTEM_FORM_NAMES } from "@/utils/formUtils";
 import { formEntriesAPI } from "@/api/forms";
-import dayjs from "dayjs";
+import dayjs, { Dayjs } from "dayjs";
 import { AppDrawer } from "@/components/common/AppDrawer";
 import DocumentManager from "./DocumentManager";
 import { useAppAlert } from "@/components/common/AppAlert";
 import utc from "dayjs/plugin/utc";
 import { Controller, useForm } from "react-hook-form";
-import { STATUS_LIST } from "@/utils/types";
+import { useMasterData } from "@/context/MasterData";
+import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 
 dayjs.extend(utc);
 
@@ -48,6 +53,7 @@ export default function ClientSchemeDetail({ id: propId }: any) {
     const navigate = useNavigate();
     const { showAlert, AlertComponent } = useAppAlert();
     const queryClient = useQueryClient();
+    const { statusList, stageList } = useMasterData();
 
     const { id: paramId } = useParams();
     const id = propId || paramId;
@@ -57,26 +63,23 @@ export default function ClientSchemeDetail({ id: propId }: any) {
     const [openDocumentList, setOpenDocumentList] = useState(false);
     const [activeStage, setActiveStage] = useState(0);
     const [submittedDocs, setSubmittedDocs] = useState<string[]>([]);
+    const [tab, setTab] = useState("loan_form_tab");
 
-    const { control, watch, reset } = useForm({
-        defaultValues: { current_stage: '', status: '', selectedSchemeId: '' },
-    });
-
-    const { current_stage, status, selectedSchemeId }: any = watch();
-
-    const { data: statusList = [] } = useQuery({
-        queryKey: ['formEntries', SYSTEM_FORM_NAMES.STATUS],
-        queryFn: async () => {
-            try {
-                const response = await formEntriesAPI.getAll({
-                    formName: SYSTEM_FORM_NAMES.STATUS, page: 1, limit: 10,
-                });
-                return response.data || [];
-            } catch (error: any) {
-                showAlert('error', error.response?.data?.message);
-            }
+    const { control, watch, reset, getValues } = useForm({
+        defaultValues: {
+            selectedSchemeId: '',
+            loan_sanction_date: null as Dayjs | null,
+            first_disbursement_date: null as Dayjs | null,
+            first_sale_bill_amount: '',
+            loan_amount: '',
+            disbursement_amount: '',
+            sanction_amount: '',
+            stage: "",
+            status: ""
         },
     });
+
+    const { selectedSchemeId }: any = watch();
 
     useEffect(() => {
         if (openDocumentList) {
@@ -135,10 +138,15 @@ export default function ClientSchemeDetail({ id: propId }: any) {
         const data = clientSubsidydetail?.[0];
         setCaseDetail(data);
         if (data) {
+            console.log("datatyuiyui",data)
             reset({
-                status: data?.status,
-                current_stage: data?.current_stage,
-                selectedSchemeId: data?.scheme_ref?.[0]?._id  //default selected Scheme
+                selectedSchemeId: data?.scheme_ref?.[0]?._id,  //default selected Scheme
+                loan_sanction_date: data?.loan_sanction_date ? dayjs(data.loan_sanction_date) : null,
+                first_disbursement_date: data?.first_disbursement_date ? dayjs(data.first_disbursement_date) : null,
+                first_sale_bill_amount: data?.first_sale_bill_amount,
+                loan_amount: data?.loan_amount,
+                disbursement_amount: data?.disbursement_amount,
+                sanction_amount: data?.sanction_amount,
             });
         }
     }, [clientSubsidydetail, reset]);
@@ -185,11 +193,11 @@ export default function ClientSchemeDetail({ id: propId }: any) {
         },
         {
             label: "Created At",
-            value: dayjs(caseDetail?.createdAt).format("DD-MM-YYYY") || '-',
+            value: dayjs(caseDetail?.createdAt).format("DD-MMM-YYYY") || '-',
         },
         {
             label: "Updated At",
-            value: dayjs(caseDetail?.updatedAt).format("DD-MM-YYYY") || '-',
+            value: dayjs(caseDetail?.updatedAt).format("DD-MMM-YYYY") || '-',
         },
     ];
 
@@ -242,13 +250,6 @@ export default function ClientSchemeDetail({ id: propId }: any) {
         else return 'primary.main';
     }
 
-    const displayUpdateBtn = current_stage !== caseDetail?.current_stage || status !== caseDetail?.status;
-
-    const handleUpdate = async () => {
-        const payload = { status, current_stage }
-        await updateMutation.mutateAsync({ id, payload });
-    }
-
     const handleDocumentCheck = (docId: string) => {
         setSubmittedDocs((prev: any) =>
             prev.includes(docId)
@@ -270,6 +271,137 @@ export default function ClientSchemeDetail({ id: propId }: any) {
     const totalDocs = caseDetail?.subsidy_ref?.requird_docs?.length || 0;
     const submittedCount = caseDetail?.submitted_docs?.length || 0;
     const percentage = submittedCount > 0 ? Number(((submittedCount / totalDocs) * 100).toFixed(1)) : 0;
+
+    const renderTabContent = () => {
+        switch (tab) {
+            case "loan_form_tab":
+                return (
+                    <>
+                        <Box sx={{ display: "flex", gap: "4px" }}>
+                            <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                <Controller
+                                    name="loan_sanction_date"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <DatePicker
+                                            label="Loan Sanction Date"
+                                            value={field.value}
+                                            slotProps={{ textField: { size: "small" } }}
+                                            format="DD/MM/YYYY"
+                                            onChange={(value) => field.onChange(value)}
+                                        />
+                                    )}
+                                />
+
+                                <Controller
+                                    name="first_disbursement_date"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <DatePicker
+                                            label="First Disbursement Date"
+                                            value={field.value}
+                                            slotProps={{ textField: { size: "small" } }}
+                                            format="DD/MM/YYYY"
+                                            onChange={(value) => field.onChange(value)}
+                                        />
+                                    )}
+                                />
+                            </LocalizationProvider>
+                        </Box >
+
+                        <Controller
+                            name="first_sale_bill_amount"
+                            control={control}
+                            render={({ field }) => (
+                                <TextField
+                                    {...field}
+                                    label="First Sale Bill Amount"
+                                    type="number"
+                                    size="small"
+                                    onChange={(value) => field.onChange(value)}
+                                    fullWidth
+                                />
+                            )}
+                        />
+                        <Controller
+                            name="loan_amount"
+                            control={control}
+                            render={({ field }) => (
+                                <TextField
+                                    {...field}
+                                    label="Loan Amount"
+                                    type="number"
+                                    size="small"
+                                    onChange={(value) => field.onChange(value)}
+                                    fullWidth
+                                />
+                            )}
+                        />
+                        <Controller
+                            name="disbursement_amount"
+                            control={control}
+                            render={({ field }) => (
+                                <TextField
+                                    {...field}
+                                    label="Disbursement Amount"
+                                    type="number"
+                                    size="small"
+                                    onChange={(value) => field.onChange(value)}
+                                    fullWidth
+                                />
+                            )}
+                        />
+                        <Controller
+                            name="sanction_amount"
+                            control={control}
+                            render={({ field }) => (
+                                <TextField
+                                    {...field}
+                                    label="Sanction Amount"
+                                    type="number"
+                                    size="small"
+                                    onChange={(value) => field.onChange(value)}
+                                    fullWidth
+                                />
+                            )}
+                        />
+
+                    </>
+                );
+
+            case "manage_status_tab":
+                return <>Manage Status Content
+                </>;
+
+            case "manage_stage_tab":
+                return <>Manage Stage Content</>;
+
+            default:
+                return null;
+        }
+    };
+
+    const handleSave = async () => {
+        try {
+            let payload: any = {};
+            if (tab === "loan_form_tab") {
+                const formValues = getValues();
+                console.log("formValues", formValues)
+                payload = {
+                    loan_sanction_date: dayjs(formValues.loan_sanction_date).format("YYYY-MM-DD"),
+                    first_disbursement_date: dayjs(formValues.first_disbursement_date).format("YYYY-MM-DD"),
+                    first_sale_bill_amount: formValues.first_sale_bill_amount,
+                    loan_amount: formValues.loan_amount,
+                    disbursement_amount: formValues.disbursement_amount,
+                    sanction_amount: formValues.sanction_amount,
+                };
+            }
+            await updateMutation.mutateAsync({ id, payload });
+            queryClient.invalidateQueries({ queryKey: ['clientSubsidydetail'] })
+        } catch (error) {
+            console.error(error);
+        }
+    }
 
     return (
         <>
@@ -377,46 +509,6 @@ export default function ClientSchemeDetail({ id: propId }: any) {
                                 sx={{ p: 1, color: 'primary.main', borderColor: "primary.main", '& .MuiChip-icon': { color: 'primary.main' } }}
                             />
 
-                            <Box sx={{ ml: "auto", display: "flex", gap: 1, flexWrap: "wrap", }} >
-                                <Controller
-                                    name="current_stage"
-                                    control={control}
-                                    render={({ field }) => (
-                                        <FormControl sx={{ width: 200 }} size="small">
-                                            <InputLabel>Stage</InputLabel>
-                                            <Select {...field} label="Stage">
-                                                {statusList
-                                                    ?.sort((a: any, b: any) => a?.payload?.order_index - b?.payload?.order_index)
-                                                    ?.map((stage: any) => (
-                                                        <MenuItem key={stage?._id} value={stage?._id}>
-                                                            {stage?.payload?.label}
-                                                        </MenuItem>
-                                                    ))}
-                                            </Select>
-                                        </FormControl>
-                                    )}
-                                />
-
-                                <Controller
-                                    name="status"
-                                    control={control}
-                                    render={({ field }) => (
-                                        <FormControl sx={{ width: 200 }} size="small">
-                                            <InputLabel>Status</InputLabel>
-                                            <Select {...field} label="Status" >
-                                                {STATUS_LIST?.map((val: any) => (<MenuItem value={val?.value}> {val?.label}</MenuItem>))}
-                                            </Select>
-                                        </FormControl>
-                                    )}
-                                />
-
-                                {displayUpdateBtn && (
-                                    <Button variant="contained" size="small" onClick={handleUpdate}>
-                                        Update
-                                    </Button>
-                                )}
-
-                            </Box>
                         </Stack>
                     </Card>
 
@@ -496,67 +588,44 @@ export default function ClientSchemeDetail({ id: propId }: any) {
                                     alignItems="center"
                                     mb={1}
                                 >
-                                    <Button
-                                        variant="contained"
-                                        size="small"
-                                        startIcon={<ArrowBack />}
-                                        onClick={() => handleStageStep(activeStage, '-')}
-                                        disabled={activeStage === 0}
+                                    <Tabs
+                                        value={tab}
+                                        onChange={(_, newValue) => setTab(newValue)}
                                     >
-                                        Prev Stage
-                                    </Button>
+                                        <Tab value="loan_form_tab" label="Loan Section" sx={{ textTransform: "none" }} />
+                                        <Tab value="manage_status_tab" label="Manage Status" sx={{ textTransform: "none" }} />
+                                        <Tab value="manage_stage_tab" label="Manage Stage" sx={{ textTransform: "none" }} />
+                                    </Tabs>
 
-                                    <Typography
-                                        variant="h6"
-                                        fontWeight={600}
-                                        textAlign={"center"}
-                                    >
-                                        Stage Detail
-                                    </Typography>
 
                                     <Button
-                                        variant="contained"
+                                        variant="outlined"
                                         size="small"
-                                        endIcon={<ArrowForward />}
-                                        onClick={() => handleStageStep(activeStage, '+')}
-                                        disabled={activeStage >= currentStageIndex}
                                     >
-                                        Next Stage
+                                        Todo
                                     </Button>
                                 </Box>
 
                                 <Divider sx={{ mb: 1 }} />
-
-                                <Stack
+                                <Box
+                                    component="form"
+                                    width={500}
+                                    display="flex"
+                                    flexDirection="column"
                                     alignItems="center"
-                                    justifyContent="center"
-                                    spacing={2}
-                                    height="100%"
+                                    gap={2}
                                 >
-                                    <Typography
-                                        variant="overline"
-                                        color="primary"
-                                    >
-                                        CURRENT STAGE
-                                    </Typography>
+                                    {renderTabContent()}
 
-                                    <Typography
-                                        variant="h4"
-                                        fontWeight={700}
-                                        textAlign="center"
+                                    <Button
+                                        type="button"
+                                        variant="contained"
+                                        sx={{ alignSelf: "flex-end" }}
+                                        onClick={handleSave}
                                     >
-                                        {sortedStages[activeStage]?.payload?.label}
-                                    </Typography>
-
-                                    <Typography
-                                        variant="body1"
-                                        color="text.secondary"
-                                        textAlign="center"
-                                        maxWidth={500}
-                                    >
-                                        {sortedStages[activeStage]?.description}
-                                    </Typography>
-                                </Stack>
+                                        Save
+                                    </Button>
+                                </Box>
                             </Paper>
                         </Grid>
                     </Grid>
