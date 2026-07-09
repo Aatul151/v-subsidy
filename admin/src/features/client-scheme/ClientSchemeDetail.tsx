@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowBack, Assignment, DescriptionOutlined, TrendingUp, Visibility, Close as CloseIcon, DescriptionOutlined as DescriptionOutlinedIcon } from "@mui/icons-material";
+import { ArrowBack, Assignment, DescriptionOutlined, TrendingUp, Visibility, Close as CloseIcon, DescriptionOutlined as DescriptionOutlinedIcon, CheckCircle } from "@mui/icons-material";
 import {
     Box,
     Button,
@@ -46,6 +46,7 @@ import { Controller, useForm } from "react-hook-form";
 import { useMasterData } from "@/context/MasterData";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { clientsAPI } from "@/api/manageClient";
 
 dayjs.extend(utc);
 
@@ -85,6 +86,9 @@ export default function ClientSchemeDetail({ id: propId }: any) {
                 stage: "",
                 end_date: null as Dayjs | null,
                 remark: ""
+            },
+            todoForm: {
+                remark: ""
             }
         },
     });
@@ -123,6 +127,21 @@ export default function ClientSchemeDetail({ id: propId }: any) {
         },
     });
 
+    const updateTodoMutation = useMutation({
+        mutationFn: ({ id, payload, taskCompleted, }: {
+            id: string;
+            payload: UpdateClientSchemePayload;
+            taskCompleted: boolean;
+        }) => clientsAPI.update(id, payload),
+
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({ queryKey: ["client_subsidy"] });
+            showAlert("success", variables.taskCompleted ? "Task marked as completed successfully!" : "Todo remark updated successfully!");
+        },
+        onError: (error: any) => {
+            showAlert("error", error.response?.data?.message || "Failed to update remark");
+        },
+    });
 
     const {
         data: clientSubsidydetail,
@@ -168,8 +187,12 @@ export default function ClientSchemeDetail({ id: propId }: any) {
 
 
     useEffect(() => {
-        setActiveStep(activeStatusIndex > 0 ? activeStatusIndex : -1);
+        setActiveStep(activeStatusIndex);
     }, [activeStatusIndex]);
+
+    const clientTodoRemark = useMemo(() => {
+        return clientSubsidydetail?.[0]?.client?.case_todos.find((e: any) => e?.scheme_id == selectedSchemeId)?.remark;
+    }, [clientSubsidydetail, selectedSchemeId]);
 
     useEffect(() => {
         const data = clientSubsidydetail?.[0];
@@ -185,9 +208,12 @@ export default function ClientSchemeDetail({ id: propId }: any) {
                     disbursement_amount: data?.disbursement_amount || "",
                     sanction_amount: data?.sanction_amount || "",
                 },
+                todoForm: {
+                    remark: clientTodoRemark || "",
+                }
             });
         }
-    }, [clientSubsidydetail, reset]);
+    }, [clientSubsidydetail, reset, selectedSchemeId]);
 
     useEffect(() => {
         reset({
@@ -386,7 +412,7 @@ export default function ClientSchemeDetail({ id: propId }: any) {
                 const statusFormField = [
                     { name: "stage", label: "Stage", type: "dropdown", options: stageList, disabled: true },
                     { name: "status", label: "Status", type: "dropdown", options: statusList },
-                    { name: "remark", label: "Remark", type: "text" },
+                    { name: "remark", label: "Remark", type: "text", multiline: true, rows: 4 },
 
                 ];
                 return <>
@@ -397,7 +423,7 @@ export default function ClientSchemeDetail({ id: propId }: any) {
                             gap: 2,
                         }}
                     >
-                        {statusFormField?.map(({ name, label, type, options, disabled = false }: any) => (
+                        {statusFormField?.map(({ name, label, type, options, disabled = false, multiline, rows }: any) => (
                             <Controller
                                 key={name}
                                 name={`stausForm.${name}` as any}
@@ -423,6 +449,8 @@ export default function ClientSchemeDetail({ id: propId }: any) {
                                             type={type}
                                             size="small"
                                             fullWidth
+                                            multiline={multiline}
+                                            rows={rows}
                                             value={field.value ?? ""}
                                             onChange={(e) => field.onChange(e.target.value)}
                                         />
@@ -436,7 +464,7 @@ export default function ClientSchemeDetail({ id: propId }: any) {
                 const stageFormField = [
                     { name: "stage", label: "Stage", type: "dropdown", options: stageList },
                     { name: "end_date", label: "End date", type: "date" },
-                    { name: "remark", label: "Remark", type: "text" },
+                    { name: "remark", label: "Remark", type: "text", multiline: true, rows: 4 },
 
                 ];
                 return <>
@@ -448,7 +476,7 @@ export default function ClientSchemeDetail({ id: propId }: any) {
                         }}
                     >
                         <LocalizationProvider dateAdapter={AdapterDayjs}>
-                            {stageFormField?.map(({ name, label, type, options, disabled = false }: any) => (
+                            {stageFormField?.map(({ name, label, type, options, disabled = false, multiline, rows }: any) => (
                                 <Controller
                                     key={name}
                                     name={`stageForm.${name}` as any}
@@ -487,6 +515,8 @@ export default function ClientSchemeDetail({ id: propId }: any) {
                                                 type={type}
                                                 size="small"
                                                 fullWidth
+                                                multiline={multiline}
+                                                rows={rows}
                                                 value={field.value ?? ""}
                                                 onChange={(e) => field.onChange(e.target.value)}
                                             />
@@ -498,13 +528,46 @@ export default function ClientSchemeDetail({ id: propId }: any) {
 
                     </Box>
                 </>;
+            case "manage_todo_tab":
+                const todoFormField = [
+                    { name: "remark", label: "Remark", type: "text", multiline: true, rows: 4 },
+                ];
+
+                return <Box
+                    sx={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(1, 1fr)",
+                        gap: 2,
+                    }}
+                >
+                    {todoFormField?.map(({ name, label, type, multiline, rows }: any) => (
+                        <Controller
+                            key={name}
+                            name={`todoForm.${name}` as any}
+                            control={control}
+                            render={({ field }) => (
+                                <TextField
+                                    {...field}
+                                    label={label}
+                                    type={type}
+                                    size="small"
+                                    fullWidth
+                                    multiline={multiline}
+                                    rows={rows}
+                                    value={field.value ?? ""}
+                                    onChange={(e) => field.onChange(e.target.value)}
+                                />
+                            )}
+                        />
+                    ))}
+                </Box>
 
             default:
                 return null;
         }
     };
 
-    const handleSave = async () => {
+    const handleSave = async (props: any = {}) => {
         try {
             let payload: any = {};
 
@@ -544,10 +607,28 @@ export default function ClientSchemeDetail({ id: propId }: any) {
                         }
                     }
                     break;
+
+                case 'manage_todo_tab':
+                    const { taskCompleted } = props;
+
+                    const todoValues = getValues().todoForm;
+                    await updateTodoMutation.mutateAsync({
+                        id: caseDetail?.client?._id,
+                        payload: {
+                            case_todos: {
+                                case_id: id,
+                                scheme_id: selectedSchemeId,
+                                remark: todoValues.remark,
+                                taskCompleted,
+                            },
+                        },
+                        taskCompleted,
+                    });
+                    break;
             }
 
-            await updateMutation.mutateAsync({ id, payload });
-            queryClient.invalidateQueries({ queryKey: ['clientSubsidydetail'] })
+            if (Object.keys(payload)?.length > 0) { await updateMutation.mutateAsync({ id, payload }) }
+            queryClient.invalidateQueries({ queryKey: ['client_subsidy'] })
             if (tab === 'manage_status_tab') queryClient.invalidateQueries({ queryKey: ['client_status'] })
         } catch (error) {
             console.error(error);
@@ -737,24 +818,18 @@ export default function ClientSchemeDetail({ id: propId }: any) {
                                     display="flex"
                                     justifyContent="space-between"
                                     alignItems="center"
-                                    mb={1}
                                 >
                                     <Tabs
                                         value={tab}
                                         onChange={(_, newValue) => setTab(newValue)}
+                                        sx={{ width: "100%" }}
                                     >
                                         <Tab value="loan_form_tab" label="Loan Section" sx={{ textTransform: "none" }} />
                                         <Tab value="manage_status_tab" label="Manage Status" sx={{ textTransform: "none" }} />
                                         <Tab value="manage_stage_tab" label="Manage Stage" sx={{ textTransform: "none" }} />
+                                        <Box sx={{ flexGrow: 1 }} />
+                                        <Tab value="manage_todo_tab" label="Todo" sx={{ textTransform: "none" }} />
                                     </Tabs>
-
-
-                                    <Button
-                                        variant="outlined"
-                                        size="small"
-                                    >
-                                        Todo
-                                    </Button>
                                 </Box>
 
                                 <Divider sx={{ mb: 1 }} />
@@ -762,14 +837,32 @@ export default function ClientSchemeDetail({ id: propId }: any) {
                                     <Box sx={{ marginTop: "20px", marginBottom: "10px", display: "flex", gap: 3, flexDirection: "column" }}>
                                         {renderTabContent()}
                                     </Box>
-                                    <Box sx={{ display: "flex", justifyContent: "end" }}>
+                                    <Box sx={{ display: "flex", justifyContent: "end", gap: "4px" }}>
                                         <Button
                                             type="button"
                                             variant="contained"
-                                            onClick={handleSave}
+                                            onClick={() =>
+                                                tab === "manage_todo_tab"
+                                                    ? handleSave({ taskCompleted: false })
+                                                    : handleSave()
+                                            }
                                         >
                                             Save
                                         </Button>
+                                        {tab === "manage_todo_tab" && clientTodoRemark && (
+                                            <Tooltip title="Remove alert from client">
+                                                <Button
+                                                    type="button"
+                                                    variant="contained"
+                                                    color="success"
+                                                    startIcon={<CheckCircle />}
+                                                    onClick={() => handleSave({ taskCompleted: true })}
+                                                >
+                                                    Completed
+                                                </Button>
+                                            </Tooltip>
+                                        )}
+
                                     </Box>
                                 </Box>
                             </Paper>

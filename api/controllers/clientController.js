@@ -152,7 +152,7 @@ export const updateClient = async (req, res) => {
     if (address !== undefined) fieldToUpdate.address = address;
     if (remarks !== undefined) fieldToUpdate.remarks = remarks;
     if (isActive !== undefined) fieldToUpdate.isActive = isActive;
-    if (case_todos) {
+    if (case_todos?.case_id && case_todos?.scheme_id) {
       const resClient = await Client.findById(id);
       if (!resClient) { return res.status(404).json({ success: false, message: "Client not found." }); }
       const todos = [...resClient.case_todos];
