@@ -61,7 +61,7 @@ export default function ClientSchemeDetail({ id: propId }: any) {
     const [caseDetail, setCaseDetail] = useState<any>(null);
     const [documentMode, setDocumentMode] = useState<any>(null);
     const [openDocumentList, setOpenDocumentList] = useState(false);
-    const [activeStage, setActiveStage] = useState(0);
+    const [activeStep, setActiveStep] = useState(-1);
     const [submittedDocs, setSubmittedDocs] = useState<string[]>([]);
     const [tab, setTab] = useState("loan_form_tab");
 
@@ -123,14 +123,6 @@ export default function ClientSchemeDetail({ id: propId }: any) {
         },
     });
 
-    const sortedStages = [...(statusList || [])].sort((a: any, b: any) => a?.payload?.order_index - b?.payload?.order_index);
-    const currentStageIndex = sortedStages.findIndex((stage: any) => stage?.payload?.label === caseDetail?.current_stage_ref?.label);
-
-    useEffect(() => {
-        if (currentStageIndex >= 0) {
-            setActiveStage(currentStageIndex);
-        }
-    }, [currentStageIndex]);
 
     const {
         data: clientSubsidydetail,
@@ -156,6 +148,28 @@ export default function ClientSchemeDetail({ id: propId }: any) {
         );
     }, [caseDetail, currentStage, selectedSchemeId]);
 
+    //Status history details 
+    const { data: statusHistoryInfo } = useQuery({
+        queryKey: ['client_status', id, selectedSchemeId, currentStage?.stage_id],
+        queryFn: async () => {
+            if (!id || !selectedSchemeId || !currentStage?.stage_id) return;
+            return await clientSubsidyAPI.getStatusHistory(id, selectedSchemeId, currentStage?.stage_id);
+        },
+    });
+
+    const formattedStatusList = statusList
+        ?.sort((a: any, b: any) => a?.payload?.order_index - b?.payload?.order_index)
+        ?.map((status: any) => ({
+            ...status,
+            statusProgress: statusHistoryInfo?.find((item: any) => item?.status_id == status?._id),
+        }));
+
+    const activeStatusIndex = formattedStatusList.findIndex((item: any) => !item.statusProgress?.completed_date);
+
+
+    useEffect(() => {
+        setActiveStep(activeStatusIndex > 0 ? activeStatusIndex : -1);
+    }, [activeStatusIndex]);
 
     useEffect(() => {
         const data = clientSubsidydetail?.[0];
@@ -179,7 +193,7 @@ export default function ClientSchemeDetail({ id: propId }: any) {
         reset({
             ...getValues(),
             stausForm: {
-                stage: currentStatus?.stage_id || "",
+                stage: currentStage?.stage_id || "",
                 status: currentStatus?.status_id || "",
                 remark: currentStatus?.remarks || "",
             },
@@ -190,12 +204,6 @@ export default function ClientSchemeDetail({ id: propId }: any) {
             }
         });
     }, [currentStage, currentStatus]);
-
-    const handleStageStep = (selectedIdx: number, direction?: string) => {
-        let nextStage = selectedIdx;
-        if (direction) nextStage = direction === '+' ? selectedIdx + 1 : selectedIdx - 1
-        setActiveStage((nextStage) % statusList?.length);
-    };
 
     const headerFields = [
         {
@@ -220,7 +228,7 @@ export default function ClientSchemeDetail({ id: propId }: any) {
         },
         {
             label: "Current Stage",
-            value: currentStage?.ref_stage?.name,
+            value: currentStage?.ref_stage?.name || "-",
         },
         {
             label: "Status",
@@ -540,6 +548,7 @@ export default function ClientSchemeDetail({ id: propId }: any) {
 
             await updateMutation.mutateAsync({ id, payload });
             queryClient.invalidateQueries({ queryKey: ['clientSubsidydetail'] })
+            if (tab === 'manage_status_tab') queryClient.invalidateQueries({ queryKey: ['client_status'] })
         } catch (error) {
             console.error(error);
         }
@@ -552,7 +561,7 @@ export default function ClientSchemeDetail({ id: propId }: any) {
                 <Stack spacing={3}>
                     {!propId && (
                         <PageHeader
-                            title="Client Subsidy detail"
+                            title="Client Case detail"
                             icon="Assignment"
                             fallbackIcon={Assignment}
                             sx={{ mb: 0.5, borderRadius: '10px', padding: 1.5 }}
@@ -581,12 +590,14 @@ export default function ClientSchemeDetail({ id: propId }: any) {
 
                                     {item?.isStatus ?
                                         <Typography fontWeight={600} fontSize={13}>
-                                            <Chip
-                                                size="small"
-                                                variant="outlined"
-                                                label={item?.value}
-                                                sx={{ bgcolor: `${getColor(item)}`, borderColor: `${getColor(item)}` }}
-                                            />
+                                            {item?.value ?
+                                                <Chip
+                                                    size="small"
+                                                    variant="outlined"
+                                                    label={item?.value}
+                                                    sx={{ bgcolor: `${getColor(item)}`, borderColor: `${getColor(item)}` }}
+                                                />
+                                                : "-"}
                                         </Typography>
                                         :
                                         <Typography fontWeight={600} fontSize={13} sx={{ textTransform: "Capitalize" }}>
@@ -673,36 +684,34 @@ export default function ClientSchemeDetail({ id: propId }: any) {
                                     fontWeight={600}
                                     mb={3}
                                 >
-                                    Stages & Progress
+                                    Status & Progress
                                 </Typography>
 
-                                <Stepper
-                                    activeStep={activeStage}
-                                    orientation="vertical"
-                                >
-                                    {sortedStages.map((stage: any, idx) => (
-                                        <Step key={stage?.payload?.label}>
+                                <Stepper activeStep={activeStep} orientation="vertical">
+                                    {formattedStatusList.map((status: any, idx) => (
+                                        <Step key={status._id}>
                                             <StepLabel
-                                                onClick={() => { if (idx <= currentStageIndex) { handleStageStep(idx); } }}
-                                                sx={{
-                                                    cursor: idx <= currentStageIndex ? "pointer" : "not-allowed",
-                                                    opacity: idx <= currentStageIndex ? 1 : 0.5
+                                                onClick={idx <= activeStatusIndex ? () => setActiveStep(idx) : undefined} sx={{
+                                                    cursor: idx <= activeStatusIndex ? "pointer" : "not-allowed",
+                                                    opacity: idx <= activeStatusIndex ? 1 : 0.5,
                                                 }}
                                             >
                                                 <Typography fontWeight={600}>
-                                                    {stage?.payload?.label}
+                                                    {status.payload.label}
                                                 </Typography>
 
-                                                {stage?.createdAt && (
-                                                    <Typography variant="body2" sx={{ mt: 1 }} >
-                                                        {dayjs(caseDetail?.createdAt).format("DD-MM-YYYY")}
+                                                {status.statusProgress?.completed_date && (
+                                                    <Typography variant="body2" mt={1}>
+                                                        {dayjs(status.statusProgress.completed_date).format(
+                                                            "DD-MMM-YYYY"
+                                                        )}
                                                     </Typography>
                                                 )}
                                             </StepLabel>
 
                                             <StepContent>
-                                                <Typography variant="body2" sx={{ mt: 1 }}>
-                                                    {stage?.payload?.description}
+                                                <Typography variant="body2">
+                                                    {status.statusProgress?.remarks}
                                                 </Typography>
                                             </StepContent>
                                         </Step>

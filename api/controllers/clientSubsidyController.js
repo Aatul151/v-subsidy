@@ -40,16 +40,21 @@ export const createClientCase = async (req, res) => {
         for (let i = 0; i < scheme_ids?.length; i++) {
             const eachSchemeId = scheme_ids[i];
 
-            current_status?.push({
-                scheme_id: eachSchemeId,
-                stage_id: stage_id,
-                status_id: status_id
-            })
+            current_status = updateCurrentStatus(
+                current_status,
+                eachSchemeId,
+                stage_id,
+                status_id,
+                remarks ?? "",
+            );
 
-            current_stage?.push({
-                scheme_id: eachSchemeId,
-                stage_id: stage_id,
-            })
+            current_stage = updateCurrentStage(
+                current_stage,
+                eachSchemeId,
+                stage_id,
+                null,
+                remarks ?? "",
+            );
         }
 
         const resScheme = await ClientCases.create({
@@ -387,7 +392,7 @@ export const updateClientCase = async (req, res) => {
         if (!resScheme || !resScheme._id) { return res.status(404).json({ success: false, message: "Case not found.", }); }
 
         const promises = [];
-            const reqUser = req.user
+        const reqUser = req.user
         if (status?.scheme_id && status?.stage_id && status?.status_id) {
 
             promises.push(

@@ -136,4 +136,23 @@ export const clientSubsidyAPI = {
     delete: async (clientCaseId: string): Promise<void> => {
         await axiosInstance.delete(`/client-case/${clientCaseId}`);
     },
+
+    /**
+  * Get client scheme status history
+  * @param clientCaseId - client case ID
+  * @param scheme_id - client scheme ID
+  * @param stage_id - client satge ID
+  */
+    getStatusHistory: async (clientCaseId: string, schemeId: string, stageId: string): Promise<ClientSchemeType> => {
+        const response = await axiosInstance.get<ApiResponse<ClientSchemeType>>(`/client-case/status-history/${clientCaseId}`,
+            {
+                params: {
+                    scheme_id: schemeId,
+                    stage_id: stageId,
+                },
+            }
+        );
+        return response.data.data;
+    },
 }
+
