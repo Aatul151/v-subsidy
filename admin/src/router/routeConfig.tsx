@@ -203,7 +203,7 @@ export const protectedRoutesConfig: RouteConfigItem[] = [
     useLayout: true,
   },
   {
-    path: '/client-case/:id',
+    path: '/client-case/:id/:schemeId?',
     element: <ClientSchemeDetail />,
     requiresAuth: true,
     useLayout: true,

@@ -50,14 +50,15 @@ import { clientsAPI } from "@/api/manageClient";
 
 dayjs.extend(utc);
 
-export default function ClientSchemeDetail({ id: propId }: any) {
+export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId }: any) {
     const navigate = useNavigate();
     const { showAlert, AlertComponent } = useAppAlert();
     const queryClient = useQueryClient();
     const { statusList, stageList } = useMasterData();
 
-    const { id: paramId } = useParams();
+    const { id: paramId, schemeId: paramSchemeId } = useParams();
     const id = propId || paramId;
+    const defaultSchemeId = propsSchemeId || paramSchemeId;
 
     const [caseDetail, setCaseDetail] = useState<any>(null);
     const [documentMode, setDocumentMode] = useState<any>(null);
@@ -199,7 +200,7 @@ export default function ClientSchemeDetail({ id: propId }: any) {
         setCaseDetail(data);
         if (data) {
             reset({
-                selectedSchemeId: selectedSchemeId || data?.scheme_ref?.[0]?._id || "",
+                selectedSchemeId: selectedSchemeId || defaultSchemeId || data?.scheme_ref?.[0]?._id || "",
                 sectionForm: {
                     loan_sanction_date: data?.loan_sanction_date ? dayjs(data.loan_sanction_date) : null,
                     first_disbursement_date: data?.first_disbursement_date ? dayjs(data.first_disbursement_date) : null,

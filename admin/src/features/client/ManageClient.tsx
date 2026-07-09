@@ -1,6 +1,6 @@
 import { PageHeader } from "@/components/common/PageHeader";
-import { Alert, Avatar, Box, Button, ButtonGroup, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Tooltip, Typography } from "@mui/material";
-import { FormatListBulleted as FormatListBulletedIcon } from '@mui/icons-material';
+import { Alert, Avatar, Box, Button, ButtonGroup, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Divider, IconButton, Stack, Tooltip, Typography } from "@mui/material";
+import { ArrowOutward, FormatListBulleted as FormatListBulletedIcon, NotificationsActive } from '@mui/icons-material';
 import { Add as AddIcon, Edit as EditIcon, Visibility as ViewIcon, Refresh as RefreshIcon } from '@mui/icons-material';
 import { PageContent } from "@/components/common/PageContent";
 import { AppDataTable } from "@/components/common/AppDataTable";
@@ -15,16 +15,20 @@ import { FormField, FormSection } from "@aatulwork/customform-renderer";
 import { useAppAlert } from "@/components/common/AppAlert";
 import { UpdateRolePayload } from "@/api/roles";
 import { getAvatarColor } from "@/utils/iconMap";
+import { useNavigate } from "react-router-dom";
 
 
 export default function ManageClient() {
     const queryClient = useQueryClient();
     const { showAlert, AlertComponent } = useAppAlert();
+    const navigate = useNavigate();
 
     const [formDrawerOpen, setFormDrawerOpen] = useState(false);
     const [formMode, setFormMode] = useState<'add' | 'edit' | 'view'>('add');
     const [selectedClient, setSelectedClient] = useState<Clients | null>(null);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [openTodoModal, setOpenTodoModal] = useState(false);
+    const [todoList, setTodoList] = useState<any[]>([]);
 
     // GET form defination
     const {
@@ -137,6 +141,11 @@ export default function ManageClient() {
         contact_person: 3,
     };
 
+    const handleTodoModal = (todos: any[]) => {
+        setTodoList(todos || []);
+        setOpenTodoModal(true);
+    };
+
     // Build columns dynamically from form schema
     const buildColumns = (): GridColDef[] => {
         if (!formSchema) {
@@ -232,6 +241,16 @@ export default function ManageClient() {
                         label="Edit"
                         onClick={() => handleActions(true, params.row, 'edit')}
                     />,
+                    ...(params?.row.case_todos?.length > 0
+                        ? [
+                            <GridActionsCellItem
+                                key="todo"
+                                icon={<NotificationsActive color="warning" />}
+                                label="Todos"
+                                onClick={() => handleTodoModal(params.row.case_todos)}
+                                showInMenu={false}
+                            />,
+                        ] : []),
                     // <GridActionsCellItem
                     //     key="delete"
                     //     icon={<DeleteIcon color="error" />}
@@ -427,6 +446,90 @@ export default function ManageClient() {
                         disabled={isLoading}
                     >
                         {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Displat TODO alerts */}
+            <Dialog
+                open={openTodoModal}
+                onClose={() => setOpenTodoModal(false)}
+                fullWidth
+                maxWidth="sm"
+            >
+                <DialogTitle>Case Todos</DialogTitle>
+
+                <DialogContent dividers sx={{ p: 1 }}>
+                    <Stack spacing={1}>
+                        {todoList.map((todo: any, index: number) => (
+                            <Box
+                                key={todo._id || index}
+                                sx={{
+                                    py: 0.5,
+                                    px: 1,
+                                    borderRadius: 1,
+                                    "&:hover": { bgcolor: "action.hover" },
+                                }}
+                            >
+                                <Stack
+                                    direction="row"
+                                    justifyContent="space-between"
+                                    alignItems="center"
+                                >
+                                    <Stack direction="row" spacing={1.5} alignItems="center" sx={{ flex: 1, minWidth: 0 }}>
+                                        <Avatar sx={{ width: 35, height: 35, bgcolor: "warning.light" }}>
+                                            {todo.ref_scheme?.scheme_name?.charAt(0)}
+                                        </Avatar>
+
+                                        <Box sx={{ minWidth: 0 }}>
+                                            <Typography fontWeight={600} fontSize={14} noWrap>
+                                                {todo.ref_scheme?.scheme_name}{" "}
+                                                <Box
+                                                    component="code"
+                                                    sx={{
+                                                        fontSize: 13,
+                                                        bgcolor: "grey.100",
+                                                        px: 0.5,
+                                                        py: 0.2,
+                                                        borderRadius: 0.5,
+                                                        fontFamily: "monospace",
+                                                        color: "text.secondary",
+                                                    }}
+                                                >
+                                                    {todo.ref_case?.case_number}
+                                                </Box>
+                                            </Typography>
+
+                                            {todo.remark && (
+                                                <Typography
+                                                    variant="caption"
+                                                    color="text.secondary"
+                                                    sx={{ display: "block", mt: 0.3 }}
+                                                >
+                                                    {todo.remark}
+                                                </Typography>
+                                            )}
+                                        </Box>
+                                    </Stack>
+
+                                    <IconButton
+                                        size="small"
+                                        color="primary"
+                                        onClick={() => navigate(`/client-case/${todo?.case_id}/${todo?.scheme_id}`)}
+                                    >
+                                        <ArrowOutward fontSize="small" />
+                                    </IconButton>
+                                </Stack>
+
+                                {index !== todoList.length - 1 && <Divider sx={{ mt: 1 }} />}
+                            </Box>
+                        ))}
+                    </Stack>
+                </DialogContent>
+
+                <DialogActions>
+                    <Button variant="outlined" onClick={() => setOpenTodoModal(false)}>
+                        Close
                     </Button>
                 </DialogActions>
             </Dialog>
