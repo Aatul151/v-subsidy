@@ -1,7 +1,9 @@
 import Client from "../models/Client.js";
+import ClientCases from "../models/ClientCases.js";
 import { validateFormAccess, validateModuleAccess } from "../services/permissionService.js";
 import { FORM } from "../utils/codes.js";
 import { generateUniqueNo } from "../utils/commonFunctions.js";
+import { populateFormReference } from "../utils/populateReferences.js";
 
 const CLIENT_FORM = FORM.CLIENT_FORM;
 
@@ -32,11 +34,25 @@ export const getClients = async (req, res) => {
     // fetch
     const [clients, totalRecords] = await Promise.all([
       Client.find(filter)
+        .lean()
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(pageSize),
       Client.countDocuments(filter),
     ]);
+
+    // populate fileds
+    for (const client of clients) {
+      if (!client?.case_todos?.length) continue;
+
+      for (const todo of client.case_todos) {
+        if (todo?.case_id) { todo["ref_case"] = await ClientCases.findById(todo.case_id).select("case_number").lean() }
+
+        if (todo?.scheme_id) {
+          todo["ref_scheme"] = await populateFormReference(todo?.scheme_id, { referenceFormName: FORM?.SCHEME_FORM });
+        }
+      }
+    }
 
     return res.status(200).json({
       success: true,
