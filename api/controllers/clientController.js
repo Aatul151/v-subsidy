@@ -155,7 +155,7 @@ export const updateClient = async (req, res) => {
     if (case_todos) {
       const resClient = await Client.findById(id);
       if (!resClient) { return res.status(404).json({ success: false, message: "Client not found." }); }
-      const todos = [...client.case_todos];
+      const todos = [...resClient.case_todos];
 
       const index = todos.findIndex(
         item =>
