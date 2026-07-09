@@ -145,17 +145,21 @@ export const getCaseProgressData = async (caseIds = [], {
 
 //#region MANAGE CURRNET STATUS/STAGE FIELD
 // UDPATE Current Stage
-export const updateCurrentStage = (currentStage, schemeId, stageId) => {
+export const updateCurrentStage = (currentStage, schemeId, stageId, end_date, remarks) => {
     const index = currentStage.findIndex(
         item => item.scheme_id.toString() === schemeId.toString()
     );
 
     if (index > -1) {
         currentStage[index].stage_id = stageId;
+        currentStage[index].end_date = end_date;
+        currentStage[index].remarks = remarks;
     } else {
         currentStage.push({
             scheme_id: schemeId,
-            stage_id: stageId
+            stage_id: stageId,
+            end_date,
+            remarks
         });
     }
 
@@ -163,7 +167,7 @@ export const updateCurrentStage = (currentStage, schemeId, stageId) => {
 };
 
 // UDPATE Current Status
-export const updateCurrentStatus = (currentStatus, schemeId, stageId, statusId) => {
+export const updateCurrentStatus = (currentStatus, schemeId, stageId, statusId, remarks) => {
     const index = currentStatus.findIndex(
         item =>
             item?.scheme_id?.toString() == schemeId?.toString() &&
@@ -172,11 +176,13 @@ export const updateCurrentStatus = (currentStatus, schemeId, stageId, statusId) 
 
     if (index > -1) {
         currentStatus[index].status_id = statusId;
+        currentStatus[index].remarks = remarks;
     } else {
         currentStatus.push({
             scheme_id: schemeId,
             stage_id: stageId,
-            status_id: statusId
+            status_id: statusId,
+            remarks,
         });
     }
 
