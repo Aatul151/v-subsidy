@@ -34,6 +34,11 @@ const CaseStageProgressSchema = new mongoose.Schema(
       default: null,
     },
 
+    is_active: {
+      type: Boolean,
+      default: true,
+    },
+
     remarks: {
       type: String,
       trim: true,

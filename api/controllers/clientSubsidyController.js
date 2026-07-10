@@ -429,7 +429,7 @@ export const updateClientCase = async (req, res) => {
                 statusProgress.remarks
             );
         }
-        if (stageProgress) {
+        if (stageProgress?.is_active) {
             updateFields.current_stage = updateCurrentStage(
                 resScheme.current_stage || [],
                 stageProgress.scheme_id,

@@ -262,14 +262,13 @@ export const saveCaseStageProgress = async ({
     case_id,
     scheme_id,
     stage_id,
-    start_date = new Date(),
     end_date = null,
     date = null,
     remarks = "",
     reqUser = null,
 }) => {
     try {
-        // Find existing stage progress
+       // Find existing stage progress
         const existingProgress = await CaseStageProgress.findOne({ case_id, scheme_id, stage_id });
 
         // Update existing record
@@ -284,19 +283,36 @@ export const saveCaseStageProgress = async ({
             return existingProgress;
         }
 
-        // Create new record
+        // Close current active stage
+        await CaseStageProgress.updateMany(
+            {
+                case_id,
+                scheme_id,
+                is_active: true,
+            },
+            {
+                $set: {
+                    is_active: false,
+                    // end_date: new Date(),
+                    updatedAt: new Date(),
+                    updatedBy: reqUser?._id,
+                },
+            }
+        );
+
         return await CaseStageProgress.create({
             case_id,
             scheme_id,
             stage_id,
-            start_date,
+            start_date: new Date(),
             end_date,
             date,
             remarks,
+            is_active: true,
             createdBy: reqUser?._id,
             // updatedBy: reqUser?._id
         });
-
+        
     } catch (error) {
         console.error("Error saving case stage progress:", error);
         throw error;

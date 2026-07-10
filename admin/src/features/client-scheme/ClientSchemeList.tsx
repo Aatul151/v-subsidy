@@ -1,4 +1,4 @@
-import { Alert, Avatar, Box, Button, ButtonGroup, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControl, IconButton, InputLabel, MenuItem, Select, Stack, Table, TableBody, TableCell, TableHead, TableRow, Tooltip, Typography } from "@mui/material";
+import { Alert, Avatar, Box, Button, ButtonGroup, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControl, IconButton, InputLabel, MenuItem, Select, Table, TableBody, TableCell, TableHead, TableRow, Tooltip, Typography } from "@mui/material";
 import { ArrowOutward, FormatListBulleted as FormatListBulletedIcon } from '@mui/icons-material';
 import { GridActionsCellItem, GridColDef } from "@mui/x-data-grid";
 import CloseIcon from "@mui/icons-material/Close";
@@ -1128,54 +1128,60 @@ export default function ClientScheme() {
                     maxWidth="md"
                     fullWidth
                 >
-                    <DialogTitle>{caseDetails?.client?.name} • Case Summary</DialogTitle>
+                    <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", pr: 1 }}>
+                        <Typography variant="h6">
+                            {caseDetails?.client?.name} • Case Summary
+                        </Typography>
+
+                        <IconButton size="small" onClick={() => setCaseDetails(null)} sx={{ mr: 3 }}>
+                            <CloseIcon fontSize="small" />
+                        </IconButton>
+                    </DialogTitle>
                     <DialogContent dividers>
-                        <Stack spacing={1}>
-                            <Table size="small">
-                                <TableHead>
-                                    <TableRow>
-                                        <TableCell><b>Scheme</b></TableCell>
-                                        <TableCell><b>Stage</b></TableCell>
-                                        <TableCell><b>Status</b></TableCell>
-                                        <TableCell></TableCell>
-                                    </TableRow>
-                                </TableHead>
+                        <Table size="small">
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell><b>Scheme</b></TableCell>
+                                    <TableCell><b>Stage</b></TableCell>
+                                    <TableCell><b>Status</b></TableCell>
+                                    <TableCell></TableCell>
+                                </TableRow>
+                            </TableHead>
 
-                                <TableBody>
-                                    {caseDetails?.scheme_ref?.map((scheme: any) => {
-                                        const stage = caseDetails.current_stage?.find((s: any) => s?.scheme_id === scheme?._id);
-                                        const status = caseDetails.current_status?.find((s: any) => s?.scheme_id == scheme?._id && s?.stage_id == stage?.stage_id);
+                            <TableBody>
+                                {caseDetails?.scheme_ref?.map((scheme: any) => {
+                                    const stage = caseDetails.current_stage?.find((s: any) => s?.scheme_id === scheme?._id);
+                                    const status = caseDetails.current_status?.find((s: any) => s?.scheme_id == scheme?._id && s?.stage_id == stage?.stage_id);
 
-                                        return (
-                                            <TableRow key={scheme?._id}>
-                                                <TableCell>{scheme?.scheme_name}</TableCell>
-                                                <TableCell>
-                                                    {stage?.ref_stage?.name || "-"}
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Chip
-                                                        size="small"
-                                                        label={status?.ref_status?.label || "-"}
-                                                        sx={{
-                                                            bgcolor: status?.ref_status?.bgColor,
-                                                        }}
-                                                    />
-                                                </TableCell>
-                                                <TableCell>
-                                                    <IconButton
-                                                        size="small"
-                                                        color="primary"
-                                                        onClick={() => navigate(`/client-case/${caseDetails?._id}/${scheme?._id}`)}
-                                                    >
-                                                        <ArrowOutward fontSize="small" />
-                                                    </IconButton>
-                                                </TableCell>
-                                            </TableRow>
-                                        );
-                                    })}
-                                </TableBody>
-                            </Table>
-                        </Stack>
+                                    return (
+                                        <TableRow key={scheme?._id}>
+                                            <TableCell>{scheme?.scheme_name}</TableCell>
+                                            <TableCell>
+                                                {stage?.ref_stage?.name || "-"}
+                                            </TableCell>
+                                            <TableCell>
+                                                <Chip
+                                                    size="small"
+                                                    label={status?.ref_status?.label || "-"}
+                                                    sx={{
+                                                        bgcolor: status?.ref_status?.bgColor,
+                                                    }}
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                <IconButton
+                                                    size="small"
+                                                    color="primary"
+                                                    onClick={() => navigate(`/client-case/${caseDetails?._id}/${scheme?._id}`)}
+                                                >
+                                                    <ArrowOutward fontSize="small" />
+                                                </IconButton>
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })}
+                            </TableBody>
+                        </Table>
                     </DialogContent>
                 </Dialog>
             )}
