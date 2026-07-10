@@ -199,44 +199,46 @@ export const saveCaseStatusProgress = async ({
     stage_id,
     status_id,
     remarks = "",
-    reqUser = null
+    reqUser = null,
 }) => {
     try {
-        const lastProgress = await CaseStatusProgress.findOne({ case_id, scheme_id, stage_id }).sort({ createdAt: -1 });
+        // Check if this status already exists
+        const existingProgress = await CaseStatusProgress.findOne({
+            case_id,
+            scheme_id,
+            stage_id,
+            status_id,
+        });
 
-        // No previous record
-        if (!lastProgress) {
-            return await CaseStatusProgress.create({
-                case_id,
-                scheme_id,
-                stage_id,
-                status_id,
-                submitted_date: new Date(),
-                completed_date: null,
-                remarks,
-                createdAt: new Date(),
-                createdBy: reqUser?._id
-            });
+        // Status already exists -> Update remark only
+        if (existingProgress) {
+            existingProgress.remarks = remarks;
+            existingProgress.updatedAt = new Date();
+            existingProgress.updatedBy = reqUser?._id;
+
+            await existingProgress.save();
+            return existingProgress;
         }
 
-        // Same status -> update existing record only ( completed date, remark )
-        if (lastProgress?.status_id?.toString() == status_id?.toString()) {
-            lastProgress.remarks = remarks;
-            // lastProgress.completed_date = completed_date;
-            lastProgress.updatedAt = new Date();
-            lastProgress.updatedBy = reqUser?._id;
-            await lastProgress.save();
-            return lastProgress;
+        // Find current active status
+        const activeProgress = await CaseStatusProgress.findOne({
+            case_id,
+            scheme_id,
+            stage_id,
+            completed_date: null,
+        });
+
+        // Close current active status
+        if (activeProgress) {
+            activeProgress.completed_date = new Date();
+            activeProgress.updatedAt = new Date();
+            activeProgress.updatedBy = reqUser?._id;
+
+            await activeProgress.save();
         }
 
-        // Status changed 
-        lastProgress.completed_date = new Date();
-        lastProgress.remarks = remarks;
-        lastProgress.updatedAt = new Date();
-        lastProgress.updatedBy = reqUser?._id;
-        await lastProgress.save();
-
-        return await CaseStatusProgress.create({
+        // Create new status
+        const newProgress = await CaseStatusProgress.create({
             case_id,
             scheme_id,
             stage_id,
@@ -244,10 +246,11 @@ export const saveCaseStatusProgress = async ({
             submitted_date: new Date(),
             completed_date: null,
             remarks,
-            createdAt: new Date(),
-            createdBy: reqUser?._id
+            createdBy: reqUser?._id,
+            updatedBy: reqUser?._id,
         });
 
+        return newProgress;
     } catch (error) {
         console.error("Error saving case status progress:", error);
         throw error;
@@ -296,8 +299,6 @@ export const saveCaseStageProgress = async ({
         }
 
         // Stage changed -> close previous stage
-        lastProgress.end_date = new Date();
-        lastProgress.remarks = remarks;
         lastProgress.updatedAt = new Date();
         lastProgress.updatedBy = reqUser?._id;
         await lastProgress.save();

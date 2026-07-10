@@ -67,7 +67,7 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
     const [submittedDocs, setSubmittedDocs] = useState<string[]>([]);
     const [tab, setTab] = useState("loan_form_tab");
 
-    const { control, watch, reset, getValues } = useForm({
+    const { control, watch, reset, getValues, setValue } = useForm({
         defaultValues: {
             selectedSchemeId: '',
             sectionForm: {
@@ -78,7 +78,7 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
                 disbursement_amount: '',
                 sanction_amount: '',
             },
-            stausForm: {
+            statusForm: {
                 stage: "",
                 status: "",
                 remark: ""
@@ -219,7 +219,7 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
     useEffect(() => {
         reset({
             ...getValues(),
-            stausForm: {
+            statusForm: {
                 stage: currentStage?.stage_id || "",
                 status: currentStatus?.status_id || "",
                 remark: currentStatus?.remarks || "",
@@ -347,6 +347,17 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
     const submittedCount = caseDetail?.submitted_docs?.length || 0;
     const percentage = submittedCount > 0 ? Number(((submittedCount / totalDocs) * 100).toFixed(1)) : 0;
 
+    const handleStatusChange = (statusId: string) => {
+        const remarkFieldValue = formattedStatusList?.find(
+            (item: any) =>
+                item.statusProgress?.scheme_id == selectedSchemeId &&
+                item.statusProgress?.stage_id == currentStage?.stage_id &&
+                item.statusProgress?.status_id == statusId
+        )?.statusProgress?.remarks;
+
+        setValue("statusForm.remark", remarkFieldValue || "");
+    };
+
     const renderTabContent = () => {
         switch (tab) {
             case "loan_form_tab":
@@ -412,7 +423,7 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
             case "manage_status_tab":
                 const statusFormField = [
                     { name: "stage", label: "Stage", type: "dropdown", options: stageList, disabled: true },
-                    { name: "status", label: "Status", type: "dropdown", options: statusList },
+                    { name: "status", label: "Status", type: "dropdown", options: statusList, disabled_order: true, onChange: (value: string) => handleStatusChange(value) },
                     { name: "remark", label: "Remark", type: "text", multiline: true, rows: 4 },
 
                 ];
@@ -424,10 +435,10 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
                             gap: 2,
                         }}
                     >
-                        {statusFormField?.map(({ name, label, type, options, disabled = false, multiline, rows }: any) => (
+                        {statusFormField?.map(({ name, label, type, options, disabled = false, multiline, rows, disabled_order, onChange }: any) => (
                             <Controller
                                 key={name}
-                                name={`stausForm.${name}` as any}
+                                name={`statusForm.${name}` as any}
                                 control={control}
                                 render={({ field }) =>
                                     type === "dropdown" ? (
@@ -435,12 +446,23 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
                                             <InputLabel id="client-label">{label}</InputLabel>
                                             <Select
                                                 {...field}
-                                                onChange={(value) => field.onChange(value)}
+                                                onChange={(e) => {
+                                                    field.onChange(e.target.value);
+                                                    onChange?.(e.target.value);
+                                                }}
                                                 labelId="stage-label"
                                                 label="stage"
                                                 disabled={disabled}
                                             >
-                                                {options?.map((val: any) => (<MenuItem key={val?._id} value={val?._id}>{val?.payload?.name || val?.payload?.label}</MenuItem>))}
+                                                {options?.map((val: any) => (
+                                                    <MenuItem
+                                                        key={val?._id}
+                                                        value={val?._id}
+                                                        disabled={disabled_order ? val.payload.order_index > activeStatusIndex + 2 : false}
+                                                    >
+                                                        {val?.payload?.name || val?.payload?.label}
+                                                    </MenuItem>
+                                                ))}
                                             </Select>
                                         </FormControl>
                                     ) : (
@@ -586,7 +608,7 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
                     break;
 
                 case 'manage_status_tab':
-                    const statusValues = getValues()?.stausForm;
+                    const statusValues = getValues()?.statusForm;
                     payload = {
                         status: {
                             scheme_id: selectedSchemeId,
