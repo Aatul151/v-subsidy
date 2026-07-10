@@ -135,6 +135,8 @@ export const getClientCases = async (req, res) => {
         const pageSize = Number(limit);
         const sortDirection = sortType?.toUpperCase() === "DESC" ? -1 : 1;
         const skip = customSkip !== undefined ? Number(customSkip) : (currentPage - 1) * pageSize;
+        const schemeIds = scheme?.split(",");
+        const schemeObjectIds = schemeIds?.map(id => new mongoose.Types.ObjectId(id));
 
         const [records, totalRecords, statusCombinations] = await Promise.all([
             ClientCases.find(filter)
@@ -149,7 +151,7 @@ export const getClientCases = async (req, res) => {
             ClientCases.aggregate([
                 { $match: filter },
                 { $unwind: "$current_status" },
-                ...(scheme ? [{ $match: { "current_status.scheme_id": new mongoose.Types.ObjectId(scheme) } }] : []),
+                ...(scheme ? [{ $match: { "current_status.scheme_id": schemeObjectIds } }] : []),
                 {
                     $group: {
                         _id: "$_id",
@@ -180,8 +182,8 @@ export const getClientCases = async (req, res) => {
             if (Array.isArray(record.current_status)) {
                 // Collect, sanitize, and sort current status string items
                 const rawArray = record.current_status
-                    ?.filter(stat => !scheme || stat?.scheme_id?.toString() === scheme.toString())
-                    ?.map(stat => stat.status_id?.toString())
+                    ?.filter(stat => !schemeIds?.length || schemeIds?.some(id => id?.toString() == stat?.scheme_id?.toString()))
+                    ?.map(stat => stat?.status_id?.toString())
                     ?.filter(Boolean);
 
                 const sortedCombinationString = rawArray.sort().join(",");
