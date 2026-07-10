@@ -326,16 +326,19 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
     }
 
     const handleDocumentCheck = (docId: string) => {
-        setSubmittedDocs((prev: any) =>
-            prev.includes(docId)
-                ? prev.filter((id: any) => id != docId)
-                : [...prev, docId]
-        );
+        setSubmittedDocs((prev: any[]) => {
+            const exists = prev?.some((doc) => doc?.scheme_id == selectedSchemeId && doc?.docId == docId);
+
+            if (exists) {
+                return prev?.filter((doc) => !(doc?.scheme_id == selectedSchemeId && doc?.docId == docId)); // Remove From Doc
+            }
+            return [...prev, { docId, scheme_id: selectedSchemeId }]; // Add In Doc
+        });
     };
 
     const handleSaveDocuments = async () => {
         try {
-            const payload = { submitted_docs: submittedDocs || [] }
+            const payload = { submitted_docs: submittedDocs }
             await updateMutation.mutateAsync({ id, payload });
             setOpenDocumentList(false);
         } catch (err) {
@@ -343,9 +346,8 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
         }
     };
 
-    const totalDocs = caseDetail?.subsidy_ref?.requird_docs?.length || 0;
-    const submittedCount = caseDetail?.submitted_docs?.length || 0;
-    const percentage = submittedCount > 0 ? Number(((submittedCount / totalDocs) * 100).toFixed(1)) : 0;
+    const requiredDocument = caseDetail?.scheme_ref?.find((e: any) => e?._id == selectedSchemeId)
+    const percentage = formattedStatusList?.length > 0 ? Number((((activeStep + 1) / formattedStatusList?.length) * 100)?.toFixed(1)) : 0;
 
     const handleStatusChange = (statusId: string) => {
         const remarkFieldValue = formattedStatusList?.find(
@@ -725,9 +727,9 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
                                 icon={<DescriptionOutlined />}
                                 label={
                                     <Stack direction="row" alignItems="center" spacing={1}>
-                                        <Typography variant="body2">Documents: {(caseDetail?.subsidy_ref?.requird_docs?.length || 0)} required</Typography>
+                                        <Typography variant="body2">Documents: {(requiredDocument?.requird_docs?.length || 0)} required</Typography>
 
-                                        {caseDetail?.subsidy_ref?.requird_docs?.length > 0 && <Tooltip title="View Documents" placement="bottom" arrow>
+                                        {requiredDocument?.requird_docs?.length > 0 && <Tooltip title="View Documents" placement="bottom" arrow>
                                             <Visibility fontSize="small" sx={{ cursor: 'pointer' }}
                                                 onClick={(e) => {
                                                     e.stopPropagation();
@@ -917,7 +919,7 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
 
                     <DialogContent dividers sx={{ p: 3 }}>
                         <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-                            {caseDetail?.subsidy_ref?.requird_docs?.map((docId: string, index: number) => {
+                            {requiredDocument?.requird_docs?.map((docId: string, index: number) => {
                                 const document = documentsList?.find((d: any) => d?._id == docId);
                                 return (
                                     <Paper
@@ -947,7 +949,7 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
                                         </Box>
 
                                         <Checkbox
-                                            checked={submittedDocs?.includes(docId)}
+                                            checked={submittedDocs?.some((doc: any) => doc?.scheme_id == selectedSchemeId && doc?.docId == docId)}
                                             onChange={() => handleDocumentCheck(docId)}
                                             color="primary"
                                         />
