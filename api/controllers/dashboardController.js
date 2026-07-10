@@ -85,10 +85,12 @@ export const getCount = async (req, res) => {
     const EntryModel = getFormEntryModel(statusForm);
     const statuses = await EntryModel.find({ formId: statusForm?._id })
 
-    const statusCount = {};
-    statuses?.forEach(status => {
-      statusCount[status?.payload?.value] = countMap?.get(status?._id?.toString()) || 0;
-    });
+    const statusCount = statuses?.map(status => ({
+      _id: status._id,
+      totalCount: countMap?.get(status?._id?.toString()) || 0,
+      label: status?.payload?.label,
+      bgColor: status?.payload?.bgColor,
+    }));
     //#endregion
 
     return res.status(200).json({
