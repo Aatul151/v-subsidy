@@ -77,8 +77,8 @@ export default function ClientScheme() {
 
             case "week":
                 return {
-                    expireFrom: dayjs().add(1, "day").format("YYYY-MM-DD"),
-                    expireTo: dayjs().add(7, "day").format("YYYY-MM-DD")
+                    expireFrom: dayjs().startOf("week").format("YYYY-MM-DD"),
+                    expireTo: dayjs().endOf("week").format("YYYY-MM-DD"),
                 };
 
             case "month":
@@ -142,11 +142,11 @@ export default function ClientScheme() {
 
     const filters = {
         client: Array.isArray(client) ? client?.join(",") : client,
-        status: Array.isArray(status) ? status?.join(",") : status,
+        status_id: Array.isArray(status) ? status?.join(",") : status,
         expired: date === "expired" ? true : null,
         assigned_executive: Array.isArray(assigned_executive) ? assigned_executive?.join(",") : assigned_executive,
         skip: skip && isKanbanBoard && isExpanded ? skip : undefined,
-        ...(isKanbanBoard ? (isExpanded ? { current_stage: filterStage } : {}) : { current_stage: Array.isArray(stage) ? stage.join(",") : stage }),
+        ...(isKanbanBoard ? (isExpanded ? { stage_id: filterStage } : {}) : { stage_id: Array.isArray(stage) ? stage.join(",") : stage }),
         ...(OpenArchiveTable && { isArchived: true }),
         ...dateRange,
     };
@@ -974,7 +974,6 @@ export default function ClientScheme() {
                         columns={columns}
                         loading={clientLoading}
                         getRowId={(row) => row._id}
-                        onRowClick={(row) => { navigate(`/client-case/${row.id}`) }}
                     />}
                 </Box>
             </PageContent >
