@@ -1,5 +1,5 @@
 import { Alert, Avatar, Box, Button, ButtonGroup, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControl, IconButton, InputLabel, MenuItem, Select, Stack, Table, TableBody, TableCell, TableHead, TableRow, Tooltip, Typography } from "@mui/material";
-import { FormatListBulleted as FormatListBulletedIcon } from '@mui/icons-material';
+import { ArrowOutward, FormatListBulleted as FormatListBulletedIcon } from '@mui/icons-material';
 import { GridActionsCellItem, GridColDef } from "@mui/x-data-grid";
 import CloseIcon from "@mui/icons-material/Close";
 import { LocalizationProvider } from "@mui/x-date-pickers";
@@ -16,7 +16,7 @@ import { PageHeader } from "@/components/common/PageHeader";
 import { PageContent } from "@/components/common/PageContent";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDateTime, SYSTEM_FORM_NAMES, transformFormSchema } from "@/utils/formUtils";
-import { formsAPI } from "@/api/forms";
+import { formEntriesAPI, formsAPI } from "@/api/forms";
 import { FormField, FormSection } from "@aatulwork/customform-renderer";
 import { clientSubsidyAPI, ClientSchemeType, CreateClientPayload, UpdateClientSchemePayload } from "@/api/clientScheme";
 import { FormContainer } from "@/components/form-builder/FormContainer";
@@ -59,13 +59,14 @@ export default function ClientScheme() {
             stage: [],
             assigned_executive: [],
             status: statusParam ? [statusParam] : [],
+            scheme: [],
             date: expiredParam === "true" ? "expired" : "",
             startDate: null as Dayjs | null,
             endDate: null as Dayjs | null,
         },
     });
 
-    const { client, stage, assigned_executive, date, startDate, endDate, status }: any = watch();
+    const { client, stage, assigned_executive, date, startDate, endDate, status, scheme }: any = watch();
 
     const getDateRange = () => {
         const today = dayjs();
@@ -131,6 +132,19 @@ export default function ClientScheme() {
         placeholderData: (previousData) => previousData,
     });
 
+    const { data: schemeList } = useQuery({
+        queryKey: ['formEntries', SYSTEM_FORM_NAMES.SCHEME],
+        queryFn: async () => {
+            const response = await formEntriesAPI.getAll({
+                formName: SYSTEM_FORM_NAMES.SCHEME,
+                page: 1,
+                limit: 10,
+            });
+
+            return response.data || [];
+        },
+    });
+
     const formSchema = formSchemaRaw;
 
     const [paginationModel, setPaginationModel] = useState({
@@ -144,6 +158,7 @@ export default function ClientScheme() {
     const filters = {
         client: Array.isArray(client) ? client?.join(",") : client,
         status_id: Array.isArray(status) ? status?.join(",") : status,
+        scheme: Array.isArray(scheme) ? scheme?.join(",") : scheme,
         expired: date === "expired" ? true : null,
         assigned_executive: Array.isArray(assigned_executive) ? assigned_executive?.join(",") : assigned_executive,
         skip: skip && isKanbanBoard && isExpanded ? skip : undefined,
@@ -181,11 +196,12 @@ export default function ClientScheme() {
         const isDateFilterApplied = !!date && date !== "";
         const isUserFilterEmpty = !assigned_executive || assigned_executive.length === 0;
         const isStatusFilterEmpty = !status || status.length === 0;
+        const isSchemeFilterEmpty = !scheme || scheme.length === 0;
 
         // 1. Get the current active date strings from your helper function
         const activeRange = isDateFilterApplied ? getDateRange() : null;
 
-        if (!filterStage && isClientFilterEmpty && isUserFilterEmpty && isStatusFilterEmpty && !isDateFilterApplied && clientSubsidyList?.pagination) {
+        if (!filterStage && isClientFilterEmpty && isUserFilterEmpty && isStatusFilterEmpty && isSchemeFilterEmpty && !isDateFilterApplied && clientSubsidyList?.pagination) {
             setDefaultSubsidyCount(clientSubsidyList.pagination);
         } else {
             const updatedStages = clientSubsidyList?.pagination?.stageCounts || [];
@@ -221,8 +237,13 @@ export default function ClientScheme() {
                             ? s.status.length === status.length && s.status.every((st: string) => status?.includes(st))
                             : status.includes(s.status)
                     );
+                    const matchesScheme = isSchemeFilterEmpty || (
+                        Array.isArray(s.scheme)
+                            ? s.scheme.length === scheme.length && s.scheme.every((st: string) => scheme?.includes(st))
+                            : scheme.includes(s.scheme)
+                    );
 
-                    return matchesClient && matchesDate && matchesUser && matchesStatus;
+                    return matchesClient && matchesDate && matchesUser && matchesStatus && matchesScheme;
                 };
                 // 3. Filter existing state and incoming data with the unified rule
                 const existingStages = (prev?.stageCounts || []).filter(isValidStage);
@@ -836,6 +857,50 @@ export default function ClientScheme() {
                                     </FormControl>
                                 )}
                             />
+                            <Controller
+                                name="scheme"
+                                control={control}
+                                render={({ field }) => (
+                                    <FormControl sx={{ width: 200 }} size="small">
+                                        <InputLabel id="client-label">Scheme</InputLabel>
+                                        <Select
+                                            {...field}
+                                            onChange={(e) => {
+                                                field.onChange(e);
+                                                if (isKanbanBoard) { setPages(1); }
+                                                setIsExpanded(false);
+                                            }}
+                                            multiple={true}
+                                            labelId="scheme-label"
+                                            label="scheme"
+                                        >
+                                            {schemeList?.map((val: any) => (<MenuItem key={val?._id} value={val?._id}>{val?.payload?.scheme_name}</MenuItem>))}
+                                        </Select>
+                                    </FormControl>
+                                )}
+                            />
+                            <Controller
+                                name="stage"
+                                control={control}
+                                render={({ field }) => (
+                                    <FormControl sx={{ width: 200 }} size="small">
+                                        <InputLabel id="client-label">Stage </InputLabel>
+                                        <Select
+                                            {...field}
+                                            onChange={(e) => {
+                                                field.onChange(e);
+                                                if (isKanbanBoard) { setPages(1); }
+                                                setIsExpanded(false);
+                                            }}
+                                            multiple={true}
+                                            labelId="stage-label"
+                                            label="stage"
+                                        >
+                                            {stageList?.map((val: any) => (<MenuItem key={val?._id} value={val?._id}>{val?.payload?.name}</MenuItem>))}
+                                        </Select>
+                                    </FormControl>
+                                )}
+                            />
                             {!isKanbanBoard && <Controller
                                 name="status"
                                 control={control}
@@ -884,28 +949,6 @@ export default function ClientScheme() {
                                         >
                                             {[...new Map(userList?.data?.map((r: any) => [r?._id, { label: r?.name, id: r?._id }])).values()]
                                                 .map((stage: any) => (<MenuItem key={stage?.id} value={stage?.id} > {stage?.label}  </MenuItem>))}
-                                        </Select>
-                                    </FormControl>
-                                )}
-                            />
-                            <Controller
-                                name="stage"
-                                control={control}
-                                render={({ field }) => (
-                                    <FormControl sx={{ width: 200 }} size="small">
-                                        <InputLabel id="client-label">Stage </InputLabel>
-                                        <Select
-                                            {...field}
-                                            onChange={(e) => {
-                                                field.onChange(e);
-                                                if (isKanbanBoard) { setPages(1); }
-                                                setIsExpanded(false);
-                                            }}
-                                            multiple={true}
-                                            labelId="stage-label"
-                                            label="stage"
-                                        >
-                                            {stageList?.map((val: any) => (<MenuItem key={val?._id} value={val?._id}>{val?.payload?.name}</MenuItem>))}
                                         </Select>
                                     </FormControl>
                                 )}
@@ -968,7 +1011,7 @@ export default function ClientScheme() {
 
                                 </LocalizationProvider>
                             )}
-                            {(client?.length > 0 || (!isKanbanBoard && stage?.length > 0) || date !== '' || assigned_executive?.length > 0 || status?.length > 0) && <IconButton
+                            {(client?.length > 0 || (!isKanbanBoard && stage?.length > 0) || date !== '' || assigned_executive?.length > 0 || status?.length > 0 || scheme?.length > 0) && <IconButton
                                 sx={{ fontSize: "20px", width: 26, height: 26 }}
                                 onClick={handleClose}
                             >
@@ -977,15 +1020,24 @@ export default function ClientScheme() {
                         </Box>}
 
                     {!OpenArchiveTable && (isKanbanBoard ?
-                        <KanbanBoard boards={boardData} sx={{ mt: 6 }} onShowMore={handleSeeMore} onRefresh={handleRefresh} onDrop={handleDrop} />
+                        <KanbanBoard boards={boardData} sx={{
+                            mt: date === "custom" ? 12 : 6,
+                            "@media (max-width:1432px)": {
+                                mt: 12,
+                                height: "400px"
+                            },
+                        }} onShowMore={handleSeeMore} onRefresh={handleRefresh} onDrop={handleDrop} />
                         : <AppDataTable
                             rows={clientSubsidy}
                             columns={columns}
                             loading={clientLoading}
                             getRowId={(row) => row._id}
                             sx={{
-                                mt: date === "custom" ? 5 : 0,
-                                "@media (max-width:1690px)": { mt: "40px", },
+                                mt: 5,
+                                "@media (max-width:1690px)": {
+                                    mt: date === "custom" ? "90px" : "40px",
+                                    height: "400px"
+                                },
                                 height: "500px"
                             }}
                             serverPagination
@@ -1019,9 +1071,8 @@ export default function ClientScheme() {
                     const { createdAt, updatedAt,
                         assigned_executive_ref: { name: executiveName } = {},
                         client: { _id: clientId } = {},
-                        subsidy_ref: { subsidy_name: subsidyName } = {},
-                        current_stage_ref: { label: currentStage } = {}, ...clientSubsidy } = selectedClientSubsidy;
-                    return { ...clientSubsidy, assigned_executive_ref: executiveName, client: clientId, subsidy_ref: subsidyName, current_stage_ref: currentStage };
+                        ...clientSubsidy } = selectedClientSubsidy;
+                    return { ...clientSubsidy, assigned_executive_ref: executiveName, client: clientId, current_stage: selectedClientSubsidy.current_stage?.[0]?.stage_id, };
                 })() : undefined}
                 title={formMode === 'edit' ? "Edit Case" : formMode === 'view' ? "View Case" : 'Add Case'}
                 mode={formMode}
@@ -1086,13 +1137,14 @@ export default function ClientScheme() {
                                         <TableCell><b>Scheme</b></TableCell>
                                         <TableCell><b>Stage</b></TableCell>
                                         <TableCell><b>Status</b></TableCell>
+                                        <TableCell></TableCell>
                                     </TableRow>
                                 </TableHead>
 
                                 <TableBody>
                                     {caseDetails?.scheme_ref?.map((scheme: any) => {
                                         const stage = caseDetails.current_stage?.find((s: any) => s?.scheme_id === scheme?._id);
-                                        const status = caseDetails.current_status?.find((s: any) => s?.scheme_id === scheme?._id);
+                                        const status = caseDetails.current_status?.find((s: any) => s?.scheme_id == scheme?._id && s?.stage_id == stage?.stage_id);
 
                                         return (
                                             <TableRow key={scheme?._id}>
@@ -1108,6 +1160,15 @@ export default function ClientScheme() {
                                                             bgcolor: status?.ref_status?.bgColor,
                                                         }}
                                                     />
+                                                </TableCell>
+                                                <TableCell>
+                                                    <IconButton
+                                                        size="small"
+                                                        color="primary"
+                                                        onClick={() => navigate(`/client-case/${caseDetails?._id}/${scheme?._id}`)}
+                                                    >
+                                                        <ArrowOutward fontSize="small" />
+                                                    </IconButton>
                                                 </TableCell>
                                             </TableRow>
                                         );

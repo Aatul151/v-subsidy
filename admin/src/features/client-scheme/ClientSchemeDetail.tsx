@@ -326,7 +326,7 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
     );
 
     const getColor = (item: any) => {
-        if (item?.label === 'Status') return caseDetail?.current_status?.filter((d: any) => d?.scheme_id == selectedSchemeId)?.[0]?.ref_status?.bgColor;
+        if (item?.label === 'Status') return caseDetail?.current_status?.find((d: any) => d?.scheme_id == selectedSchemeId && d?.stage_id == currentStatus?.stage_id)?.ref_status?.bgColor;
         else return 'primary.main';
     }
 

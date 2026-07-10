@@ -13,6 +13,7 @@ export const SYSTEM_FORM_NAMES = {
   CLIENTS: 'clients',
   STAGES: "stage",
   STATUS: "status",
+  SCHEME: "scheme",
   ALL_DOCUMENTS: "all_documents",
 
   // Add more system form names here as needed
