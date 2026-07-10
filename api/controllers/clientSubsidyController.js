@@ -333,82 +333,86 @@ export const updateClientCase = async (req, res) => {
         if (disbursement_amount !== undefined) fieldToUpdate.disbursement_amount = disbursement_amount;
         if (sanction_amount !== undefined) fieldToUpdate.sanction_amount = sanction_amount;
 
-        //update current status or stage field
-        if (stage?.scheme_id || status?.scheme_id) {
-            const clientCase = await ClientCases.findById(id);
+        const hasCaseFields = Object.keys(fieldToUpdate).length > 0;
+        const hasStatus = status?.scheme_id && status?.stage_id && status?.status_id;
+        const hasStage = stage?.scheme_id && stage?.stage_id;
 
-            if (stage?.scheme_id != undefined) {
-                fieldToUpdate['current_stage'] = updateCurrentStage(
-                    clientCase.current_stage,
-                    stage?.scheme_id,
-                    stage?.stage_id,
-                    stage?.end_date,
-                    stage?.remarks ?? "",
-                );
-            };
-
-            if (status?.scheme_id != undefined && status?.stage_id != undefined) {
-                fieldToUpdate['current_status'] = updateCurrentStatus(
-                    clientCase.current_status,
-                    status?.scheme_id,
-                    status?.stage_id,
-                    status?.status_id,
-                    status?.remarks ?? "",
-                );
-            };
-        }
-
-        if (Object.keys(fieldToUpdate).length === 0) {
+        if (!hasCaseFields && !hasStatus && !hasStage) {
             return res.status(400).json({ success: false, message: "Please provide at least one field to update." });
         }
 
-        fieldToUpdate['updatedBy'] = req?.user?._id;
-        fieldToUpdate['updatedAt'] = new Date();
+        let resScheme = await ClientCases.findById(id);
+        
+        if (hasCaseFields) {
+            fieldToUpdate['updatedBy'] = req?.user?._id;
+            fieldToUpdate['updatedAt'] = new Date();
 
-        const resScheme = await ClientCases.findByIdAndUpdate(id,
-            fieldToUpdate,
-            {
-                new: true,
-                runValidators: true
-            }
-        );
+            resScheme = await ClientCases.findByIdAndUpdate(
+                id,
+                fieldToUpdate,
+                {
+                    new: true,
+                    runValidators: true,
+                }
+            );
+        }
 
         if (!resScheme || !resScheme._id) { return res.status(404).json({ success: false, message: "Case not found.", }); }
 
-        const promises = [];
+        //#region Manage Status & stage progress
         const reqUser = req.user
-        if (status?.scheme_id && status?.stage_id && status?.status_id) {
+        const [statusProgress, stageProgress] = await Promise.all([
+            hasStatus ? saveCaseStatusProgress({
+                case_id: resScheme._id,
+                scheme_id: status.scheme_id,
+                stage_id: status.stage_id,
+                status_id: status.status_id,
+                remarks: status.remarks ?? "",
+                reqUser,
+            }) : null,
 
-            promises.push(
-                saveCaseStatusProgress({
-                    case_id: resScheme._id,
-                    scheme_id: status.scheme_id,
-                    stage_id: status.stage_id,
-                    status_id: status.status_id,
-                    remarks: status.remarks ?? "",
-                    reqUser
-                })
+            hasStage ? saveCaseStageProgress({
+                case_id: resScheme._id,
+                scheme_id: stage.scheme_id,
+                stage_id: stage.stage_id,
+                end_date: stage.end_date ?? null,
+                date: null,
+                remarks: stage.remarks ?? "",
+                reqUser,
+            }) : null,
+        ]);
+        //#endregion
+
+        //#region Manage current stage/status
+        const updateFields = {};
+
+        if (statusProgress?.completed_date === null) {
+            updateFields.current_status = updateCurrentStatus(
+                resScheme.current_status || [],
+                statusProgress.scheme_id,
+                statusProgress.stage_id,
+                statusProgress.status_id,
+                statusProgress.remarks
             );
         }
-        if (stage?.scheme_id && stage?.stage_id) {
-            promises.push(
-                saveCaseStageProgress({
-                    case_id: resScheme._id,
-                    scheme_id: stage.scheme_id,
-                    stage_id: stage.stage_id,
-                    end_date: stage.end_date ?? null,
-                    date: null,
-                    remarks: stage.remarks ?? "",
-                    reqUser
-                })
+        if (stageProgress) {
+            updateFields.current_stage = updateCurrentStage(
+                resScheme.current_stage || [],
+                stageProgress.scheme_id,
+                stageProgress.stage_id,
+                stageProgress.end_date,
+                stageProgress.remarks
             );
         }
+        //#endregion
 
-        await Promise.all(promises);
+        if (Object.keys(updateFields).length) {
+            await ClientCases.findByIdAndUpdate(id, { $set: updateFields });
+        }
+
         return res.status(200).json({ success: true, message: "Case updated successfully.", data: resScheme });
 
     } catch (error) {
-
         return res.status(500).json({ success: false, message: "Failed to update case.", error: error.message, });
     }
 };
