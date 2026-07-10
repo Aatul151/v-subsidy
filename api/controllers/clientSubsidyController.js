@@ -222,6 +222,37 @@ export const getClientCases = async (req, res) => {
         const populatedEntries = await populateReferencesBatch(data, validation?.form);
         const formateEntries = populatedEntries?.map((e) => { return e?.payload });
 
+        for (const eachData of formateEntries) {
+            if (eachData.current_status) {
+                eachData.current_status = await Promise.all(
+                    eachData.current_status.map(async (status) => {
+                        const refStatus = await populateFormReference(status.status_id, { referenceFormName: FORM?.STATUS_FORM });
+                        const refStage = await populateFormReference(status.stage_id, { referenceFormName: FORM?.STAGE_FORM });
+                        const refScheme = await populateFormReference(status.scheme_id, { referenceFormName: FORM?.SCHEME_FORM });
+
+                        return {
+                            ...status?.toObject(),
+                            ref_status: refStatus,
+                            ref_stage: refStage,
+                            ref_scheme: refScheme
+                        };
+                    })
+                );
+            }
+
+            if (eachData.current_stage) {
+                eachData.current_stage = await Promise.all(
+                    eachData.current_stage.map(async (stage) => {
+                        const refStage = await populateFormReference(stage?.stage_id, { referenceFormName: FORM?.STAGE_FORM });
+                        return {
+                            ...stage?.toObject(),
+                            ref_stage: refStage
+                        };
+                    })
+                );
+            }
+        }
+
         return res.status(200).json({
             success: true,
             pagination: {

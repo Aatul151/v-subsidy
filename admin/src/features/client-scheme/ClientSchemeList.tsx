@@ -1,4 +1,4 @@
-import { Alert, Avatar, Box, Button, ButtonGroup, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControl, IconButton, InputLabel, MenuItem, Select, Tooltip, Typography } from "@mui/material";
+import { Alert, Avatar, Box, Button, ButtonGroup, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControl, IconButton, InputLabel, MenuItem, Select, Stack, Table, TableBody, TableCell, TableHead, TableRow, Tooltip, Typography } from "@mui/material";
 import { FormatListBulleted as FormatListBulletedIcon } from '@mui/icons-material';
 import { GridActionsCellItem, GridColDef } from "@mui/x-data-grid";
 import CloseIcon from "@mui/icons-material/Close";
@@ -50,6 +50,7 @@ export default function ClientScheme() {
     const [defaultSubsidyCount, setDefaultSubsidyCount] = useState<any>(null);
     const [filterStage, setFilterStage] = useState("");
     const [isExpanded, setIsExpanded] = useState(false);
+    const [caseDetails, setCaseDetails] = useState<any>(null);
 
     const { statusList, stageList } = useMasterData();
     const { control, watch, reset } = useForm({
@@ -428,18 +429,43 @@ export default function ClientScheme() {
                 columns.push({
                     field: field.name,
                     headerName: field.label,
-                    width: 200,
+                    width: 250,
                     order: orderMap.scheme,
                     valueGetter: (_value, row: any) => { return row?.scheme_ref?.[0]?.scheme_name },
                     renderCell: (params: any) => {
-                        const assign_executive = params?.row?.scheme_ref?.[0]?.scheme_name;
+                        const schemes = params?.row?.scheme_ref || [];
+                        const isClickable = schemes?.length > 1;
+
                         return (
-                            <Box sx={{ display: "flex", gap: "5px", alignItems: "center" }}>
-                                <Typography>{assign_executive}</Typography>
-                                {params?.row?.scheme_ref?.length > 1 && (<Typography fontSize="12px">({params?.row?.scheme_ref?.length - 1}+ More)</Typography>)}
+                            <Box
+                                onClick={(e) => {
+                                    if (!isClickable) return;
+                                    e.stopPropagation();
+                                    setCaseDetails(params.row);
+                                }}
+                                sx={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 0.5,
+                                    cursor: isClickable ? "pointer" : "default",
+                                    color: isClickable ? "primary.main" : "text.primary",
+                                    "&:hover": isClickable
+                                        ? { textDecoration: "underline" }
+                                        : {},
+                                }}
+                            >
+                                <Typography variant="body2">
+                                    {schemes[0]?.scheme_name}
+                                </Typography>
+
+                                {isClickable && (
+                                    <Typography variant="caption" color="text.secondary">
+                                        +{schemes.length - 1} more
+                                    </Typography>
+                                )}
                             </Box>
                         );
-                    },
+                    }
                 });
             } else if (field.name === "expireOn") {
                 columns.push({
@@ -476,20 +502,21 @@ export default function ClientScheme() {
                 columns.push({
                     field: field.name,
                     headerName: field.label,
-                    width: 200,
+                    width: 250,
                     order: orderMap.status,
-                    renderCell: (params: any) => {
-                        const status = statusList?.filter((list) => list?._id === params?.row?.current_status?.[0]?.status_id);
-                        const stageLabel = status?.[0]?.payload?.label;
-                        const bgColor = status?.[0]?.payload?.bgColor;
+                    renderCell: ({ row }: any) => {
+                        const statuses = row?.current_status || [];
                         return (
-                            <Chip
-                                label={stageLabel || "-"}
-                                size="small"
-                                sx={{
-                                    backgroundColor: bgColor,
-                                }}
-                            />)
+                            <Box display="flex" alignItems="center" gap={0.5}>
+                                {statuses[0] && (
+                                    <Chip
+                                        size="small"
+                                        label={statuses[0]?.ref_status?.label}
+                                        sx={{ bgcolor: statuses[0]?.ref_status?.bgColor }}
+                                    />
+                                )}
+                            </Box>
+                        );
                     },
                     valueGetter: (_value, row: any) => { return row?.status; }
                 });
@@ -1042,6 +1069,55 @@ export default function ClientScheme() {
                     </Button>
                 </DialogActions>
             </Dialog>
+
+            {caseDetails && (
+                <Dialog
+                    open={caseDetails?._id}
+                    onClose={() => setCaseDetails(null)}
+                    maxWidth="md"
+                    fullWidth
+                >
+                    <DialogTitle>{caseDetails?.client?.name} • Case Summary</DialogTitle>
+                    <DialogContent dividers>
+                        <Stack spacing={1}>
+                            <Table size="small">
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell><b>Scheme</b></TableCell>
+                                        <TableCell><b>Stage</b></TableCell>
+                                        <TableCell><b>Status</b></TableCell>
+                                    </TableRow>
+                                </TableHead>
+
+                                <TableBody>
+                                    {caseDetails?.scheme_ref?.map((scheme: any) => {
+                                        const stage = caseDetails.current_stage?.find((s: any) => s?.scheme_id === scheme?._id);
+                                        const status = caseDetails.current_status?.find((s: any) => s?.scheme_id === scheme?._id);
+
+                                        return (
+                                            <TableRow key={scheme?._id}>
+                                                <TableCell>{scheme?.scheme_name}</TableCell>
+                                                <TableCell>
+                                                    {stage?.ref_stage?.name || "-"}
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Chip
+                                                        size="small"
+                                                        label={status?.ref_status?.label || "-"}
+                                                        sx={{
+                                                            bgcolor: status?.ref_status?.bgColor,
+                                                        }}
+                                                    />
+                                                </TableCell>
+                                            </TableRow>
+                                        );
+                                    })}
+                                </TableBody>
+                            </Table>
+                        </Stack>
+                    </DialogContent>
+                </Dialog>
+            )}
         </Box >
     </>)
 }
