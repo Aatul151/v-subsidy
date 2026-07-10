@@ -144,7 +144,7 @@ export const clientSubsidyAPI = {
   * @param stage_id - client satge ID
   */
     getStatusHistory: async (clientCaseId: string, schemeId: string, stageId: string): Promise<ClientSchemeType> => {
-        const response = await axiosInstance.get<ApiResponse<ClientSchemeType>>(`/client-case/status-history/${clientCaseId}`,
+        const response = await axiosInstance.get<ApiResponse<ClientSchemeType>>(`/client-case/history/${clientCaseId}`,
             {
                 params: {
                     scheme_id: schemeId,

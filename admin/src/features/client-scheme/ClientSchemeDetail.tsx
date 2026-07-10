@@ -169,7 +169,7 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
     }, [caseDetail, currentStage, selectedSchemeId]);
 
     //Status history details 
-    const { data: statusHistoryInfo } = useQuery({
+    const { data: stepperInfo } = useQuery({
         queryKey: ['client_status', id, selectedSchemeId, currentStage?.stage_id],
         queryFn: async () => {
             if (!id || !selectedSchemeId || !currentStage?.stage_id) return;
@@ -181,8 +181,13 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
         ?.sort((a: any, b: any) => a?.payload?.order_index - b?.payload?.order_index)
         ?.map((status: any) => ({
             ...status,
-            statusProgress: statusHistoryInfo?.find((item: any) => item?.status_id == status?._id),
+            statusProgress: stepperInfo?.statusHistory?.find((item: any) => item?.status_id == status?._id),
         }));
+
+    const formattedStageList = stageList?.map((stage: any) => ({
+        ...stage,
+        stageProgress: stepperInfo?.stageHistory?.find((item: any) => item?.stage_id == stage?._id),
+    }));
 
     const activeStatusIndex = formattedStatusList.findIndex((item: any) => !item.statusProgress?.completed_date);
 
@@ -360,6 +365,17 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
         setValue("statusForm.remark", remarkFieldValue || "");
     };
 
+    const handleStageChange = (stageId: string) => {
+        const fieldValue = formattedStageList?.find(
+            (item: any) =>
+                item.stageProgress?.scheme_id == selectedSchemeId &&
+                item.stageProgress?.stage_id == stageId
+        )?.stageProgress;
+
+        setValue("stageForm.remark", fieldValue?.remarks || "");
+        setValue("stageForm.end_date", fieldValue?.end_date ? dayjs(fieldValue?.end_date) : null);
+    };
+
     const renderTabContent = () => {
         switch (tab) {
             case "loan_form_tab":
@@ -487,7 +503,7 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
                 </>;
             case "manage_stage_tab":
                 const stageFormField = [
-                    { name: "stage", label: "Stage", type: "dropdown", options: stageList },
+                    { name: "stage", label: "Stage", type: "dropdown", options: stageList, onChange: (value: string) => handleStageChange(value) },
                     { name: "end_date", label: "End date", type: "date" },
                     { name: "remark", label: "Remark", type: "text", multiline: true, rows: 4 },
 
@@ -501,7 +517,7 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
                         }}
                     >
                         <LocalizationProvider dateAdapter={AdapterDayjs}>
-                            {stageFormField?.map(({ name, label, type, options, disabled = false, multiline, rows }: any) => (
+                            {stageFormField?.map(({ name, label, type, options, disabled = false, multiline, rows, onChange }: any) => (
                                 <Controller
                                     key={name}
                                     name={`stageForm.${name}` as any}
@@ -512,7 +528,10 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
                                                 <InputLabel id="client-label">{label}</InputLabel>
                                                 <Select
                                                     {...field}
-                                                    onChange={(value) => field.onChange(value)}
+                                                    onChange={(e) => {
+                                                        field.onChange(e.target.value);
+                                                        onChange?.(e.target.value);
+                                                    }}
                                                     labelId="stage-label"
                                                     label="stage"
                                                     disabled={disabled}

@@ -12,6 +12,7 @@ import path from 'path';
 import { FORM } from "../utils/codes.js";
 import { log } from "console";
 import CaseStatusProgress from "../models/case/StatusProgress.js";
+import CaseStageProgress from "../models/case/StageProgress.js";
 
 const CLIENT_CASE_FORM = FORM.CLIENT_CASES_FORM;
 
@@ -342,7 +343,7 @@ export const updateClientCase = async (req, res) => {
         }
 
         let resScheme = await ClientCases.findById(id);
-        
+
         if (hasCaseFields) {
             fieldToUpdate['updatedBy'] = req?.user?._id;
             fieldToUpdate['updatedAt'] = new Date();
@@ -418,7 +419,7 @@ export const updateClientCase = async (req, res) => {
 };
 
 // Get Status History
-export const fetchStatusHistory = async (req, res) => {
+export const fetchCaseHistory = async (req, res) => {
     try {
         const { case_id } = req.params;
         const { scheme_id, stage_id } = req.query;
@@ -429,10 +430,11 @@ export const fetchStatusHistory = async (req, res) => {
 
         const filter = { case_id, scheme_id };
         if (stage_id) { filter.stage_id = stage_id; }
-        const history = await CaseStatusProgress.find(filter).sort({ createdAt: 1 }).lean();
+        const statusHistory = await CaseStatusProgress.find(filter).sort({ createdAt: 1 }).lean();
+        const stageHistory = await CaseStageProgress.find({ case_id, scheme_id }).sort({ createdAt: 1 }).lean();
 
-        for (let index = 0; index < history?.length; index++) {
-            const eachData = history?.[index];
+        for (let index = 0; index < statusHistory?.length; index++) {
+            const eachData = statusHistory?.[index];
 
             if (eachData?.status_id) {
                 eachData['ref_status'] = await populateFormReference(eachData?.status_id, { referenceFormName: FORM?.STATUS_FORM })
@@ -445,7 +447,18 @@ export const fetchStatusHistory = async (req, res) => {
             }
         }
 
-        return res.status(200).json({ success: true, data: history });
+        for (let index = 0; index < stageHistory?.length; index++) {
+            const eachStageData = stageHistory?.[index];
+
+            if (eachStageData?.stage_id) {
+                eachStageData['ref_stage'] = await populateFormReference(eachStageData?.stage_id, { referenceFormName: FORM?.STAGE_FORM })
+            }
+            if (eachStageData?.scheme_id) {
+                eachStageData['ref_scheme'] = await populateFormReference(eachStageData?.scheme_id, { referenceFormName: FORM?.SCHEME_FORM })
+            }
+        }
+
+        return res.status(200).json({ success: true, data: { statusHistory, stageHistory } });
 
     } catch (error) {
         return res.status(500).json({

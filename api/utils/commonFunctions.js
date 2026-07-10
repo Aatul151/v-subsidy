@@ -266,54 +266,35 @@ export const saveCaseStageProgress = async ({
     end_date = null,
     date = null,
     remarks = "",
-    reqUser = null
+    reqUser = null,
 }) => {
     try {
-        const lastProgress = await CaseStageProgress.findOne({ case_id, scheme_id }).sort({ createdAt: -1 });
+        // Find existing stage progress
+        const existingProgress = await CaseStageProgress.findOne({ case_id, scheme_id, stage_id });
 
-        // No previous stage
-        if (!lastProgress) {
-            return await CaseStageProgress.create({
-                case_id,
-                scheme_id,
-                stage_id,
-                start_date,
-                end_date: null,
-                date,
-                remarks,
-                createdAt: new Date(),
-                createdBy: reqUser?._id
-            });
+        // Update existing record
+        if (existingProgress) {
+            existingProgress.end_date = end_date;
+            existingProgress.date = date;
+            existingProgress.remarks = remarks;
+            existingProgress.updatedAt = new Date();
+            existingProgress.updatedBy = reqUser?._id;
+
+            await existingProgress.save();
+            return existingProgress;
         }
 
-        // Same stage -> update existing record only
-        if (lastProgress.stage_id.toString() === stage_id.toString()) {
-            lastProgress.remarks = remarks;
-            if (date) { lastProgress.date = date; }
-            if (end_date) { lastProgress.end_date = end_date; }
-
-            lastProgress.updatedAt = new Date();
-            lastProgress.updatedBy = reqUser?._id;
-            await lastProgress.save();
-            return lastProgress;
-        }
-
-        // Stage changed -> close previous stage
-        lastProgress.updatedAt = new Date();
-        lastProgress.updatedBy = reqUser?._id;
-        await lastProgress.save();
-
-        // Create new stage
+        // Create new record
         return await CaseStageProgress.create({
             case_id,
             scheme_id,
             stage_id,
-            start_date: new Date(),
-            end_date: null,
+            start_date,
+            end_date,
             date,
             remarks,
-            createdAt: new Date(),
-            createdBy: reqUser?._id
+            createdBy: reqUser?._id,
+            // updatedBy: reqUser?._id
         });
 
     } catch (error) {
