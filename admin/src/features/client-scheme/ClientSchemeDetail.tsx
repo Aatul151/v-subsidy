@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowBack, Assignment, DescriptionOutlined, TrendingUp, Visibility, Close as CloseIcon, DescriptionOutlined as DescriptionOutlinedIcon, CheckCircle } from "@mui/icons-material";
+import { ArrowBack, Assignment, DescriptionOutlined, TrendingUp, Visibility, Close as CloseIcon, DescriptionOutlined as DescriptionOutlinedIcon, CheckCircle, SearchOff } from "@mui/icons-material";
 import {
     Box,
     Button,
@@ -659,6 +659,30 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
             console.error(error);
         }
     }
+
+    //#region No case found
+    if (!clientSubsidydetail || clientSubsidydetail.length === 0) {
+        return (
+            <Box sx={{ minHeight: "70vh", display: "flex", justifyContent: "center", alignItems: "center", p: 3 }}>
+                <Paper elevation={2} sx={{ maxWidth: 450, width: "100%", p: 5, textAlign: "center", borderRadius: 3, }}>
+                    <SearchOff color="disabled" sx={{ fontSize: 70, mb: 2 }} />
+
+                    <Typography variant="h5" fontWeight={600} gutterBottom>
+                        No Case Details Found
+                    </Typography>
+
+                    <Typography color="text.secondary" sx={{ mb: 4 }}>
+                        The requested case could not be found or may have been removed.
+                    </Typography>
+
+                    <Button variant="contained" startIcon={<ArrowBack />} onClick={() => navigate(-1)}>
+                        Go Back
+                    </Button>
+                </Paper>
+            </Box>
+        );
+    }
+    //#endregion
 
     return (
         <>
