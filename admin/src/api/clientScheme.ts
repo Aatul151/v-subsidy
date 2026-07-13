@@ -18,7 +18,7 @@ export interface PaginatedClientSubsidyResponse {
         totalPages: number;
         hasNextPage: boolean;
         hasPrevPage: boolean;
-        stageCounts?: any[];
+        statusCounts?: any[];
     };
 }
 
@@ -32,7 +32,7 @@ export interface PaginatedApiResponse<T> {
         totalPages: number;
         hasNextPage: boolean;
         hasPrevPage: boolean;
-        stageCounts?: any[]
+        statusCounts?: any[]
     };
     message?: string;
 }
@@ -108,6 +108,16 @@ export const clientSubsidyAPI = {
         const response = await axiosInstance.get<ApiResponse<ClientSchemeType>>(`/client-case/${clientCaseId}`);
         return response.data.data;
     },
+
+    /**
+     * Get Client Schemes
+     * @param client_id - client scheme ID
+     */
+    getClientScheme: async (client_id: any): Promise<any> => {
+        const response = await axiosInstance.get<ApiResponse<any>>(`/client-case/scheme/${client_id}`);
+        return response.data.data;
+    },
+
 
 
     /**

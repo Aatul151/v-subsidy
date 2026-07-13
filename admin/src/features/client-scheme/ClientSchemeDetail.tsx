@@ -157,6 +157,16 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
         placeholderData: (previousData) => previousData, // Keep previous data while fetching new page
     });
 
+    const { data: clientScheme = [] } = useQuery({
+        queryKey: ["client_scheme", caseDetail?.client?._id],
+        queryFn: async () => {
+            const response = await clientSubsidyAPI.getClientScheme(caseDetail.client._id);
+            return response || [];
+        },
+        enabled: !!caseDetail?.client?._id,
+    });
+
+
     const currentStage = useMemo(() => {
         return caseDetail?.current_stage?.find((item: any) => item.scheme_id == selectedSchemeId);
     }, [caseDetail, selectedSchemeId]);
@@ -286,7 +296,7 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
 
     const actionButton = (
         <>
-            {caseDetail?.clientCases?.length > 1 && (
+            {clientScheme?.length > 1 && (
                 <Controller
                     name="selectedSchemeId"
                     control={control}

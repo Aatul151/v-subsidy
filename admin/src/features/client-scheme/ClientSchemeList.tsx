@@ -26,6 +26,7 @@ import { usersAPI } from "@/api/users";
 import utc from "dayjs/plugin/utc";
 import { getAvatarColor } from "@/utils/iconMap";
 import { useMasterData } from "@/context/MasterData";
+import { hasCurrentStatus, isMatchingFilter } from "@/utils/commonFunctions";
 
 dayjs.extend(utc);
 
@@ -48,7 +49,7 @@ export default function ClientScheme() {
     const [skip, setSkip] = useState<any>();
     const [allClientSubsidy, setAllClientSubsidy] = useState<any[]>([]);
     const [defaultSubsidyCount, setDefaultSubsidyCount] = useState<any>(null);
-    const [filterStage, setFilterStage] = useState("");
+    const [filterStatus, setFilterStatus] = useState(null);
     const [isExpanded, setIsExpanded] = useState(false);
     const [caseDetails, setCaseDetails] = useState<any>(null);
 
@@ -156,14 +157,14 @@ export default function ClientScheme() {
     const pageSize = paginationModel.pageSize;
 
     const filters = {
-        client: Array.isArray(client) ? client?.join(",") : client,
-        status_id: Array.isArray(status) ? status?.join(",") : status,
-        scheme: Array.isArray(scheme) ? scheme?.join(",") : scheme,
-        expired: date === "expired" ? true : null,
-        assigned_executive: Array.isArray(assigned_executive) ? assigned_executive?.join(",") : assigned_executive,
-        skip: skip && isKanbanBoard && isExpanded ? skip : undefined,
-        ...(isKanbanBoard ? (isExpanded ? { stage_id: filterStage } : {}) : { stage_id: Array.isArray(stage) ? stage.join(",") : stage }),
-        ...(OpenArchiveTable && { isArchived: true }),
+        client: client?.join(","),
+        scheme: scheme?.join(","),
+        assigned_executive: assigned_executive?.join(","),
+        expired: date === "expired" ? true : undefined,
+        skip: isKanbanBoard && isExpanded ? skip : undefined,
+        stage_id: stage?.join(","),
+        status_id: isKanbanBoard ? (isExpanded ? filterStatus : undefined) : status?.join(","),
+        isArchived: OpenArchiveTable || undefined,
         ...dateRange,
     };
 
@@ -192,76 +193,41 @@ export default function ClientScheme() {
     });
 
     useEffect(() => {
-        const isClientFilterEmpty = !client || client.length === 0;
-        const isDateFilterApplied = !!date && date !== "";
-        const isUserFilterEmpty = !assigned_executive || assigned_executive.length === 0;
-        const isStatusFilterEmpty = !status || status.length === 0;
-        const isSchemeFilterEmpty = !scheme || scheme.length === 0;
+        const filterState = {
+            isClientFilterEmpty: !client?.length,
+            isUserFilterEmpty: !assigned_executive?.length,
+            isStatusFilterEmpty: !status?.length,
+            isSchemeFilterEmpty: !scheme?.length,
+            isStageFilterEmpty: !stage?.length,
+            isDateFilterApplied: !!date,
+            isExpiredFilterApplied: date == 'expired',
+        };
 
-        // 1. Get the current active date strings from your helper function
-        const activeRange = isDateFilterApplied ? getDateRange() : null;
+        const activeRange = filterState?.isDateFilterApplied ? getDateRange() : null;
 
-        if (!filterStage && isClientFilterEmpty && isUserFilterEmpty && isStatusFilterEmpty && isSchemeFilterEmpty && !isDateFilterApplied && clientSubsidyList?.pagination) {
+        const hasNoFilters = !filterStatus && filterState.isClientFilterEmpty && filterState.isUserFilterEmpty && filterState?.isStageFilterEmpty && filterState.isStatusFilterEmpty && filterState.isSchemeFilterEmpty && !filterState.isExpiredFilterApplied && !filterState.isDateFilterApplied;
+
+        if (hasNoFilters && clientSubsidyList?.pagination) {
             setDefaultSubsidyCount(clientSubsidyList.pagination);
-        } else {
-            const updatedStages = clientSubsidyList?.pagination?.stageCounts || [];
-
-            setDefaultSubsidyCount((prev: any) => {
-                if (updatedStages.length === 0) { return { ...prev, stageCounts: [] }; }
-
-                const stageMap = new Map();
-                // 2. Combined validation helper for client, dates, and executive users
-                const isValidStage = (s: any) => {
-                    // Check client matches EXACTLY if filtered
-                    const matchesClient = isClientFilterEmpty || (
-                        Array.isArray(s.client)
-                            ? s.client.length === client.length && s.client.every((id: string) => client?.includes(id))
-                            : client.includes(s.client)
-                    );
-                    // Check dates match if date filter is active
-                    const matchesDate = !isDateFilterApplied || (
-                        s.expireFrom === activeRange?.expireFrom &&
-                        s.expireTo === activeRange?.expireTo
-                    );
-
-                    // FIX: Check assigned_executive filter strictly 
-                    const matchesUser = isUserFilterEmpty || (
-                        s.assigned_executive && (
-                            Array.isArray(s.assigned_executive)
-                                ? s.assigned_executive.length === assigned_executive.length && s.assigned_executive.every((id: string) => assigned_executive?.includes(id))
-                                : assigned_executive.includes(s.assigned_executive)
-                        )
-                    );
-                    const matchesStatus = isStatusFilterEmpty || (
-                        Array.isArray(s.status)
-                            ? s.status.length === status.length && s.status.every((st: string) => status?.includes(st))
-                            : status.includes(s.status)
-                    );
-                    const matchesScheme = isSchemeFilterEmpty || (
-                        Array.isArray(s.scheme)
-                            ? s.scheme.length === scheme.length && s.scheme.every((st: string) => scheme?.includes(st))
-                            : scheme.includes(s.scheme)
-                    );
-
-                    return matchesClient && matchesDate && matchesUser && matchesStatus && matchesScheme;
-                };
-                // 3. Filter existing state and incoming data with the unified rule
-                const existingStages = (prev?.stageCounts || []).filter(isValidStage);
-                const incomingStages = updatedStages.filter(isValidStage);
-                // 4. Merge data fields cleanly
-                [...existingStages, ...incomingStages].forEach((stage: any) => {
-                    stageMap.set(stage.stageId, {
-                        ...stageMap.get(stage.stageId),
-                        ...stage
-                    });
-                });
-                return {
-                    ...prev,
-                    stageCounts: Array.from(stageMap.values())
-                };
-            });
+            return;
         }
-    }, [clientSubsidyList, filterStage, client, date, startDate, endDate, assigned_executive]);
+        const updatedStages = clientSubsidyList?.pagination?.statusCounts || [];
+        const { merge } = isMatchingFilter({
+            client,
+            assigned_executive,
+            status,
+            scheme,
+            stage,
+            activeRange,
+            expired: date == 'expired',
+            ...filterState,
+        });
+
+        setDefaultSubsidyCount((prev: any) => ({
+            ...prev,
+            statusCounts: updatedStages.length ? merge(prev?.statusCounts, updatedStages) : [],
+        }));
+    }, [clientSubsidyList, filterStatus, client, assigned_executive, status, scheme, stage, date, startDate, endDate,]);
     const clientSubsidy = clientSubsidyList?.data || [];
     const clientSubsidyPagination = clientSubsidyList?.pagination as any;
 
@@ -731,7 +697,7 @@ export default function ClientScheme() {
             });
         });
 
-        const stageCountObj = defaultSubsidyCount?.stageCounts?.find((e: any) => e?.stageId == data?._id);
+        const stageCountObj = defaultSubsidyCount?.statusCounts?.find((e: any) => e?.statusId == data?._id);
         return ({
             _id: data?._id,
             label: data?.payload?.label,
@@ -740,7 +706,7 @@ export default function ClientScheme() {
             orderIndex: data?.payload?.order_index,
 
             data: (allClientSubsidy || [])
-                ?.filter((item: any) => item?.current_status?.[0]?.status_id == data?._id)
+                ?.filter((item: any) => hasCurrentStatus(item, data?._id))
                 ?.map((item: any) => ({
                     id: item?._id,
                     scheme_ref: item?.scheme_ref,
@@ -757,7 +723,7 @@ export default function ClientScheme() {
             pagination: {
                 hasNextPage: stageCountObj?.hasNextPage,
                 nextPage: stageCountObj?.nextPage,
-                stageId: stageCountObj?.stageId,
+                // stageId: stageCountObj?.stageId,
                 totalCount: stageCountObj?.totalCount,
                 loadedCount: stageCountObj?.loadedCount,
             }
@@ -766,7 +732,7 @@ export default function ClientScheme() {
 
     const handleSeeMore = (data: any) => {
         setIsExpanded(true);
-        setFilterStage(data?._id);
+        setFilterStatus(data?._id);
         setPages(data?.pagination?.nextPage)
         setSkip(data?.pagination?.loadedCount)
     }
@@ -775,7 +741,7 @@ export default function ClientScheme() {
         setIsExpanded(true);
         setPages(1);
         setSkip(data?.pagination?.loadedCount)
-        setFilterStage(data?._id);
+        setFilterStatus(data?._id);
     }
 
     const handleDrop = async (data: any) => {
@@ -791,7 +757,7 @@ export default function ClientScheme() {
         //update total count
         setDefaultSubsidyCount((prev: any) => ({
             ...prev,
-            stageCounts: prev.stageCounts.map((item: any) => ({
+            statusCounts: prev.statusCounts.map((item: any) => ({
                 ...item,
                 totalCount:
                     item.stageId === data.row.current_stage
@@ -817,7 +783,7 @@ export default function ClientScheme() {
             endDate: null as Dayjs | null,
         });
         setIsExpanded(false);
-        setFilterStage('');
+        setFilterStatus(null);
         setPages(1);
         setSkip('');
     };
@@ -936,7 +902,7 @@ export default function ClientScheme() {
                                                 field.onChange(e);
                                                 if (isKanbanBoard) { setPages(1); }
                                                 setIsExpanded(false);
-                                                setFilterStage('');
+                                                setFilterStatus(null);
                                             }}
                                             multiple={true}
                                             labelId="status-label"

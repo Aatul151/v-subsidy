@@ -5,7 +5,7 @@ import FormDefinition from "../models/FormDefinition.js";
 import { deleteFile, sanitizeFileName, uploadFile } from "../services/fileUploadService.js";
 import { validateFormAccess } from "../services/permissionService.js";
 import { buildMongoFilter } from "../utils/buildMongoFilter.js";
-import { buildCaseFilter, generateUniqueNo, getCaseProgressData, saveCaseStageProgress, saveCaseStatusProgress, updateCurrentStage, updateCurrentStatus } from "../utils/commonFunctions.js";
+import { buildCaseFilter, buildKanbanPagination, generateUniqueNo, getCaseProgressData, saveCaseStageProgress, saveCaseStatusProgress, updateCurrentStage, updateCurrentStatus } from "../utils/commonFunctions.js";
 import { populateFormReference, populateReferencesBatch } from "../utils/populateReferences.js";
 import fs from 'fs/promises';
 import path from 'path';
@@ -142,6 +142,8 @@ export const getClientCases = async (req, res) => {
         const skip = customSkip !== undefined ? Number(customSkip) : (currentPage - 1) * pageSize;
         const schemeIds = scheme?.split(",");
         const schemeObjectIds = schemeIds?.map(id => new mongoose.Types.ObjectId(id));
+        const statusObjectIds = status_id?.split(",")?.map(id => new mongoose.Types.ObjectId(id));
+        const stageObjectIds = stage_id?.split(",")?.map(id => new mongoose.Types.ObjectId(id));
 
         const [records, totalRecords, statusCombinations] = await Promise.all([
             ClientCases.find(filter)
@@ -150,78 +152,65 @@ export const getClientCases = async (req, res) => {
                 .sort({ [sortBy]: sortDirection })
                 .skip(skip)
                 .limit(pageSize),
-
             ClientCases.countDocuments(filter),
-
             ClientCases.aggregate([
                 { $match: filter },
                 { $unwind: "$current_status" },
-                ...(scheme ? [{ $match: { "current_status.scheme_id": schemeObjectIds } }] : []),
                 {
-                    $group: {
-                        _id: "$_id",
-                        statusIds: { $addToSet: { $toString: "$current_status.status_id" } }
+                    $project: {
+                        status_id: "$current_status.status_id",
+                        scheme_id: "$current_status.scheme_id",
+                        stage_id: "$current_status.stage_id",
+                        isMatched: {
+                            $gt: [
+                                {
+                                    $size: {
+                                        $filter: {
+                                            input: "$current_stage",
+                                            as: "stage",
+                                            cond: {
+                                                $and: [
+                                                    { $eq: ["$$stage.scheme_id", "$current_status.scheme_id"] },
+                                                    { $eq: ["$$stage.stage_id", "$current_status.stage_id"] }
+                                                ]
+                                            }
+                                        }
+                                    }
+                                },
+                                0
+                            ]
+                        }
                     }
                 },
-                { $unwind: "$statusIds" },
-                { $sort: { "statusIds": 1 } },
+                { $match: { isMatched: true } },
+                ...(schemeObjectIds?.length ? [{ $match: { "scheme_id": { $in: schemeObjectIds } } }] : []),
+                ...(stageObjectIds?.length ? [{ $match: { "stage_id": { $in: stageObjectIds } } }] : []),
+                ...(statusObjectIds?.length ? [{ $match: { "status_id": { $in: statusObjectIds } } }] : []),
                 {
                     $group: {
-                        _id: "$_id",
-                        statusCombination: { $push: "$statusIds" }
-                    }
-                },
-                {
-                    $group: {
-                        _id: "$statusCombination",
+                        _id: "$status_id",
                         count: { $sum: 1 }
                     }
                 }
             ])
         ]);
 
-        // Track what actually got loaded in this specific batch payload
-        const loadedCombinationCounts = {};
-
-        records.forEach(record => {
-            if (Array.isArray(record.current_status)) {
-                // Collect, sanitize, and sort current status string items
-                const rawArray = record.current_status
-                    ?.filter(stat => !schemeIds?.length || schemeIds?.some(id => id?.toString() == stat?.scheme_id?.toString()))
-                    ?.map(stat => stat?.status_id?.toString())
-                    ?.filter(Boolean);
-
-                const sortedCombinationString = rawArray.sort().join(",");
-
-                if (sortedCombinationString) {
-                    loadedCombinationCounts[sortedCombinationString] = (loadedCombinationCounts[sortedCombinationString] || 0) + 1;
-                }
-            }
-        });
-
-        const statusCountsWithPagination = statusCombinations?.map(comboItem => {
-            const comboKey = [...comboItem._id].sort().join(",");
-            const totalComboCount = comboItem?.count || 0;
-            const loadedInThisSlice = loadedCombinationCounts[comboKey] || 0;
-
-            let nextSkip = 0;
-            let hasNextPage = false;
-
-            if (status_id) {
-                const totalLoadedSoFar = skip + loadedInThisSlice;
-                hasNextPage = totalLoadedSoFar < totalComboCount;
-                nextSkip = totalLoadedSoFar;
-            } else {
-                hasNextPage = totalComboCount > loadedInThisSlice;
-                nextSkip = loadedInThisSlice;
-            }
-
-            return {
-                statusId: comboItem?._id, // Returns the clean array format requested
-                totalCount: totalComboCount,
-                loadedCount: nextSkip,
-                hasNextPage: hasNextPage
-            };
+        const statusCountsWithPagination = buildKanbanPagination({
+            records,
+            statusCombinations,
+            schemeIds,
+            statusIds: statusObjectIds || [],
+            skip,
+            statusFilterApplied: !!status_id,
+            extra: {
+                stageId: stage_id?.split(","),
+                client: client?.split(","),
+                expireFrom,
+                expireTo,
+                assigned_executive: assigned_executive?.split(","),
+                scheme: schemeIds,
+                expired
+            },
         });
 
         // Populate Fields
@@ -295,14 +284,8 @@ export const getCaseById = async (req, res) => {
             return res.status(404).json({ success: false, message: "Case not found." });
         }
 
-        const clientCases = await ClientCases.find({ client: resScheme.client?._id }).select("_id case_number scheme").lean();;
-        for (let cs = 0; cs < clientCases.length; cs++) {
-            const eachCase = clientCases?.[cs];
-            eachCase["ref_scheme"] = await populateFormReference(eachCase?.scheme?.[0], { referenceFormName: FORM?.SCHEME_FORM });
-        }
-
         const populatedEntries = await populateReferencesBatch([{ payload: resScheme?._doc }], validation?.form);
-        const formateEntries = populatedEntries.map((e) => ({ ...e.payload, clientCases }));
+        const formateEntries = populatedEntries.map((e) => ({ ...e.payload }));
         //#region  Populate current stage and status 
         for (const eachData of formateEntries) {
             if (eachData.current_status) {
@@ -346,6 +329,25 @@ export const getCaseById = async (req, res) => {
             message: "Failed to fetch case",
             error: error.message
         });
+    }
+};
+
+// Fetch Client Schemes
+export const getClientShemes = async (req, res) => {
+    try {
+        const { client_id } = req.params;
+        const cases = await ClientCases.find({ client: client_id }).select("_id case_number scheme").lean();
+
+        const data = await Promise.all(
+            cases.map(async (item) => ({
+                ...item,
+                ref_scheme: await populateFormReference(item.scheme?.[0], { referenceFormName: FORM.SCHEME_FORM }),
+            }))
+        );
+
+        return res.status(200).json({ success: true, data });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: "Failed to fetch client cases.", error: error.message });
     }
 };
 

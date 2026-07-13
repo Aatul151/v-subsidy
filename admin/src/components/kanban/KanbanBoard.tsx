@@ -30,7 +30,6 @@ type KanbanContainerProps = {
         loadedCount: number,
         nextPage: boolean,
         hasNextPage: boolean,
-        stageId: any
         totalCount: number
     },
     onShowMore?: (value: any) => void;
@@ -59,7 +58,7 @@ export default function KanbanBoard({
 }: KanbanBoardProps) {
     const [boards, setBoards] = useState(initialBoards);
     const [dragItem, setDragItem] = useState<{ item: any; sourceBoard: number; } | null>(null);
-
+    
     useEffect(() => {
         setBoards(initialBoards);
     }, [initialBoards]);
@@ -251,7 +250,7 @@ function KanbanItem({
                         >
                             <Box sx={{ display: "flex", alignItems: 'center', justifyContent: 'space-between' }}>
                                 <Typography sx={{ fontWeight: 600, fontSize: 12 }}>
-                                    {item?.title}
+                                    {item?.scheme_ref?.[0]?.scheme_name}
                                 </Typography>
                                 <IconButton onClick={() => setSubsidyId(item?.id)}>
                                     <LaunchIcon sx={{ fontSize: 16 }} />

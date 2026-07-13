@@ -2,6 +2,7 @@ import { createContext, useContext, ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { SYSTEM_FORM_NAMES } from '@/utils/formUtils';
 import { formEntriesAPI } from '@/api/forms';
+import { useAuthStore } from '@/store/authStore';
 
 interface MasterDataContextType {
     statusList: any[];
@@ -18,6 +19,7 @@ export const MasterDataProvider = ({
 }: {
     children: ReactNode;
 }) => {
+    const { isAuthenticated } = useAuthStore();
     const statusQuery = useQuery({
         queryKey: ['formEntries', SYSTEM_FORM_NAMES.STATUS],
         queryFn: async () => {
@@ -29,6 +31,7 @@ export const MasterDataProvider = ({
 
             return response.data || [];
         },
+        enabled: isAuthenticated,
     });
 
     const stageQuery = useQuery({
@@ -42,6 +45,7 @@ export const MasterDataProvider = ({
 
             return response.data || [];
         },
+        enabled: isAuthenticated,
     });
 
     return (

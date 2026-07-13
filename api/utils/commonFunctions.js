@@ -273,6 +273,11 @@ export const saveCaseStageProgress = async ({
 
         // Update existing record
         if (existingProgress) {
+            await CaseStageProgress.updateMany(
+                { case_id, scheme_id, _id: { $ne: existingProgress?._id }, is_active: true },
+                { $set: { is_active: false, updatedAt: new Date(), updatedBy: reqUser?._id } }
+            );
+
             existingProgress.end_date = end_date;
             existingProgress.date = date;
             existingProgress.remarks = remarks;
@@ -320,3 +325,50 @@ export const saveCaseStageProgress = async ({
     }
 };
 //#endregion
+
+
+// Calculates Kanban pagination details for each status.
+export const buildKanbanPagination = ({
+    records = [],
+    statusCombinations = [],
+    schemeIds = [],
+    statusIds = [],
+    skip = 0,
+    statusFilterApplied = false,
+    extra = {},
+}) => {
+    const loadedCounts = {};
+
+    // Count loaded records per status
+    records.forEach(record => {
+        record.current_status?.forEach(status => {
+            if (schemeIds.length && !schemeIds.some(id => id.toString() === status.scheme_id?.toString())) { return; } // Scheme filter
+            if (statusIds.length && !statusIds.some(id => id.toString() === status.status_id?.toString())) { return; } // Status filter
+
+            // Active stage only
+            const isCurrentStage = record.current_stage?.some(stage =>
+                stage.scheme_id?.toString() === status.scheme_id?.toString() &&
+                stage.stage_id?.toString() === status.stage_id?.toString()
+            );
+
+            if (!isCurrentStage) return;
+            const key = status.status_id.toString();
+            loadedCounts[key] = (loadedCounts[key] || 0) + 1;
+        });
+    });
+
+    // Build pagination object
+    return statusCombinations.map(item => {
+        const statusKey = item._id.toString();
+        const loadedCount = loadedCounts[statusKey] || 0;
+        const nextLoaded = statusFilterApplied ? skip + loadedCount : loadedCount;
+
+        return {
+            statusId: statusKey,
+            totalCount: item.count,
+            loadedCount: nextLoaded,
+            hasNextPage: nextLoaded < item.count,
+            ...extra,
+        };
+    });
+};
