@@ -157,13 +157,15 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
         placeholderData: (previousData) => previousData, // Keep previous data while fetching new page
     });
 
+    const clientId = useMemo(() => caseDetail?.client?._id, [caseDetail?.client?._id]);
+
     const { data: clientScheme = [] } = useQuery({
-        queryKey: ["client_scheme", caseDetail?.client?._id],
+        queryKey: ["client_scheme", clientId],
         queryFn: async () => {
-            const response = await clientSubsidyAPI.getClientScheme(caseDetail.client._id);
+            const response = await clientSubsidyAPI.getClientScheme(clientId);
             return response || [];
         },
-        enabled: !!caseDetail?.client?._id,
+        enabled: !!clientId,
     });
 
 
@@ -304,8 +306,8 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
                         <Autocomplete
                             size="small"
                             sx={{ width: 250 }}
-                            options={caseDetail?.clientCases || []}
-                            value={caseDetail?.clientCases?.find((item: any) => item?._id === id) || null}
+                            options={clientScheme || []}
+                            value={clientScheme?.find((item: any) => item?._id === id) || null}
                             getOptionLabel={(option: any) => `${option?.ref_scheme?.scheme_name} - ${option?.case_number} ` || ""}
                             isOptionEqualToValue={(option, value) => option?._id == value?._id}
                             onChange={(_, value) => {
