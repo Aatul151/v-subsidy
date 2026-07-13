@@ -15,7 +15,7 @@ export const getCount = async (req, res) => {
 
     const [totalClients, totalCases, expiryCounts, totalStatusCount] = await Promise.all([
       Client.countDocuments(),
-      ClientCases.countDocuments(),
+      ClientCases.countDocuments({ isArchived: false }),
       ClientCases.aggregate([
         {
           $match: { isArchived: false, expireOn: { $ne: null }, },
@@ -47,12 +47,40 @@ export const getCount = async (req, res) => {
         },
       ]),
       ClientCases.aggregate([
+        { $match: { isArchived: false } },
         {
-          $unwind: "$current_status"
+          $project: {
+            matchedStatus: {
+              $filter: {
+                input: "$current_status",
+                as: "status",
+                cond: {
+                  $gt: [
+                    {
+                      $size: {
+                        $filter: {
+                          input: "$current_stage",
+                          as: "stage",
+                          cond: {
+                            $and: [
+                              { $eq: ["$$stage.scheme_id", "$$status.scheme_id"] },
+                              { $eq: ["$$stage.stage_id", "$$status.stage_id"] }
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    0
+                  ]
+                }
+              }
+            }
+          }
         },
+        { $unwind: "$matchedStatus" },
         {
           $group: {
-            _id: "$current_status.status_id",
+            _id: "$matchedStatus.status_id",
             count: { $sum: 1 }
           }
         }
