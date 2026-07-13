@@ -20,6 +20,7 @@ const CLIENT_CASE_FORM = FORM.CLIENT_CASES_FORM;
 export const createClientCase = async (req, res) => {
     try {
         const { client, scheme_ids, assigned_executive, stage_id, status_id, remarks, expireOn } = req.body;
+        const multiEntry = true;
 
         // Validation
         if (!client || !scheme_ids || !stage_id || !status_id) {
@@ -31,75 +32,79 @@ export const createClientCase = async (req, res) => {
             return res.status(validation.statusCode).json({ success: false, message: validation.message });
         }
 
-        // Generate dynamically
-        const case_number = await generateUniqueNo("caseSequence", "Case", true);
+        const reqUser = req.user;
+        const createCase = async (schemeArray) => {
+            const case_number = await generateUniqueNo("caseSequence", "Case", true);
 
-        let current_status = [];
-        let current_stage = [];
+            let current_status = [];
+            let current_stage = [];
 
-        for (let i = 0; i < scheme_ids?.length; i++) {
-            const eachSchemeId = scheme_ids[i];
+            for (const schemeId of schemeArray) {
+                current_status = updateCurrentStatus(
+                    current_status,
+                    schemeId,
+                    stage_id,
+                    status_id,
+                    remarks ?? ""
+                );
 
-            current_status = updateCurrentStatus(
+                current_stage = updateCurrentStage(
+                    current_stage,
+                    schemeId,
+                    stage_id,
+                    null,
+                    remarks ?? ""
+                );
+            }
+
+            const clientCase = await ClientCases.create({
+                case_number,
+                client,
+                scheme: schemeArray,
+                assigned_executive,
+                expireOn,
+                remarks,
                 current_status,
-                eachSchemeId,
-                stage_id,
-                status_id,
-                remarks ?? "",
+                current_stage,
+                createdBy: reqUser._id,
+                createdAt: new Date(),
+            });
+
+            await Promise.all(
+                schemeArray.flatMap((schemeId) => [
+                    saveCaseStatusProgress({
+                        case_id: clientCase._id,
+                        scheme_id: schemeId,
+                        stage_id,
+                        status_id,
+                        remarks,
+                        reqUser,
+                    }),
+
+                    saveCaseStageProgress({
+                        case_id: clientCase._id,
+                        scheme_id: schemeId,
+                        stage_id,
+                        start_date: new Date(),
+                        end_date: null,
+                        date: null,
+                        remarks,
+                        reqUser,
+                    }),
+                ])
             );
 
-            current_stage = updateCurrentStage(
-                current_stage,
-                eachSchemeId,
-                stage_id,
-                null,
-                remarks ?? "",
-            );
+            return clientCase;
+        };
+
+        let result;
+        if (multiEntry) {
+            result = await Promise.all(scheme_ids.map((schemeId) => createCase([schemeId])));
+        } else {
+            result = [await createCase(scheme_ids)];
         }
 
-        const resScheme = await ClientCases.create({
-            case_number,
-            client,
-            scheme: scheme_ids,
-            assigned_executive,
-            expireOn,
-            remarks,
-            current_status,
-            current_stage,
-            createdBy: req.user?._id,
-            createdaAt: new Date()
-        });
-
-        const reqUser = req.user
-        await Promise.all(
-            scheme_ids?.flatMap((schemeId) => [
-                saveCaseStatusProgress({
-                    case_id: resScheme._id,
-                    scheme_id: schemeId,
-                    stage_id: stage_id,
-                    status_id: status_id,
-                    submitted_date: new Date(),
-                    remarks: remarks,
-                    reqUser
-                }),
-
-                saveCaseStageProgress({
-                    case_id: resScheme._id,
-                    scheme_id: schemeId,
-                    stage_id: stage_id,
-                    start_date: new Date(),
-                    end_date: null,
-                    date: null,
-                    remarks: remarks,
-                    reqUser
-                }),
-            ])
-        );
-
-
-        return res.status(201).json({
-            success: true, message: "Case created successfully.", date: resScheme,
-        });
+        return res.status(201).json({ success: true, message: "Case created successfully.", data: result });
 
     } catch (error) {
         return res.status(500).json({ success: false, message: "Failed to create case.", error: error.message });
@@ -290,9 +295,14 @@ export const getCaseById = async (req, res) => {
             return res.status(404).json({ success: false, message: "Case not found." });
         }
 
-        const populatedEntries = await populateReferencesBatch([{ payload: resScheme?._doc }], validation?.form);
-        const formateEntries = populatedEntries?.map((e) => { return e?.payload });
+        const clientCases = await ClientCases.find({ client: resScheme.client?._id }).select("_id case_number scheme").lean();;
+        for (let cs = 0; cs < clientCases.length; cs++) {
+            const eachCase = clientCases?.[cs];
+            eachCase["ref_scheme"] = await populateFormReference(eachCase?.scheme?.[0], { referenceFormName: FORM?.SCHEME_FORM });
+        }
 
+        const populatedEntries = await populateReferencesBatch([{ payload: resScheme?._doc }], validation?.form);
+        const formateEntries = populatedEntries.map((e) => ({ ...e.payload, clientCases }));
         //#region  Populate current stage and status 
         for (const eachData of formateEntries) {
             if (eachData.current_status) {

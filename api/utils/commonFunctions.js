@@ -268,7 +268,7 @@ export const saveCaseStageProgress = async ({
     reqUser = null,
 }) => {
     try {
-       // Find existing stage progress
+        // Find existing stage progress
         const existingProgress = await CaseStageProgress.findOne({ case_id, scheme_id, stage_id });
 
         // Update existing record
@@ -277,6 +277,7 @@ export const saveCaseStageProgress = async ({
             existingProgress.date = date;
             existingProgress.remarks = remarks;
             existingProgress.updatedAt = new Date();
+            existingProgress.is_active = true;
             existingProgress.updatedBy = reqUser?._id;
 
             await existingProgress.save();
@@ -312,7 +313,7 @@ export const saveCaseStageProgress = async ({
             createdBy: reqUser?._id,
             // updatedBy: reqUser?._id
         });
-        
+
     } catch (error) {
         console.error("Error saving case stage progress:", error);
         throw error;

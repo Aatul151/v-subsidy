@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ArrowBack, Assignment, DescriptionOutlined, TrendingUp, Visibility, Close as CloseIcon, DescriptionOutlined as DescriptionOutlinedIcon, CheckCircle, SearchOff } from "@mui/icons-material";
 import {
+    Autocomplete,
     Box,
     Button,
     ButtonGroup,
@@ -181,12 +182,12 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
         ?.sort((a: any, b: any) => a?.payload?.order_index - b?.payload?.order_index)
         ?.map((status: any) => ({
             ...status,
-            statusProgress: stepperInfo?.statusHistory?.find((item: any) => item?.status_id == status?._id),
+            statusProgress: stepperInfo?.statusHistory?.find((item: any) => item?.scheme_id == selectedSchemeId && item?.status_id == status?._id && item?.stage_id == currentStage?.stage_id),
         }));
 
     const formattedStageList = stageList?.map((stage: any) => ({
         ...stage,
-        stageProgress: stepperInfo?.stageHistory?.find((item: any) => item?.stage_id == stage?._id),
+        stageProgress: stepperInfo?.stageHistory?.find((item: any) => item?.stage_id == stage?._id && item?.scheme_id == selectedSchemeId),
     }));
 
     const activeStatusIndex = formattedStatusList.findIndex((item: any) => !item.statusProgress?.completed_date);
@@ -205,7 +206,7 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
         setCaseDetail(data);
         if (data) {
             reset({
-                selectedSchemeId: selectedSchemeId || defaultSchemeId || data?.scheme_ref?.[0]?._id || "",
+                selectedSchemeId: defaultSchemeId || data?.scheme_ref?.[0]?._id || "",
                 sectionForm: {
                     loan_sanction_date: data?.loan_sanction_date ? dayjs(data.loan_sanction_date) : null,
                     first_disbursement_date: data?.first_disbursement_date ? dayjs(data.first_disbursement_date) : null,
@@ -285,23 +286,29 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
 
     const actionButton = (
         <>
-            <Controller
-                name="selectedSchemeId"
-                control={control}
-                render={({ field }) => (
-                    <FormControl sx={{ width: 200 }} size="small">
-                        <InputLabel id="client-label">Scheme </InputLabel>
-                        <Select
-                            {...field}
-                            onChange={(e) => { field.onChange(e); }}
-                            labelId="scheme-label"
-                            label="scheme"
-                        >
-                            {caseDetail?.scheme_ref?.map((val: any) => (<MenuItem key={val?._id} value={val?._id}>{val?.scheme_name}</MenuItem>))}
-                        </Select>
-                    </FormControl>
-                )}
-            />
+            {caseDetail?.clientCases?.length > 1 && (
+                <Controller
+                    name="selectedSchemeId"
+                    control={control}
+                    render={({ field }) => (
+                        <Autocomplete
+                            size="small"
+                            sx={{ width: 250 }}
+                            options={caseDetail?.clientCases || []}
+                            value={caseDetail?.clientCases?.find((item: any) => item?._id === id) || null}
+                            getOptionLabel={(option: any) => `${option?.ref_scheme?.scheme_name} - ${option?.case_number} ` || ""}
+                            isOptionEqualToValue={(option, value) => option?._id == value?._id}
+                            onChange={(_, value) => {
+                                if (value?._id) {
+                                    field.onChange(value._id);
+                                    navigate(`/client-case/${value._id}`);
+                                }
+                            }}
+                            renderInput={(params) => (<TextField  {...params} label="Scheme" placeholder="Search Scheme" size="small" />)}
+                        />
+                    )}
+                />
+            )}
             <ButtonGroup
                 variant="outlined"
                 size={'small'}
@@ -731,7 +738,7 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
                                 gap: 2,
                             }}
                         >
-                            {headerFields.map((item) => (
+                            {headerFields?.map((item) => (
                                 <Box key={item?.label}>
                                     <Typography variant="caption" color="text.secondary">
                                         {item?.label}
