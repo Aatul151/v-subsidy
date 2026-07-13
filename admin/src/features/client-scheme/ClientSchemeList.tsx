@@ -708,6 +708,29 @@ export default function ClientScheme() {
     );
 
     const boardData = (statusList || [])?.map((data: any) => {
+        const schemeWisePending = allClientSubsidy.map((item: any) => {
+            return item.scheme_ref.map((scheme: any) => {
+                console.log("item", item);
+
+                // Submitted docs for this scheme
+                const submitted = item.submitted_docs
+                    .filter((doc: any) => doc.scheme_id === scheme._id)
+                // .map((doc: any) => doc.docId);
+                console.log("submitted", submitted);
+
+
+                // Pending docs
+                const pendingDocs = scheme.requird_docs.filter(
+                    (docId: any) => !submitted.includes(docId)
+                );
+
+                return {
+                    schemeId: scheme._id,
+                    pendingCount: pendingDocs.length,
+                };
+            });
+        });
+
         const stageCountObj = defaultSubsidyCount?.stageCounts?.find((e: any) => e?.stageId == data?._id);
         return ({
             _id: data?._id,
@@ -727,7 +750,7 @@ export default function ClientScheme() {
                     current_stage: item?.current_stage,
                     case_number: item?.case_number,
                     expireOn: dayjs.utc(item?.expireOn).format("DD-MMM-YYYY"),
-                    totalRequirdDocs: item?.scheme_ref?.requird_docs?.length,
+                    // totalPendingDocs: schemeWisePending?.find((e) => e?.),
                     clientId: item?.client?._id
                 })),
 
@@ -1022,10 +1045,7 @@ export default function ClientScheme() {
                     {!OpenArchiveTable && (isKanbanBoard ?
                         <KanbanBoard boards={boardData} sx={{
                             mt: date === "custom" ? 12 : 6,
-                            "@media (max-width:1432px)": {
-                                mt: 12,
-                                height: "400px"
-                            },
+                            "@media (max-width:1432px)": { mt: 12, },
                         }} onShowMore={handleSeeMore} onRefresh={handleRefresh} onDrop={handleDrop} />
                         : <AppDataTable
                             rows={clientSubsidy}
