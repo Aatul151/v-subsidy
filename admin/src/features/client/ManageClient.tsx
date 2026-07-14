@@ -16,6 +16,7 @@ import { useAppAlert } from "@/components/common/AppAlert";
 import { UpdateRolePayload } from "@/api/roles";
 import { getAvatarColor } from "@/utils/iconMap";
 import { useNavigate } from "react-router-dom";
+import ClientDetailDrawer from "@/components/common/ClientDetailDrawer";
 
 
 export default function ManageClient() {
@@ -29,6 +30,7 @@ export default function ManageClient() {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [openTodoModal, setOpenTodoModal] = useState(false);
     const [todoList, setTodoList] = useState<any[]>([]);
+    const [clientId, setClientId] = useState<any>(null);
 
     // GET form defination
     const {
@@ -173,11 +175,14 @@ export default function ManageClient() {
                     order: orderMap.name,
                     renderCell: (params: any) => {
                         const clientName = params?.row?.name;
+                        const colorCode = getAvatarColor(clientName);
                         return <>
-                            <Avatar sx={{ width: 25, height: 25, mr: 1, bgcolor: `${getAvatarColor(clientName)}.light`, }}>
-                                {clientName?.charAt(0)?.toUpperCase()}
-                            </Avatar>
-                            {clientName}
+                            <Box onClick={() => setClientId(params?.row?._id)} sx={{ display: "flex", alignItems: "center", cursor: "pointer", color: `${colorCode}.light` }}>
+                                <Avatar sx={{ width: 25, height: 25, mr: 1, bgcolor: `${colorCode}.light`, }}>
+                                    {clientName?.charAt(0)?.toUpperCase()}
+                                </Avatar>
+                                {clientName}
+                            </Box>
                         </>
                     },
                     valueGetter: (_value, row: any) => { return row?.name; }
@@ -244,9 +249,9 @@ export default function ManageClient() {
                     ...(params?.row.case_todos?.length > 0
                         ? [
                             <GridActionsCellItem
-                                key="todo"
+                                key="client_alerts"
                                 icon={<NotificationsActive color="warning" />}
-                                label="Todos"
+                                label="client_alerts"
                                 onClick={() => handleTodoModal(params.row.case_todos)}
                                 showInMenu={false}
                             />,
@@ -457,7 +462,7 @@ export default function ManageClient() {
                 fullWidth
                 maxWidth="sm"
             >
-                <DialogTitle>Case Todos</DialogTitle>
+                <DialogTitle>Case Alerts</DialogTitle>
 
                 <DialogContent dividers sx={{ p: 1 }}>
                     <Stack spacing={1}>
@@ -533,6 +538,14 @@ export default function ManageClient() {
                     </Button>
                 </DialogActions>
             </Dialog>
+
+            {clientId &&
+                <ClientDetailDrawer
+                    open={Boolean(clientId)}
+                    onClose={() => setClientId(null)}
+                    clientId={clientId}
+                />
+            }
         </Box>
     </>)
 }

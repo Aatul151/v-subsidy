@@ -49,6 +49,10 @@ const clientCasesSchema = new mongoose.Schema(
         type: mongoose.Schema.Types.ObjectId,
         // ref: "Status"
       },
+      is_active: {
+        type: Boolean,
+        default: false
+      },
       remarks: {
         type: String,
         trim: true,

@@ -1,10 +1,11 @@
-import { Grid, Avatar, Box, Chip, Divider, Typography, Stack, } from "@mui/material";
-import { Business as BusinessIcon, LocationOn as LocationOnIcon, Email as EmailIcon, Phone as PhoneIcon, Receipt as ReceiptIcon, Badge as BadgeIcon, Notes as NotesIcon, WhatsApp as WhatsAppIcon } from '@mui/icons-material';
+import { Grid, Avatar, Box, Chip, Divider, Typography, Stack, Card, CardHeader, List, ListItem, ListItemText, IconButton, Tooltip, } from "@mui/material";
+import { Business as BusinessIcon, LocationOn as LocationOnIcon, Email as EmailIcon, Phone as PhoneIcon, Receipt as ReceiptIcon, Badge as BadgeIcon, Notes as NotesIcon, WhatsApp as WhatsAppIcon, NotificationsActiveOutlined, LaunchOutlined } from '@mui/icons-material';
 import { AppDrawer } from "./AppDrawer";
 import { getAvatarColor } from "@/utils/iconMap";
 import { useQuery } from "@tanstack/react-query";
 import { clientsAPI } from "@/api/manageClient";
 import { useMemo } from "react";
+import ClientAlertList from "./ClientAlertList";
 
 const ClientDetailDrawer = ({ open, onClose, clientId, width = 1200 }: any) => {
 
@@ -36,15 +37,17 @@ const ClientDetailDrawer = ({ open, onClose, clientId, width = 1200 }: any) => {
     {
         label: "Mobile",
         value: (
-            <Stack direction="row" spacing={1} alignItems="center">
+            <Box display={"flex"} alignContent={"center"} gap={1}>
                 <span>{mobile_number || "-"}</span>
                 {mobile_number && (
-                    <WhatsAppIcon
-                        onClick={() => window.open(`https://wa.me/${mobile_number}`, "_blank", "noopener,noreferrer")}
-                        sx={{ color: "success.main", cursor: "pointer", fontSize: 20 }}
-                    />
+                    <Tooltip title="Send Message On Whatsapp">
+                        <WhatsAppIcon
+                            onClick={() => window.open(`https://wa.me/${mobile_number}`, "_blank", "noopener,noreferrer")}
+                            sx={{ color: "success.main", cursor: "pointer", fontSize: 20 }}
+                        />
+                    </Tooltip>
                 )}
-            </Stack>
+            </Box>
         ),
         icon: <PhoneIcon fontSize="small" />,
     },
@@ -74,7 +77,7 @@ const ClientDetailDrawer = ({ open, onClose, clientId, width = 1200 }: any) => {
             width={width}
             displayExpandDrawer
         >
-            <Box sx={{ p: 4, borderRadius: 1, bgcolor: "background.paper", border: "1px solid rgba(0,0,0,.08)", boxShadow: "0 8px 30px rgba(0,0,0,.06)", overflow: "hidden", position: "relative" }}>
+            <Card sx={{ p: 4, borderRadius: 1, bgcolor: "background.paper", border: "1px solid rgba(0,0,0,.08)", boxShadow: "0 8px 30px rgba(0,0,0,.06)", overflow: "hidden", position: "relative" }}>
                 {/* Top Accent */}
                 <Box sx={{ position: "absolute", top: 0, left: 0, width: "100%", height: 5, bgcolor: `${avatarColor}.light` }} />
 
@@ -103,7 +106,7 @@ const ClientDetailDrawer = ({ open, onClose, clientId, width = 1200 }: any) => {
                     {details?.map(({ label, value, icon }, index) => (
                         <Grid xs={12} sm={6} md={4} key={index}>
                             <Box p={1}>
-                                <Box display="flex" alignItems="center" gap={1}>
+                                <Box display="flex" alignItems="center">
                                     <Box sx={{ width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", color: `${avatarColor}.light` }}>
                                         {icon}
                                     </Box>
@@ -113,14 +116,19 @@ const ClientDetailDrawer = ({ open, onClose, clientId, width = 1200 }: any) => {
                                     </Typography>
                                 </Box>
 
-                                <Typography pl={2} mt={0.5} fontSize={14} fontWeight={600} sx={{ lineHeight: 1.8, wordBreak: "break-word" }}>
+                                <Typography pl={2} fontSize={14} fontWeight={600} sx={{ wordBreak: "break-word" }}>
                                     {value || "-"}
                                 </Typography>
                             </Box>
                         </Grid>
                     ))}
                 </Grid>
-            </Box>
+            </Card>
+
+            {/* Alerts */}
+            {clientDetail?.case_todos?.length && (
+                <ClientAlertList alerts={clientDetail?.case_todos} cardView={true} />
+            )}
         </AppDrawer>
     );
 };

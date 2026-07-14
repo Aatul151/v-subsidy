@@ -6,6 +6,7 @@ import dayjs from "dayjs";
 import { AppDrawer } from "../common/AppDrawer";
 import ClientSchemeDetail from "@/features/client-scheme/ClientSchemeDetail";
 import ClientDetailDrawer from "../common/ClientDetailDrawer";
+import { formatDateTime } from "@/utils/formUtils";
 
 type KanbanContainerProps = {
     value: string;
@@ -113,7 +114,7 @@ function KanbanItem({
     const [subsidyId, setSubsidyId] = useState<any>(false);
     const [clientId, setClientId] = useState<any>(false);
 
-   
+
 
     return (
         <>
@@ -228,7 +229,7 @@ function KanbanItem({
                                         fontWeight={500}
                                         color={dayjs(item?.expireOn).startOf("day").isBefore(dayjs().startOf("day")) ? "error.main" : "text.secondary"}
                                     >
-                                        <AccessTimeIcon sx={{ fontSize: 14 }} /> {item?.expireOn ? dayjs(item.expireOn).format("DD MMM YYYY") : "-"}
+                                        <AccessTimeIcon sx={{ fontSize: 14 }} /> {formatDateTime(item.expireOn)}
                                     </Typography>
 
                                     {/* Documents count */}

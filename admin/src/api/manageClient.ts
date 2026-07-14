@@ -54,11 +54,10 @@ export const clientsAPI = {
      * @param page - Page number (default: 1)
      * @param limit - Number of items per page (default: 10)
      */
-    getAll: async (page: number = 1, limit: number = 10): Promise<PaginatedClientResponse> => {
-        const response = await axiosInstance.get<PaginatedApiResponse<Clients[]>>('/client', {
-            params: { page, limit },
+    getAll: async (page: number = 1, limit: number = 10, filters: Record<string, any> = {}): Promise<PaginatedClientResponse> => {
+        const response = await axiosInstance.get<PaginatedApiResponse<Clients[]>>("/client", {
+            params: { page, limit, ...filters, },
         });
-
         // Handle both paginated and non-paginated responses for backward compatibility
         if (response?.data?.pagination) {
             return {

@@ -47,43 +47,20 @@ export const getCount = async (req, res) => {
         },
       ]),
       ClientCases.aggregate([
-        { $match: { isArchived: false } },
         {
-          $project: {
-            matchedStatus: {
-              $filter: {
-                input: "$current_status",
-                as: "status",
-                cond: {
-                  $gt: [
-                    {
-                      $size: {
-                        $filter: {
-                          input: "$current_stage",
-                          as: "stage",
-                          cond: {
-                            $and: [
-                              { $eq: ["$$stage.scheme_id", "$$status.scheme_id"] },
-                              { $eq: ["$$stage.stage_id", "$$status.stage_id"] }
-                            ]
-                          }
-                        }
-                      }
-                    },
-                    0
-                  ]
-                }
-              }
-            }
+          $match: {
+            isArchived: false,
+            "current_status.is_active": true
           }
         },
-        { $unwind: "$matchedStatus" },
+        { $unwind: "$current_status" },
+        { $match: { "current_status.is_active": true } },
         {
           $group: {
-            _id: "$matchedStatus.status_id",
-            count: { $sum: 1 }
-          }
-        }
+            _id: "$current_status.status_id",
+            count: { $sum: 1 },
+          },
+        },
       ])
     ]);
 

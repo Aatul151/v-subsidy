@@ -73,7 +73,7 @@ export const buildCaseFilter = ({
 
     // Current Status
     if (statusIds) {
-        const statusMatch = { status_id: { $in: statusIds } };
+        const statusMatch = { is_active: true, status_id: { $in: statusIds } };
         if (schemeIds) { statusMatch.scheme_id = { $in: schemeIds } }
         if (stageIds) { statusMatch.stage_id = { $in: stageIds } }
         andConditions.push({
@@ -168,6 +168,12 @@ export const updateCurrentStage = (currentStage, schemeId, stageId, end_date, re
 
 // UDPATE Current Status
 export const updateCurrentStatus = (currentStatus, schemeId, stageId, statusId, remarks) => {
+
+    currentStatus?.forEach(item => {
+        if (item.scheme_id?.toString() == schemeId?.toString()) {
+            item.is_active = false
+        }
+    });
     const index = currentStatus.findIndex(
         item =>
             item?.scheme_id?.toString() == schemeId?.toString() &&
@@ -177,12 +183,14 @@ export const updateCurrentStatus = (currentStatus, schemeId, stageId, statusId, 
     if (index > -1) {
         currentStatus[index].status_id = statusId;
         currentStatus[index].remarks = remarks;
+        currentStatus[index].is_active = true;
     } else {
         currentStatus.push({
             scheme_id: schemeId,
             stage_id: stageId,
             status_id: statusId,
             remarks,
+            is_active: true
         });
     }
 

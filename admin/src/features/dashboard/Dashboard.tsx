@@ -1,14 +1,13 @@
-import { Box, Grid, Card, Typography, Avatar, Stack, Divider, useTheme, Chip, CardContent, IconButton, Tooltip, ButtonGroup, Button, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
+import { Box, Grid, Card, Typography, Avatar, Stack, Divider, useTheme, Chip, CardContent, IconButton, Tooltip, ButtonGroup, Button } from "@mui/material";
 import {
   PeopleAlt as PeopleAltIcon,
   TaskAlt as TaskAltIcon,
   ErrorOutline as ErrorOutlineIcon,
   FormatListBulleted as FormatListBulletedIcon,
-  SearchOff as SearchOffIcon,
   Refresh as RefreshIcon,
   AccessTime as AccessTimeIcon,
   NotificationsActive,
-  ArrowOutward
+  ReportGmailerrorred
 } from '@mui/icons-material';
 import { Dashboard as DashboardIcon } from '@mui/icons-material';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -24,6 +23,8 @@ import { clientsAPI } from "@/api/manageClient";
 import { useNavigate } from "react-router-dom";
 import ClientSchemeDetail from "../client-scheme/ClientSchemeDetail";
 import ClientDetailDrawer from "@/components/common/ClientDetailDrawer";
+import { formatDateTime } from "@/utils/formUtils";
+import ClientAlertList from "@/components/common/ClientAlertList";
 
 dayjs.extend(utc);
 
@@ -62,13 +63,16 @@ export const Dashboard = () => {
 
   const { data: clientData, } = useQuery({
     queryKey: ['manage_clients'],
-    queryFn: async () => await clientsAPI.getAll(1, 100),
+    queryFn: () => clientsAPI.getAll(1, 100, {
+      client_todos: true,
+      fields: "name,case_todos",
+    }),
     placeholderData: (previousData) => previousData,
   });
 
   const { data: monthExpireList } = getSubsidyQuery("client_month_list", 1, 100,
     {
-      expireFrom: dayjs().startOf("month").format("YYYY-MM-DD"),
+      expireFrom: dayjs().add(8, "day").format("YYYY-MM-DD"),
       expireTo: dayjs().endOf("month").format("YYYY-MM-DD"),
       status: "active",
       sortBy: "expireOn",
@@ -78,7 +82,7 @@ export const Dashboard = () => {
 
   const { data: weekExpireList } = getSubsidyQuery("client_weekexpire_list", 1, 100,
     {
-      expireFrom: dayjs().add(1, "day").format("YYYY-MM-DD"), // Tomorrow
+      expireFrom: dayjs().format("YYYY-MM-DD"), // today
       expireTo: dayjs().add(7, "day").format("YYYY-MM-DD"),// Next 7th day
       status: "active",
       sortBy: "expireOn",
@@ -92,7 +96,6 @@ export const Dashboard = () => {
       status: "active",
       sortBy: "expireOn",
     }
-
   );
 
 
@@ -156,7 +159,7 @@ export const Dashboard = () => {
       value: status?.totalCount ?? 0,
       icon: <TaskAltIcon />,
       color: status?.bgColor,
-      // OnCardClick: () => { navigate('/client-case?expired=true') }
+      OnCardClick: () => { navigate(`/client-case?status=${status?._id}`) }
     })) ?? [])
   ];
 
@@ -165,7 +168,7 @@ export const Dashboard = () => {
     setOpenTodoModal(true);
   };
 
-  const SubsidyListCard = ({ title, data, color, onRefresh = () => { }, isTodoList = false }: any) => {
+  const SubsidyListCard = ({ title, data, color, onRefresh = () => { }, isTodoList = false, error }: any) => {
 
     return (<Card sx={{ borderRadius: 1, height: "100%" }} >
       <CardContent sx={{ p: 2 }}>
@@ -210,14 +213,17 @@ export const Dashboard = () => {
                   }}
                 >
                   <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ width: "100%", minWidth: 0 }}>
-                    <Stack direction="row" spacing={1.5} alignItems="center" sx={{ minWidth: 0, flex: 1 }}>
+                    <Stack direction="row" spacing={1.5} alignItems="center" sx={{ minWidth: 0, flex: 1, cursor: "pointer" }} onClick={(e) => { e?.preventDefault(); e?.stopPropagation(); setClientId(item?._id) }}>
                       <Avatar sx={{ width: 35, height: 35, bgcolor: `${getAvatarColor(item?.client?.name)}.light` }}>
                         {item?.name?.charAt(0)?.toUpperCase()}
                       </Avatar>
 
                       <Box sx={{ minWidth: 0 }}>
-                        <Typography fontWeight={600} fontSize={14} noWrap sx={{ cursor: "pointer" }}>
+                        <Typography fontWeight={600} fontSize={14} noWrap >
                           {item?.name}
+                        </Typography>
+                        <Typography fontSize={12} color="text.secondary">
+                          Total alerts : {item?.case_todos?.length || 0}
                         </Typography>
                       </Box>
                     </Stack>
@@ -259,7 +265,7 @@ export const Dashboard = () => {
                     </Stack>
 
                     <Chip
-                      label={dayjs.utc(item?.expireOn).format("DD-MMM-YYYY")}
+                      label={formatDateTime(item?.expireOn)}
                       size="small"
                       color={color}
                       variant="outlined"
@@ -270,12 +276,12 @@ export const Dashboard = () => {
                 </Box>}  </React.Fragment>
             ))}
           </Box> :
-          <Box sx={{ marginTop: 20, p: 4, textAlign: "center", }} >
-            <Box sx={{ display: "flex", justifyContent: "center", mb: 2, color: "text.secondary", }} >
-              <SearchOffIcon sx={{ fontSize: 60 }} />
+          <Box sx={{ marginTop: 10, p: 4, textAlign: "center", }} >
+            <Box sx={{ display: "flex", justifyContent: "center", color: "text.secondary", }} >
+              <ReportGmailerrorred sx={{ fontSize: 20 }} />
             </Box>
-            <Typography fontSize={18} fontWeight={600} gutterBottom>
-              No Data Found
+            <Typography fontSize={12} fontWeight={500} color="text.secondary">
+              {error || "No case found"}
             </Typography>
           </Box>}
       </CardContent>
@@ -360,7 +366,7 @@ export const Dashboard = () => {
 
             <Grid item xs={12} sm={6} md={3}>
               <SubsidyListCard
-                title="Top 10 Expired Subsidies"
+                title="Top 10 Expired Case"
                 data={expiredList?.data}
                 color="error"
                 onRefresh={() => onRefreshList("client_expiredlist")}
@@ -369,10 +375,11 @@ export const Dashboard = () => {
 
             <Grid item xs={12} sm={6} md={3}>
               <SubsidyListCard
-                title="Client Todo"
+                title="Client Alerts"
                 data={clientData?.data}
                 color="error"
                 isTodoList={true}
+                error="No Alerts found."
                 onRefresh={() => onRefreshList("manage_clients")}
               />
             </Grid>
@@ -390,7 +397,7 @@ export const Dashboard = () => {
         <ClientSchemeDetail id={subsidyId} />
       </AppDrawer>
 
-      {clientId  &&
+      {clientId &&
         <ClientDetailDrawer
           open={Boolean(clientId)}
           onClose={() => setClientId(null)}
@@ -398,72 +405,12 @@ export const Dashboard = () => {
         />
       }
 
-      <Dialog
+      <ClientAlertList
+        openInDialog
         open={openTodoModal}
         onClose={() => setOpenTodoModal(false)}
-        fullWidth
-        maxWidth="sm"
-      >
-        <DialogTitle>Case Todos</DialogTitle>
-
-        <DialogContent dividers sx={{ p: 1 }}>
-          <Stack spacing={1}>
-            {todoList?.map((todo: any, index: number) => (
-              <Box key={todo._id || index} sx={{ py: 0.5, px: 1, borderRadius: 1, "&:hover": { bgcolor: "action.hover" } }}>
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
-                  <Stack direction="row" spacing={1.5} alignItems="center" sx={{ flex: 1, minWidth: 0 }}>
-                    <Avatar sx={{ width: 35, height: 35, bgcolor: "warning.light" }}>
-                      {todo.ref_scheme?.scheme_name?.charAt(0)}
-                    </Avatar>
-
-                    <Box sx={{ minWidth: 0 }}>
-                      <Typography fontWeight={600} fontSize={14} noWrap>
-                        {todo.ref_scheme?.scheme_name}{" "}
-                        <Box
-                          component="code"
-                          sx={{
-                            fontSize: 13,
-                            bgcolor: "grey.100",
-                            px: 0.5,
-                            py: 0.2,
-                            borderRadius: 0.5,
-                            fontFamily: "monospace",
-                            color: "text.secondary",
-                          }}
-                        >
-                          {todo.ref_case?.case_number}
-                        </Box>
-                      </Typography>
-
-                      {todo.remark && (
-                        <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.3 }}>
-                          {todo.remark}
-                        </Typography>
-                      )}
-                    </Box>
-                  </Stack>
-
-                  <IconButton
-                    size="small"
-                    color="primary"
-                    onClick={() => navigate(`/client-case/${todo?.case_id}/${todo?.scheme_id}`)}
-                  >
-                    <ArrowOutward fontSize="small" />
-                  </IconButton>
-                </Stack>
-
-                {index !== todoList.length - 1 && <Divider sx={{ mt: 1 }} />}
-              </Box>
-            ))}
-          </Stack>
-        </DialogContent>
-
-        <DialogActions>
-          <Button variant="outlined" onClick={() => setOpenTodoModal(false)}>
-            Close
-          </Button>
-        </DialogActions>
-      </Dialog>
+        alerts={todoList}
+      />
     </>
   );
 };

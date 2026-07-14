@@ -10,7 +10,7 @@ const CLIENT_FORM = FORM.CLIENT_FORM;
 // Fetch clints
 export const getClients = async (req, res) => {
   try {
-    const { client_number, name, company_name, mobile_number, email, isActive, page = 1, limit = 10 } = req.query;
+    const { client_number, name, company_name, mobile_number, email, fields, client_todos, isActive, page = 1, limit = 10 } = req.query;
 
     const validation = await validateFormAccess(CLIENT_FORM, req.user?.role, "read");
     if (!validation.success) {
@@ -25,7 +25,7 @@ export const getClients = async (req, res) => {
     if (mobile_number) { filter.mobile_number = { $regex: mobile_number, $options: "i", }; }
     if (email) { filter.email = { $regex: email, $options: "i" }; }
     if (isActive !== undefined) { filter.isActive = isActive === "true"; }
-
+    if (client_todos === "true") { filter["case_todos.0"] = { $exists: true }; }
     // pagination
     const currentPage = Number(page);
     const pageSize = Number(limit);
@@ -35,6 +35,7 @@ export const getClients = async (req, res) => {
     const [clients, totalRecords] = await Promise.all([
       Client.find(filter)
         .lean()
+        .select(fields ? fields?.split(",")?.join(" ") : "")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(pageSize),
@@ -85,10 +86,21 @@ export const getClientById = async (req, res) => {
 
     let query = Client.findById(id);
     if (fields) { query = query.select(fields.split(",").join(" ")); }
-    const client = await query.lean();
+    let client = await query.lean();
 
     if (!client) {
       return res.status(404).json({ success: false, message: "Client not found." });
+    }
+
+    // populate fileds
+    if (client?.case_todos?.length) {
+      for (const todo of client.case_todos) {
+        if (todo.case_id) { todo.ref_case = await ClientCases.findById(todo.case_id).select("case_number").lean() }
+
+        if (todo.scheme_id) {
+          todo.ref_scheme = await populateFormReference(todo.scheme_id, { referenceFormName: FORM.SCHEME_FORM });
+        }
+      }
     }
 
     return res.status(200).json({ success: true, data: client });

@@ -405,61 +405,63 @@ export const updateClientCase = async (req, res) => {
 
         if (!resScheme || !resScheme._id) { return res.status(404).json({ success: false, message: "Case not found.", }); }
 
-        //#region Manage Status & stage progress
         const reqUser = req.user
-        let [statusProgress, stageProgress] = await Promise.all([
-            hasStatus ? saveCaseStatusProgress({
-                case_id: resScheme._id,
-                scheme_id: status.scheme_id,
-                stage_id: status.stage_id,
-                status_id: status.status_id,
-                remarks: status.remarks ?? "",
-                reqUser,
-            }) : null,
-
-            hasStage ? saveCaseStageProgress({
-                case_id: resScheme._id,
-                scheme_id: stage.scheme_id,
-                stage_id: stage.stage_id,
-                end_date: stage.end_date ?? null,
-                date: null,
-                remarks: stage.remarks ?? "",
-                reqUser,
-            }) : null,
-        ]);
-        //#endregion
-
-        //#region Manage current stage/status
-        if (stageProgress?.is_active && !statusProgress && stage?.default_status_id) {
-            statusProgress = await saveDefaultStageStatus({
-                case_id: resScheme?._id,
-                scheme_id: stageProgress?.scheme_id,
-                stage_id: stageProgress?.stage_id,
-                default_status_id: stage?.default_status_id,
-                reqUser,
-            });
-        }
         const updateFields = {};
+        if (hasStatus || hasStage) {
+            //#region Manage Status & stage progress
+            let [statusProgress, stageProgress] = await Promise.all([
+                hasStatus ? saveCaseStatusProgress({
+                    case_id: resScheme._id,
+                    scheme_id: status.scheme_id,
+                    stage_id: status.stage_id,
+                    status_id: status.status_id,
+                    remarks: status.remarks ?? "",
+                    reqUser,
+                }) : null,
 
-        if (statusProgress?.completed_date === null) {
-            updateFields.current_status = updateCurrentStatus(
-                resScheme.current_status || [],
-                statusProgress.scheme_id,
-                statusProgress.stage_id,
-                statusProgress.status_id,
-                statusProgress.remarks
-            );
+                hasStage ? saveCaseStageProgress({
+                    case_id: resScheme._id,
+                    scheme_id: stage.scheme_id,
+                    stage_id: stage.stage_id,
+                    end_date: stage.end_date ?? null,
+                    date: null,
+                    remarks: stage.remarks ?? "",
+                    reqUser,
+                }) : null,
+            ]);
+            //#endregion
+
+            //#region Manage current stage/status
+            if (stageProgress?.is_active && !statusProgress && stage?.default_status_id) {
+                statusProgress = await saveDefaultStageStatus({
+                    case_id: resScheme?._id,
+                    scheme_id: stageProgress?.scheme_id,
+                    stage_id: stageProgress?.stage_id,
+                    default_status_id: stage?.default_status_id,
+                    reqUser,
+                });
+            }
+
+            if (statusProgress?.completed_date === null) {
+                updateFields.current_status = updateCurrentStatus(
+                    resScheme.current_status || [],
+                    statusProgress.scheme_id,
+                    statusProgress.stage_id,
+                    statusProgress.status_id,
+                    statusProgress.remarks
+                );
+            }
+            if (stageProgress?.is_active) {
+                updateFields.current_stage = updateCurrentStage(
+                    resScheme.current_stage || [],
+                    stageProgress.scheme_id,
+                    stageProgress.stage_id,
+                    stageProgress.end_date,
+                    stageProgress.remarks
+                );
+            }
+            //#endregion
         }
-        if (stageProgress?.is_active) {
-            updateFields.current_stage = updateCurrentStage(
-                resScheme.current_stage || [],
-                stageProgress.scheme_id,
-                stageProgress.stage_id,
-                stageProgress.end_date,
-                stageProgress.remarks
-            );
-        }
-        //#endregion
 
         if (Object.keys(updateFields).length) {
             await ClientCases.findByIdAndUpdate(id, { $set: updateFields });

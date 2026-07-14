@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowBack, Assignment, DescriptionOutlined, TrendingUp, Visibility, Close as CloseIcon, DescriptionOutlined as DescriptionOutlinedIcon, CheckCircle, SearchOff } from "@mui/icons-material";
+import { ArrowBack, Assignment, DescriptionOutlined, TrendingUp, Visibility, Close as CloseIcon, DescriptionOutlined as DescriptionOutlinedIcon, CheckCircle, SearchOff, InfoOutlined, NotificationsActiveOutlined } from "@mui/icons-material";
 import {
     Autocomplete,
     Box,
@@ -36,7 +36,7 @@ import { PageHeader } from "../../components/common/PageHeader";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { clientSubsidyAPI, UpdateClientSchemePayload } from "@/api/clientScheme";
-import { SYSTEM_FORM_NAMES } from "@/utils/formUtils";
+import { formatDateTime, SYSTEM_FORM_NAMES } from "@/utils/formUtils";
 import { formEntriesAPI } from "@/api/forms";
 import dayjs, { Dayjs } from "dayjs";
 import { AppDrawer } from "@/components/common/AppDrawer";
@@ -148,17 +148,18 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
         },
     });
 
-    const {
-        data: clientSubsidydetail,
-    } = useQuery({
-        queryKey: ['client_subsidy', id],
-        queryFn: async () => {
-            if (!id) return;
-            return await clientSubsidyAPI.getById(id);
-
-        },
-        placeholderData: (previousData) => previousData, // Keep previous data while fetching new page
+    const { data: clientSubsidydetail } = useQuery({
+        queryKey: ["client_subsidy", id],
+        queryFn: () => clientSubsidyAPI.getById(id),
+        enabled: !!id,
+        placeholderData: (previousData) => previousData,
     });
+
+    useEffect(() => {
+        if (clientSubsidydetail?.length) {
+            setCaseDetail(clientSubsidydetail[0]);
+        }
+    }, [clientSubsidydetail]);
 
     const clientId = useMemo(() => caseDetail?.client?._id, [caseDetail?.client?._id]);
 
@@ -185,9 +186,9 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
     const { data: stepperInfo } = useQuery({
         queryKey: ['client_status', id, selectedSchemeId, currentStage?.stage_id],
         queryFn: async () => {
-            if (!id || !selectedSchemeId || !currentStage?.stage_id) return;
             return await clientSubsidyAPI.getStatusHistory(id, selectedSchemeId, currentStage?.stage_id);
         },
+        enabled: !!id && !!selectedSchemeId && !!currentStage?.stage_id,
     });
 
     const formattedStatusList = statusList
@@ -210,29 +211,27 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
     }, [activeStatusIndex]);
 
     const clientTodoRemark = useMemo(() => {
-        return clientSubsidydetail?.[0]?.client?.case_todos.find((e: any) => e?.scheme_id == selectedSchemeId)?.remark;
-    }, [clientSubsidydetail, selectedSchemeId]);
+        return caseDetail?.client?.case_todos.find((e: any) => e?.case_id == id && e?.scheme_id == selectedSchemeId)?.remark;
+    }, [caseDetail, selectedSchemeId]);
 
     useEffect(() => {
-        const data = clientSubsidydetail?.[0];
-        setCaseDetail(data);
-        if (data) {
+        if (caseDetail) {
             reset({
-                selectedSchemeId: defaultSchemeId || data?.scheme_ref?.[0]?._id || "",
+                selectedSchemeId: defaultSchemeId || caseDetail?.scheme_ref?.[0]?._id || "",
                 sectionForm: {
-                    loan_sanction_date: data?.loan_sanction_date ? dayjs(data.loan_sanction_date) : null,
-                    first_disbursement_date: data?.first_disbursement_date ? dayjs(data.first_disbursement_date) : null,
-                    first_sale_bill_amount: data?.first_sale_bill_amount || "",
-                    loan_amount: data?.loan_amount || "",
-                    disbursement_amount: data?.disbursement_amount || "",
-                    sanction_amount: data?.sanction_amount || "",
+                    loan_sanction_date: caseDetail?.loan_sanction_date ? dayjs(caseDetail.loan_sanction_date) : null,
+                    first_disbursement_date: caseDetail?.first_disbursement_date ? dayjs(caseDetail.first_disbursement_date) : null,
+                    first_sale_bill_amount: caseDetail?.first_sale_bill_amount || "",
+                    loan_amount: caseDetail?.loan_amount || "",
+                    disbursement_amount: caseDetail?.disbursement_amount || "",
+                    sanction_amount: caseDetail?.sanction_amount || "",
                 },
                 todoForm: {
                     remark: clientTodoRemark || "",
                 }
             });
         }
-    }, [clientSubsidydetail, reset, selectedSchemeId]);
+    }, [caseDetail, reset, selectedSchemeId]);
 
     useEffect(() => {
         reset({
@@ -248,7 +247,7 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
                 remark: currentStage?.remarks || "",
             }
         });
-    }, [currentStage, currentStatus]);
+    }, [currentStage, currentStatus, caseDetail]);
 
     const headerFields = [
         {
@@ -270,7 +269,7 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
         },
         {
             label: dayjs(caseDetail?.expireOn).startOf("day").isBefore(dayjs().startOf("day")) ? "Expired" : "Expire On",
-            value: dayjs.utc(caseDetail?.expireOn).format("DD-MMM-YYYY") || '-',
+            value: formatDateTime(caseDetail?.expireOn),
             color: dayjs(caseDetail?.expireOn).startOf("day").isBefore(dayjs().startOf("day")) ? "error.main" : ""
         },
         {
@@ -288,15 +287,13 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
         },
         {
             label: "Created At",
-            value: dayjs(caseDetail?.createdAt).format("DD-MMM-YYYY") || '-',
+            value: formatDateTime(caseDetail?.createdAt) || "-",
         },
         {
             label: "Updated At",
-            value: dayjs(caseDetail?.updatedAt).format("DD-MMM-YYYY") || '-',
+            value: formatDateTime(caseDetail?.updatedAt) || '-',
         },
     ];
-
-    const goToListingPage = () => { navigate('/client-case') }
 
     const actionButton = (
         <>
@@ -323,26 +320,17 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
                     )}
                 />
             )}
-            <ButtonGroup
-                variant="outlined"
-                size={'small'}
-                sx={{
-                    '& .MuiButtonGroup-grouped': {
-                        minWidth: 'auto',
-                        padding: '5px 10px',
-                    },
-                }}
-            >
-                <Tooltip title="Go Back" placement="bottom" arrow>
-                    <Button
-                        onClick={goToListingPage}
-                        variant={'contained'}
-                        color="primary"
-                    >
-                        <ArrowBack fontSize="small" />
-                    </Button>
-                </Tooltip>
-            </ButtonGroup>
+
+            <Tooltip title="Go Back" placement="bottom" arrow>
+                <Button
+                    size="small"
+                    onClick={() => { navigate(-1) }}
+                    variant={'contained'}
+                    color="primary"
+                >
+                    <ArrowBack fontSize="small" />
+                </Button>
+            </Tooltip>
         </>
     );
 
@@ -595,7 +583,7 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
                 </>;
             case "manage_todo_tab":
                 const todoFormField = [
-                    { name: "remark", label: "Remark", type: "text", multiline: true, rows: 4 },
+                    { name: "remark", label: "Alert remark", placeholder: "Enter alert message", type: "text", multiline: true, rows: 4 },
                 ];
 
                 return <Box
@@ -605,7 +593,7 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
                         gap: 2,
                     }}
                 >
-                    {todoFormField?.map(({ name, label, type, multiline, rows }: any) => (
+                    {todoFormField?.map(({ name, label, type, multiline, rows, placeholder }: any) => (
                         <Controller
                             key={name}
                             name={`todoForm.${name}` as any}
@@ -614,6 +602,7 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
                                 <TextField
                                     {...field}
                                     label={label}
+                                    placeholder={placeholder}
                                     type={type}
                                     size="small"
                                     fullWidth
@@ -625,6 +614,12 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
                             )}
                         />
                     ))}
+                    <Box display="flex" alignItems="center" gap={0.5} mb={1}>
+                        <InfoOutlined fontSize="small" color="action" />
+                        <Typography variant="caption" color="text.secondary">
+                            This alert will be displayed in the client list.
+                        </Typography>
+                    </Box>
                 </Box>
 
             default:
@@ -640,8 +635,8 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
                 case 'loan_form_tab':
                     const formValues = getValues()?.sectionForm;
                     payload = {
-                        loan_sanction_date: dayjs(formValues.loan_sanction_date).format("YYYY-MM-DD"),
-                        first_disbursement_date: dayjs(formValues.first_disbursement_date).format("YYYY-MM-DD"),
+                        loan_sanction_date: formValues.loan_sanction_date ? dayjs(formValues.loan_sanction_date).format("YYYY-MM-DD") : null,
+                        first_disbursement_date: formValues.first_disbursement_date ? dayjs(formValues.first_disbursement_date).format("YYYY-MM-DD") : null,
                         first_sale_bill_amount: formValues.first_sale_bill_amount,
                         loan_amount: formValues.loan_amount,
                         disbursement_amount: formValues.disbursement_amount,
@@ -702,7 +697,7 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
     }
 
     //#region No case found
-    if (!clientSubsidydetail || clientSubsidydetail.length === 0) {
+    if (!caseDetail || !caseDetail?._id) {
         return (
             <Box sx={{ minHeight: "70vh", display: "flex", justifyContent: "center", alignItems: "center", p: 3 }}>
                 <Paper elevation={2} sx={{ maxWidth: 450, width: "100%", p: 5, textAlign: "center", borderRadius: 3, }}>
@@ -843,13 +838,19 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
                                 sx={{ p: 1, color: 'primary.main', borderColor: "primary.main", '& .MuiChip-icon': { color: 'primary.main' }, cursor: 'pointer' }}
                             />
 
-                            <Chip
-                                size="small"
-                                variant="outlined"
-                                label={`Progress: ${percentage || 0}%`}
-                                icon={<TrendingUp />}
-                                sx={{ p: 1, color: 'primary.main', borderColor: "primary.main", '& .MuiChip-icon': { color: 'primary.main' } }}
-                            />
+                            <Tooltip
+                                arrow
+                                placement="top"
+                                title={`Completion of the active stage based on status updates`}
+                            >
+                                <Chip
+                                    size="small"
+                                    variant="outlined"
+                                    label={`Progress: ${percentage || 0}%`}
+                                    icon={<TrendingUp />}
+                                    sx={{ p: 1, color: 'primary.main', cursor: "pointer", borderColor: "primary.main", '& .MuiChip-icon': { color: 'primary.main' } }}
+                                />
+                            </Tooltip>
 
                         </Stack>
                     </Card>
@@ -891,9 +892,7 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
 
                                                 {status.statusProgress?.completed_date && (
                                                     <Typography variant="body2" mt={1}>
-                                                        {dayjs(status.statusProgress.completed_date).format(
-                                                            "DD-MMM-YYYY"
-                                                        )}
+                                                        {formatDateTime(status.statusProgress.completed_date)}
                                                     </Typography>
                                                 )}
                                             </StepLabel>
@@ -936,7 +935,13 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
                                         <Tab value="manage_status_tab" label="Manage Status" sx={{ textTransform: "none" }} />
                                         <Tab value="manage_stage_tab" label="Manage Stage" sx={{ textTransform: "none" }} />
                                         <Box sx={{ flexGrow: 1 }} />
-                                        <Tab value="manage_todo_tab" label="Todo" sx={{ textTransform: "none" }} />
+                                        <Tab
+                                            value="manage_todo_tab"
+                                            icon={<NotificationsActiveOutlined fontSize="small" />}
+                                            iconPosition="start"
+                                            label="Client Alerts"
+                                            sx={{ textTransform: "none", minHeight: 48 }}
+                                        />
                                     </Tabs>
                                 </Box>
 

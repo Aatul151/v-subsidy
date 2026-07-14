@@ -313,7 +313,7 @@ export default function ClientScheme() {
             client: data?.client,
             scheme_ids: data?.scheme,
             assigned_executive: data?.assigned_executive,
-            expireOn: dayjs(data?.expireOn).format("YYYY-MM-DD"),
+            expireOn: formatDateTime(data?.expireOn),
             remarks: data?.remarks
         }
         if (formMode == 'edit' && selectedClientSubsidy?._id) {
@@ -709,7 +709,7 @@ export default function ClientScheme() {
                     createdAt: item?.createdAt,
                     current_stage: item?.current_stage,
                     case_number: item?.case_number,
-                    expireOn: dayjs.utc(item?.expireOn).format("DD-MMM-YYYY"),
+                    expireOn: formatDateTime(item?.expireOn),
                     clientId: item?.client?._id,
                     totalDocCount: findSubmittedDocCount(item?.submitted_docs, item?.scheme_ref, item?.scheme_ref?.[0]?._id)
                 })),
