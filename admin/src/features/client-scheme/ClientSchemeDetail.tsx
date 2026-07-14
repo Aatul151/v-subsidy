@@ -48,7 +48,8 @@ import { useMasterData } from "@/context/MasterData";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { clientsAPI } from "@/api/manageClient";
-import { getCurrentStatus } from "@/utils/commonFunctions";
+import { findSubmittedDocCount, getCurrentStatus } from "@/utils/commonFunctions";
+import ClientDetailDrawer from "@/components/common/ClientDetailDrawer";
 
 dayjs.extend(utc);
 
@@ -67,6 +68,7 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
     const [openDocumentList, setOpenDocumentList] = useState(false);
     const [activeStep, setActiveStep] = useState(-1);
     const [submittedDocs, setSubmittedDocs] = useState<string[]>([]);
+    const [selecteClientId, setSelecteClientId] = useState<any>(null);
     const [tab, setTab] = useState("loan_form_tab");
 
     const { control, watch, reset, getValues, setValue } = useForm({
@@ -131,7 +133,7 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
     });
 
     const updateTodoMutation = useMutation({
-        mutationFn: ({ id, payload, taskCompleted, }: {
+        mutationFn: ({ id, payload }: {
             id: string;
             payload: UpdateClientSchemePayload;
             taskCompleted: boolean;
@@ -260,14 +262,16 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
         {
             label: "Client Name",
             value: caseDetail?.client?.name || '-',
+            onclick: () => setSelecteClientId(caseDetail?.client?._id)
         },
         {
             label: "Assigned Executive",
             value: caseDetail?.assigned_executive?.name || '-',
         },
         {
-            label: "Expire On",
+            label: dayjs(caseDetail?.expireOn).startOf("day").isBefore(dayjs().startOf("day")) ? "Expired" : "Expire On",
             value: dayjs.utc(caseDetail?.expireOn).format("DD-MMM-YYYY") || '-',
+            color: dayjs(caseDetail?.expireOn).startOf("day").isBefore(dayjs().startOf("day")) ? "error.main" : ""
         },
         {
             label: "Current Stage",
@@ -368,7 +372,7 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
         }
     };
 
-    const requiredDocument = caseDetail?.scheme_ref?.find((e: any) => e?._id == selectedSchemeId)
+    const docCount = findSubmittedDocCount(caseDetail?.submitted_docs, caseDetail?.scheme_ref, selectedSchemeId);
     const percentage = formattedStatusList?.length > 0 ? Number((((activeStep + 1) / formattedStatusList?.length) * 100)?.toFixed(1)) : 0;
 
     const handleStatusChange = (statusId: string) => {
@@ -681,10 +685,10 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
                                 case_id: id,
                                 scheme_id: selectedSchemeId,
                                 remark: todoValues.remark,
-                                taskCompleted,
+                                taskCompleted: taskCompleted,
                             },
                         },
-                        taskCompleted,
+                        taskCompleted: taskCompleted,
                     });
                     break;
             }
@@ -751,7 +755,7 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
                         >
                             {headerFields?.map((item) => (
                                 <Box key={item?.label}>
-                                    <Typography variant="caption" color="text.secondary">
+                                    <Typography variant="caption" color={item?.color || `text.secondary`}>
                                         {item?.label}
                                     </Typography>
 
@@ -767,9 +771,21 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
                                                 : "-"}
                                         </Typography>
                                         :
-                                        <Typography fontWeight={600} fontSize={13} sx={{ textTransform: "Capitalize" }}>
-                                            {item?.value}
-                                        </Typography>}
+                                        <Typography
+                                            key={item.label}
+                                            fontWeight={600}
+                                            fontSize={13}
+                                            color={item.color || (item.onclick ? "primary.main" : "text.primary")}
+                                            sx={{
+                                                textTransform: "capitalize",
+                                                cursor: item.onclick ? "pointer" : "default",
+                                                "&:hover": item.onclick ? { textDecoration: "underline" } : {},
+                                            }}
+                                            onClick={item.onclick}
+                                        >
+                                            {item.value}
+                                        </Typography>
+                                    }
                                 </Box>
                             ))}
                         </Box>
@@ -788,9 +804,15 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
                                 icon={<DescriptionOutlined />}
                                 label={
                                     <Stack direction="row" alignItems="center" spacing={1}>
-                                        <Typography variant="body2">Documents: {(requiredDocument?.requird_docs?.length || 0)} required</Typography>
+                                        <Typography variant="body2">
+                                            {docCount?.totalCount === 0
+                                                ? "No Documents"
+                                                : docCount?.isAllUploaded
+                                                    ? `All ${docCount?.totalCount} Documents Uploaded`
+                                                    : `Documents: ${docCount?.uploadedCount ?? 0}/${docCount?.totalCount ?? 0} Uploaded `}
+                                        </Typography>
 
-                                        {requiredDocument?.requird_docs?.length > 0 && <Tooltip title="View Documents" placement="bottom" arrow>
+                                        {docCount?.totalCount > 0 && <Tooltip title="View Documents" placement="bottom" arrow>
                                             <Visibility fontSize="small" sx={{ cursor: 'pointer' }}
                                                 onClick={(e) => {
                                                     e.stopPropagation();
@@ -980,7 +1002,7 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
 
                     <DialogContent dividers sx={{ p: 3 }}>
                         <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-                            {requiredDocument?.requird_docs?.map((docId: string, index: number) => {
+                            {docCount?.requiredDocs?.map((docId: string, index: number) => {
                                 const document = documentsList?.find((d: any) => d?._id == docId);
                                 return (
                                     <Paper
@@ -1029,6 +1051,14 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
                         </Button>
                     </DialogActions>
                 </Dialog >}
+
+            {selecteClientId && (
+                <ClientDetailDrawer
+                    open={Boolean(selecteClientId)}
+                    onClose={() => setSelecteClientId(null)}
+                    clientId={selecteClientId}
+                />
+            )}
         </>
     );
 }

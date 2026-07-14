@@ -1,4 +1,4 @@
-import { clientSubsidyAPI, UpdateClientSubsidyPayload } from "@/api/clientScheme";
+import { clientSubsidyAPI } from "@/api/clientScheme";
 import { fileUploadAPI } from "@/api/fileUpload";
 import { useAppAlert } from "@/components/common/AppAlert";
 import { FileDisplay } from "@/components/common/FileDisplay";
@@ -57,7 +57,7 @@ export default function DocumentManager({ caseDetail, documentMode = "view", onC
     }
 
     const updateMutation = useMutation({
-        mutationFn: ({ id, payload }: { id: string; payload: UpdateClientSubsidyPayload }) =>
+        mutationFn: ({ id, payload }: { id: string; payload: any }) =>
             clientSubsidyAPI.update(id, payload),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['client_subsidy'] });

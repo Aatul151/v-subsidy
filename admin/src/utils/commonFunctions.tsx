@@ -68,3 +68,26 @@ export const getCurrentStatus = (
         )
     );
 };
+
+export const findSubmittedDocCount = (submitted_docs: any[] = [], totalSchemeDoc: any[] = [], schemeId: string | null = null) => {
+    const filteredScheme = schemeId
+        ? totalSchemeDoc.find((s: any) => s._id?.toString() === schemeId?.toString())
+        : null;
+
+    const requiredDocs = schemeId
+        ? filteredScheme?.requird_docs || []
+        : totalSchemeDoc.flatMap((s: any) => s.requird_docs || []);
+
+    const uploadedDocIds = new Set(submitted_docs.map((doc: any) => doc.docId?.toString()));
+    const remainingCount = requiredDocs?.filter((docId: any) => !uploadedDocIds.has(docId.toString())).length;
+    const totalCount = requiredDocs?.length;
+    const uploadedCount = uploadedDocIds?.size;
+
+    return {
+        totalCount,
+        uploadedCount,
+        remainingCount,
+        isAllUploaded: totalCount > 0 && remainingCount === 0,
+        requiredDocs
+    };
+};

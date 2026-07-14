@@ -6,15 +6,7 @@ import {
   FormatListBulleted as FormatListBulletedIcon,
   SearchOff as SearchOffIcon,
   Refresh as RefreshIcon,
-  Business as BusinessIcon,
-  LocationOn as LocationOnIcon,
-  Email as EmailIcon,
-  Phone as PhoneIcon,
-  Receipt as ReceiptIcon,
-  Badge as BadgeIcon,
-  Notes as NotesIcon,
   AccessTime as AccessTimeIcon,
-  WhatsApp as WhatsAppIcon,
   NotificationsActive,
   ArrowOutward
 } from '@mui/icons-material';
@@ -31,6 +23,7 @@ import { getAvatarColor } from "@/utils/iconMap";
 import { clientsAPI } from "@/api/manageClient";
 import { useNavigate } from "react-router-dom";
 import ClientSchemeDetail from "../client-scheme/ClientSchemeDetail";
+import ClientDetailDrawer from "@/components/common/ClientDetailDrawer";
 
 dayjs.extend(utc);
 
@@ -102,17 +95,6 @@ export const Dashboard = () => {
 
   );
 
-  const {
-    data: clientDetail,
-  } = useQuery({
-    queryKey: ['client_detail', clientId],
-    queryFn: async () => {
-      if (!clientId) return;
-      return await clientsAPI.getById(clientId);
-
-    },
-    placeholderData: (previousData) => previousData,
-  });
 
   const onRefreshList = (key: string) => {
     queryClient.invalidateQueries({ queryKey: [key] });
@@ -139,51 +121,7 @@ export const Dashboard = () => {
     </ButtonGroup>
   );
 
-  const clientDetails = [
-    {
-      label: "Company",
-      value: clientDetail?.company_name,
-      icon: <BusinessIcon fontSize="small" />,
-    },
-    {
-      label: "Address",
-      value: clientDetail?.address,
-      icon: <LocationOnIcon fontSize="small" />,
-    },
-    {
-      label: "Email",
-      value: clientDetail?.email,
-      icon: <EmailIcon fontSize="small" />,
-    },
-    {
-      label: "Mobile",
-      value: (
-        <Box sx={{ display: "flex" }}>
-          {clientDetail?.mobile_number}
-          <WhatsAppIcon
-            sx={{ ml: 1, color: "success.main", cursor: "pointer", fontSize: 20, }}
-            onClick={() => window.open(`https://wa.me/${clientDetail?.mobile_number}`, "_blank", "noopener,noreferrer")}
-          />
-        </Box>
-      ),
-      icon: <PhoneIcon fontSize="small" />,
-    },
-    {
-      label: "GST Number",
-      value: clientDetail?.gst_number,
-      icon: <ReceiptIcon fontSize="small" />,
-    },
-    {
-      label: "PAN Number",
-      value: clientDetail?.pan_number,
-      icon: <BadgeIcon fontSize="small" />,
-    },
-    {
-      label: "Remarks",
-      value: clientDetail?.remarks,
-      icon: <NotesIcon fontSize="small" />,
-    },
-  ]
+
 
   const counts: CountItem[] = [
     {
@@ -452,60 +390,13 @@ export const Dashboard = () => {
         <ClientSchemeDetail id={subsidyId} />
       </AppDrawer>
 
-      {clientId &&
-        <AppDrawer
+      {clientId  &&
+        <ClientDetailDrawer
           open={Boolean(clientId)}
           onClose={() => setClientId(null)}
-          title={`Client detail`}
-          anchor="right"
-          width={1400}
-          displayExpandDrawer={true}
-        >
-          <Box sx={{ p: 4, borderRadius: 1, bgcolor: "background.paper", border: "1px solid", borderColor: "rgba(0,0,0,0.08)", boxShadow: "0px 8px 30px rgba(0,0,0,0.06)", overflow: "hidden", position: "relative" }}>
-            {/* Top Accent */}
-            <Box sx={{ position: "absolute", top: 0, left: 0, width: "100%", height: "5px", bgcolor: `${getAvatarColor(clientDetail?.name)}.light` }} />
-
-            {/* Header */}
-            <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 1, flexWrap: "wrap", }}>
-              <Avatar sx={{ width: 45, height: 45, bgcolor: `${getAvatarColor(clientDetail?.name)}.light`, }}>
-                {clientDetail?.name?.charAt(0)?.toUpperCase()}
-              </Avatar>
-              <Box flex={1}>
-                <Typography fontSize={18} fontWeight={700} >
-                  {clientDetail?.name || "Client Details"}
-                </Typography>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5, flexWrap: "wrap" }}>
-                  <Typography fontSize={13} color="text.secondary"  >
-                    Client Number:
-                  </Typography>
-                  <Chip size="small" label={clientDetail?.client_number} color={'primary'} sx={{ bgcolor: `${getAvatarColor(clientDetail?.name)}.light` }} />
-                </Box>
-              </Box>
-            </Box>
-
-            <Divider sx={{ mb: 2 }} />
-            {/* Details */}
-            <Grid container spacing={2.5}>
-              {clientDetails.map((item, index) => (
-                <Grid xs={12} sm={6} md={4} key={index}>
-                  <Box sx={{ p: 1 }}  >
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, }}    >
-                      <Box sx={{ width: 40, height: 40, borderRadius: 1, color: `${getAvatarColor(clientDetail?.name)}.light`, display: "flex", alignItems: "center", justifyContent: "center", }}>
-                        {item.icon}
-                      </Box>
-                      <Typography fontSize={14} color="text.secondary" fontWeight={600}  >
-                        {item.label}
-                      </Typography>
-                    </Box>
-                    <Typography fontWeight={600} fontSize={14} sx={{ wordBreak: "break-word", lineHeight: 1.8, pl: 2 }}  >
-                      {item.value || "-"}
-                    </Typography>
-                  </Box>
-                </Grid>
-              ))}
-            </Grid>
-          </Box>
-        </AppDrawer >}
+          clientId={clientId}
+        />
+      }
 
       <Dialog
         open={openTodoModal}

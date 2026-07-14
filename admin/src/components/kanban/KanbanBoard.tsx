@@ -1,22 +1,11 @@
 import { Theme } from "@emotion/react";
-import { Box, Card, Typography, Button, Chip, SxProps, IconButton, Divider, Grid, Avatar } from "@mui/material";
+import { Box, Card, Typography, Button, Chip, SxProps, IconButton } from "@mui/material";
 import { useEffect, useState } from "react";
-import { Refresh as RefreshIcon, Launch as LaunchIcon, AccessTime as AccessTimeIcon, PostAdd } from '@mui/icons-material';
+import { Refresh as RefreshIcon, FolderOpenOutlined as FolderOpenOutlinedIcon, Person as PersonIcon, AccessTime as AccessTimeIcon, DescriptionOutlined as DescriptionOutlinedIcon } from '@mui/icons-material';
 import dayjs from "dayjs";
 import { AppDrawer } from "../common/AppDrawer";
 import ClientSchemeDetail from "@/features/client-scheme/ClientSchemeDetail";
-import { clientsAPI } from "@/api/manageClient";
-import { useQuery } from "@tanstack/react-query";
-import {
-    Business as BusinessIcon,
-    LocationOn as LocationOnIcon,
-    Email as EmailIcon,
-    Phone as PhoneIcon,
-    Receipt as ReceiptIcon,
-    Badge as BadgeIcon,
-    Notes as NotesIcon,
-} from '@mui/icons-material';
-import { getAvatarColor } from "@/utils/iconMap";
+import ClientDetailDrawer from "../common/ClientDetailDrawer";
 
 type KanbanContainerProps = {
     value: string;
@@ -124,55 +113,8 @@ function KanbanItem({
     const [subsidyId, setSubsidyId] = useState<any>(false);
     const [clientId, setClientId] = useState<any>(false);
 
-    const {
-        data: clientDetail,
-    } = useQuery({
-        queryKey: ['client_detail', clientId],
-        queryFn: async () => {
-            if (!clientId) return;
-            return await clientsAPI.getById(clientId);
+   
 
-        },
-        placeholderData: (previousData) => previousData,
-    });
-
-    const clientDetails = [
-        {
-            label: "Company",
-            value: clientDetail?.company_name,
-            icon: <BusinessIcon fontSize="small" />,
-        },
-        {
-            label: "Address",
-            value: clientDetail?.address,
-            icon: <LocationOnIcon fontSize="small" />,
-        },
-        {
-            label: "Email",
-            value: clientDetail?.email,
-            icon: <EmailIcon fontSize="small" />,
-        },
-        {
-            label: "Mobile",
-            value: clientDetail?.mobile_number,
-            icon: <PhoneIcon fontSize="small" />,
-        },
-        {
-            label: "GST Number",
-            value: clientDetail?.gst_number,
-            icon: <ReceiptIcon fontSize="small" />,
-        },
-        {
-            label: "PAN Number",
-            value: clientDetail?.pan_number,
-            icon: <BadgeIcon fontSize="small" />,
-        },
-        {
-            label: "Remarks",
-            value: clientDetail?.remarks,
-            icon: <NotesIcon fontSize="small" />,
-        },
-    ]
     return (
         <>
             <Box
@@ -234,68 +176,109 @@ function KanbanItem({
                         "&::-webkit-scrollbar-thumb": { background: "#D1D5DB", borderRadius: 20 },
                     }}
                 >
-                    {data.map((item) => (
+                    {data?.map((item) => (
                         <Card
-                            key={item.id}
+                            key={item?.id}
                             draggable
                             onDragStart={() => onDragStart(item, boardIndex)}
                             sx={{
-                                p: 1.5,
+                                p: 1,
                                 borderRadius: 1,
-                                flexShrink: 0,
-                                cursor: "move",
-                                border: "1px solid #F1F5F9",
-                                "&:hover": { boxShadow: "0px 10px 18px rgba(0,0,0,.08)", border: "1px solid black" },
+                                border: "1px solid #E5E7EB",
+                                cursor: "grab",
+                                "&:hover": {
+                                    boxShadow: 2,
+                                    borderColor: "primary.main",
+                                },
                             }}
                         >
-                            <Box sx={{ display: "flex", alignItems: 'center', justifyContent: 'space-between' }}>
-                                <Typography sx={{ fontWeight: 600, fontSize: 12 }}>
-                                    {item?.scheme_ref?.[0]?.scheme_name}
-                                </Typography>
-                                <IconButton onClick={() => setSubsidyId(item?.id)}>
-                                    <LaunchIcon sx={{ fontSize: 16 }} />
-                                </IconButton>
-                            </Box>
+                            {/* Scheme */}
+                            <Typography fontSize={12} fontWeight={600}> {item?.scheme_ref?.[0]?.scheme_name} </Typography>
 
-                            <Box sx={{ display: "flex", alignItems: 'center', justifyContent: 'space-between' }}>
-                                <Typography fontSize={12} color="primary" onClick={(e) => { e?.preventDefault(); e?.stopPropagation(); setClientId(item?.client?._id) }} sx={{ cursor: "pointer" }} >
+                            {/* Case Number */}
+                            <Typography fontSize={11} color="text.secondary" fontFamily={"monospace"} sx={{ mt: 0.3 }} >
+                                {item?.case_number}
+                            </Typography>
+
+                            {/* Client */}
+                            <Box display="flex" alignItems="center" mt={0.5} gap={0.5}>
+                                <PersonIcon sx={{ fontSize: 15, color: "text.secondary" }} />
+
+                                <Typography fontSize={13} fontWeight={600} color="primary"
+                                    sx={{ cursor: "pointer" }}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setClientId(item?.clientId);
+                                    }}
+                                >
                                     {item?.person}
                                 </Typography>
-                                <Typography fontSize={10} color="primary" sx={{ textTransform: "capitalize" }}>
-                                    {item?.case_number ?? "-"}
-                                </Typography>
                             </Box>
 
-                            <Typography
-                                fontSize={12}
-                                sx={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: 0.5,
-                                    fontWeight: 500,
-                                    color: dayjs(item?.expireOn).startOf("day").isBefore(dayjs().startOf("day")) ? "error.main" : "text.secondary",
-                                    fontSize: 12
-                                }}
-                            >
-                                <AccessTimeIcon sx={{ fontSize: 12, marginTop: "-2px" }} />  {item?.expireOn ? dayjs(item.expireOn).format("DD MMM YYYY") : "-"}
-                            </Typography>
+                            {/* Footer Box */}
+                            <Box sx={{ mt: 1.5, p: 1, borderRadius: 1, bgcolor: "#F8FAFC", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                <Box>
+                                    {/* Expire on */}
+                                    <Typography
+                                        display={"flex"}
+                                        alignItems={"center"}
+                                        gap={0.5}
+                                        mt={0.4}
+                                        fontSize={11}
+                                        fontWeight={500}
+                                        color={dayjs(item?.expireOn).startOf("day").isBefore(dayjs().startOf("day")) ? "error.main" : "text.secondary"}
+                                    >
+                                        <AccessTimeIcon sx={{ fontSize: 14 }} /> {item?.expireOn ? dayjs(item.expireOn).format("DD MMM YYYY") : "-"}
+                                    </Typography>
 
-                            <Typography
-                                variant="caption"
-                                sx={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: 0.5,
-                                    color: "text.secondary",
-                                }}
-                            >
+                                    {/* Documents count */}
+                                    <Typography
+                                        display="flex"
+                                        alignItems="center"
+                                        gap={0.5}
+                                        fontSize={11}
+                                        fontWeight={500}
+                                        mt={0.4}
+                                        color={item?.totalDocCount?.isAllUploaded ? "success.main" : "text.secondary"}
+                                    >
+                                        <DescriptionOutlinedIcon sx={{ fontSize: 14 }} />
+                                        {item?.totalDocCount?.totalCount === 0 ? (
+                                            "No Documents"
+                                        ) : item?.totalDocCount?.isAllUploaded ? (
+                                            "Documents Uploaded"
+                                        ) : (
+                                            <>
+                                                {item?.totalDocCount?.uploadedCount ?? 0}/
+                                                {item?.totalDocCount?.totalCount} Docs
 
-                                <PostAdd sx={{ fontSize: 15, }} />
-                                Required Docs: {item?.totalRequirdDocs || 0}
-                            </Typography>
+                                                <Box
+                                                    component="span"
+                                                    sx={{
+                                                        ml: 0.2,
+                                                        fontSize: 10,
+                                                        fontWeight: 600,
+                                                    }}
+                                                >
+                                                    ({item?.totalDocCount?.remainingCount} left)
+                                                </Box>
+                                            </>
+                                        )}
+                                    </Typography>
+                                </Box>
 
+                                <IconButton
+                                    size="small"
+                                    onClick={() => setSubsidyId(item?.id)}
+                                    sx={{
+                                        bgcolor: "background.paper",
+                                        borderColor: "divider",
+                                    }}
+                                >
+                                    <FolderOpenOutlinedIcon fontSize="small" />
+                                </IconButton>
+
+                            </Box>
                         </Card>
-
                     ))}
 
                     {(hasNextPage && data?.length > 0) && (
@@ -309,7 +292,7 @@ function KanbanItem({
                         </Button>
                     )}
                 </Box>
-            </Box>
+            </Box >
             <AppDrawer
                 open={Boolean(subsidyId)}
                 onClose={() => setSubsidyId(null)}
@@ -321,83 +304,12 @@ function KanbanItem({
             </AppDrawer>
 
             {clientId &&
-                <AppDrawer
+                <ClientDetailDrawer
                     open={Boolean(clientId)}
                     onClose={() => setClientId(null)}
-                    title={`Client detail`}
-                    anchor="right"
-                    width={1400}
-                    displayExpandDrawer={true}
-                >
-                    <Box sx={{ p: 4, borderRadius: 1, bgcolor: "background.paper", border: "1px solid", borderColor: "rgba(0,0,0,0.08)", boxShadow: "0px 8px 30px rgba(0,0,0,0.06)", overflow: "hidden", position: "relative" }}>
-                        {/* Top Accent */}
-                        <Box sx={{ position: "absolute", top: 0, left: 0, width: "100%", height: "5px", bgcolor: `${getAvatarColor(clientDetail?.name)}.light` }} />
-
-                        {/* Header */}
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 1, flexWrap: "wrap", }}>
-                            <Avatar sx={{ width: 45, height: 45, bgcolor: `${getAvatarColor(clientDetail?.name)}.light`, }}>
-                                {clientDetail?.name?.charAt(0)?.toUpperCase()}
-                            </Avatar>
-                            <Box flex={1}>
-                                <Typography fontSize={18} fontWeight={700} >
-                                    {clientDetail?.name || "Client Details"}
-                                </Typography>
-                                <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5, flexWrap: "wrap" }}>
-                                    <Typography fontSize={13} color="text.secondary"  >
-                                        Client Number:
-                                    </Typography>
-                                    <Chip size="small" label={clientDetail?.client_number} color={'primary'} sx={{ bgcolor: `${getAvatarColor(clientDetail?.name)}.light` }} />
-                                </Box>
-                            </Box>
-                        </Box>
-
-                        <Divider sx={{ mb: 2 }} />
-                        {/* Details */}
-                        <Grid container spacing={2.5}>
-                            {clientDetails.map((item, index) => (
-                                <Grid xs={12} sm={6} md={4} key={index}>
-                                    <Box sx={{ p: 1 }}  >
-                                        <Box sx={{ display: "flex", alignItems: "center", gap: 1, }}    >
-                                            <Box sx={{ width: 40, height: 40, borderRadius: 1, color: `${getAvatarColor(clientDetail?.name)}.light`, display: "flex", alignItems: "center", justifyContent: "center", }}>
-                                                {item.icon}
-                                            </Box>
-                                            <Typography fontSize={14} color="text.secondary" fontWeight={600}  >
-                                                {item.label}
-                                            </Typography>
-                                        </Box>
-                                        <Typography fontWeight={600} fontSize={14} sx={{ wordBreak: "break-word", lineHeight: 1.8, pl: 2 }}  >
-                                            {item.value || "-"}
-                                        </Typography>
-                                    </Box>
-                                </Grid>
-                            ))}
-                        </Grid>
-                    </Box>
-                </AppDrawer >}
+                    clientId={clientId}
+                />
+            }
         </>
     );
 }
-
-// const boardData = [
-//     {
-//         label: "Todo",
-//         value: "todo",
-//         bgColor: "#F8FAFC",
-//         data: [
-//             {
-//                 id: "69841aa773a44229244c15ef",
-//                 title: "Dashboard UI Design",
-//                 description: "Create responsive dashboard layout",
-//                 person: "Amy",
-//             },
-//         ],
-//         pagination: {
-//             currentPage: 1,
-//             limit: 3,
-//             total: 6,
-//             totalPages: 2,
-//             hasNextPage: true,
-//             hasPrevPage: false,
-//         },
-//     },
-// ];

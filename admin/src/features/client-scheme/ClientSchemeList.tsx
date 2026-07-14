@@ -26,7 +26,7 @@ import { usersAPI } from "@/api/users";
 import utc from "dayjs/plugin/utc";
 import { getAvatarColor } from "@/utils/iconMap";
 import { useMasterData } from "@/context/MasterData";
-import { getCurrentStatus, isMatchingFilter } from "@/utils/commonFunctions";
+import { findSubmittedDocCount, getCurrentStatus, isMatchingFilter } from "@/utils/commonFunctions";
 
 dayjs.extend(utc);
 
@@ -691,29 +691,6 @@ export default function ClientScheme() {
     );
 
     const boardData = (statusList || [])?.map((data: any) => {
-        const schemeWisePending = allClientSubsidy.map((item: any) => {
-            return item.scheme_ref.map((scheme: any) => {
-                console.log("item", item);
-
-                // Submitted docs for this scheme
-                const submitted = item.submitted_docs
-                    .filter((doc: any) => doc.scheme_id === scheme._id)
-                // .map((doc: any) => doc.docId);
-                console.log("submitted", submitted);
-
-
-                // Pending docs
-                const pendingDocs = scheme.requird_docs.filter(
-                    (docId: any) => !submitted.includes(docId)
-                );
-
-                return {
-                    schemeId: scheme._id,
-                    pendingCount: pendingDocs.length,
-                };
-            });
-        });
-
         const stageCountObj = defaultSubsidyCount?.statusCounts?.find((e: any) => e?.statusId == data?._id);
         return ({
             _id: data?._id,
@@ -733,14 +710,12 @@ export default function ClientScheme() {
                     current_stage: item?.current_stage,
                     case_number: item?.case_number,
                     expireOn: dayjs.utc(item?.expireOn).format("DD-MMM-YYYY"),
-                    // totalPendingDocs: schemeWisePending?.find((e) => e?.),
-                    clientId: item?.client?._id
+                    clientId: item?.client?._id,
+                    totalDocCount: findSubmittedDocCount(item?.submitted_docs, item?.scheme_ref, item?.scheme_ref?.[0]?._id)
                 })),
-
             pagination: {
                 hasNextPage: stageCountObj?.hasNextPage,
                 nextPage: stageCountObj?.nextPage,
-                // stageId: stageCountObj?.stageId,
                 totalCount: stageCountObj?.totalCount,
                 loadedCount: stageCountObj?.loadedCount,
             }
