@@ -43,7 +43,7 @@ type KanbanBoardProps = {
     boards: any[];
     onShowMore?: (value: any) => void;
     loading?: boolean;
-    onDrop?: (params: { row: any; stage: any; }) => void;
+    onDrop?: (params: { row: any; status_id: any; }) => void;
     onRefresh?: (value: any) => void;
     sx?: SxProps<Theme>;
 };
@@ -58,7 +58,7 @@ export default function KanbanBoard({
 }: KanbanBoardProps) {
     const [boards, setBoards] = useState(initialBoards);
     const [dragItem, setDragItem] = useState<{ item: any; sourceBoard: number; } | null>(null);
-    
+
     useEffect(() => {
         setBoards(initialBoards);
     }, [initialBoards]);
@@ -78,7 +78,7 @@ export default function KanbanBoard({
         updatedBoards[destinationBoard].data.push(dragItem.item);
         setBoards(updatedBoards);
         setDragItem(null);
-        onDrop?.({ row: dragItem.item, stage: updatedBoards[destinationBoard]._id });
+        onDrop?.({ row: dragItem.item, status_id: updatedBoards[destinationBoard]._id });
     };
 
     return (

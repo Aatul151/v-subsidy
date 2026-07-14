@@ -48,6 +48,7 @@ import { useMasterData } from "@/context/MasterData";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { clientsAPI } from "@/api/manageClient";
+import { getCurrentStatus } from "@/utils/commonFunctions";
 
 dayjs.extend(utc);
 
@@ -173,13 +174,10 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
         return caseDetail?.current_stage?.find((item: any) => item.scheme_id == selectedSchemeId);
     }, [caseDetail, selectedSchemeId]);
 
-    const currentStatus = useMemo(() => {
-        return caseDetail?.current_status?.find(
-            (item: any) =>
-                item.scheme_id == selectedSchemeId &&
-                item.stage_id == currentStage?.stage_id
-        );
-    }, [caseDetail, currentStage, selectedSchemeId]);
+    const currentStatus = useMemo(() =>
+        getCurrentStatus(caseDetail?.current_status, caseDetail?.current_stage, selectedSchemeId),
+        [caseDetail?.current_status, caseDetail?.current_stage, selectedSchemeId]
+    );
 
     //Status history details 
     const { data: stepperInfo } = useQuery({
@@ -345,7 +343,7 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
     );
 
     const getColor = (item: any) => {
-        if (item?.label === 'Status') return caseDetail?.current_status?.find((d: any) => d?.scheme_id == selectedSchemeId && d?.stage_id == currentStatus?.stage_id)?.ref_status?.bgColor;
+        if (item?.label === 'Status') return currentStatus?.ref_status?.bgColor;
         else return 'primary.main';
     }
 
@@ -667,6 +665,7 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
                             stage_id: stageValues?.stage,
                             end_date: stageValues?.end_date,
                             remarks: stageValues?.remark,
+                            default_status_id: statusList?.find((s) => s?.payload?.order_index == 1)?._id // Default status for new stage
                         }
                     }
                     break;

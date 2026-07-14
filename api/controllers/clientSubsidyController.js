@@ -5,7 +5,7 @@ import FormDefinition from "../models/FormDefinition.js";
 import { deleteFile, sanitizeFileName, uploadFile } from "../services/fileUploadService.js";
 import { validateFormAccess } from "../services/permissionService.js";
 import { buildMongoFilter } from "../utils/buildMongoFilter.js";
-import { buildCaseFilter, buildKanbanPagination, generateUniqueNo, getCaseProgressData, saveCaseStageProgress, saveCaseStatusProgress, updateCurrentStage, updateCurrentStatus } from "../utils/commonFunctions.js";
+import { buildCaseFilter, buildKanbanPagination, saveDefaultStageStatus, generateUniqueNo, getCaseProgressData, saveCaseStageProgress, saveCaseStatusProgress, updateCurrentStage, updateCurrentStatus } from "../utils/commonFunctions.js";
 import { populateFormReference, populateReferencesBatch } from "../utils/populateReferences.js";
 import fs from 'fs/promises';
 import path from 'path';
@@ -407,7 +407,7 @@ export const updateClientCase = async (req, res) => {
 
         //#region Manage Status & stage progress
         const reqUser = req.user
-        const [statusProgress, stageProgress] = await Promise.all([
+        let [statusProgress, stageProgress] = await Promise.all([
             hasStatus ? saveCaseStatusProgress({
                 case_id: resScheme._id,
                 scheme_id: status.scheme_id,
@@ -430,6 +430,15 @@ export const updateClientCase = async (req, res) => {
         //#endregion
 
         //#region Manage current stage/status
+        if (stageProgress?.is_active && !statusProgress && stage?.default_status_id) {
+            statusProgress = await saveDefaultStageStatus({
+                case_id: resScheme?._id,
+                scheme_id: stageProgress?.scheme_id,
+                stage_id: stageProgress?.stage_id,
+                default_status_id: stage?.default_status_id,
+                reqUser,
+            });
+        }
         const updateFields = {};
 
         if (statusProgress?.completed_date === null) {

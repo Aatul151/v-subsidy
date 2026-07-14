@@ -26,7 +26,7 @@ import { usersAPI } from "@/api/users";
 import utc from "dayjs/plugin/utc";
 import { getAvatarColor } from "@/utils/iconMap";
 import { useMasterData } from "@/context/MasterData";
-import { hasCurrentStatus, isMatchingFilter } from "@/utils/commonFunctions";
+import { getCurrentStatus, isMatchingFilter } from "@/utils/commonFunctions";
 
 dayjs.extend(utc);
 
@@ -309,19 +309,36 @@ export default function ClientScheme() {
     }
 
     const handleFormSubmit = async (data: Record<string, any>) => {
-        const payload = {
+        let payload: any = {
             client: data?.client,
             scheme_ids: data?.scheme,
             assigned_executive: data?.assigned_executive,
-            stage_id: data?.current_stage,
-            status_id: data?.status,
-            expireOn: dayjs(data.expireOn).format("YYYY-MM-DD"),
+            expireOn: dayjs(data?.expireOn).format("YYYY-MM-DD"),
             remarks: data?.remarks
         }
         if (formMode == 'edit' && selectedClientSubsidy?._id) {
+            if (data?.status) {
+                payload['status'] = {
+                    scheme_id: selectedClientSubsidy?.scheme?.[0], // default 1st scheme select
+                    stage_id: data?.current_stage,
+                    status_id: data?.status,
+                }
+            }
+            if (data?.current_stage) {
+                payload['stage'] = {
+                    scheme_id: selectedClientSubsidy?.scheme?.[0], // default 1st scheme select
+                    stage_id: data?.current_stage,
+                }
+            }
+
             await updateMutation.mutateAsync({ id: selectedClientSubsidy._id, payload });
         } else {
-            await createMutation.mutateAsync(payload);
+            const createPayload = {
+                ...payload,
+                stage_id: data?.current_stage,
+                status_id: data?.status,
+            }
+            await createMutation.mutateAsync(createPayload);
         }
     };
     const orderMap: Record<string, number> = {
@@ -492,14 +509,14 @@ export default function ClientScheme() {
                     width: 250,
                     order: orderMap.status,
                     renderCell: ({ row }: any) => {
-                        const statuses = row?.current_status || [];
+                        const currentStatus = getCurrentStatus(row?.current_status, row?.current_stage);
                         return (
                             <Box display="flex" alignItems="center" gap={0.5}>
-                                {statuses[0] && (
+                                {currentStatus && (
                                     <Chip
                                         size="small"
-                                        label={statuses[0]?.ref_status?.label}
-                                        sx={{ bgcolor: statuses[0]?.ref_status?.bgColor }}
+                                        label={currentStatus?.ref_status?.label}
+                                        sx={{ bgcolor: currentStatus?.ref_status?.bgColor }}
                                     />
                                 )}
                             </Box>
@@ -706,7 +723,7 @@ export default function ClientScheme() {
             orderIndex: data?.payload?.order_index,
 
             data: (allClientSubsidy || [])
-                ?.filter((item: any) => hasCurrentStatus(item, data?._id))
+                ?.filter((item: any) => getCurrentStatus(item?.current_status, item?.current_stage)?.status_id?.toString() == data?._id?.toString())
                 ?.map((item: any) => ({
                     id: item?._id,
                     scheme_ref: item?.scheme_ref,
@@ -745,28 +762,45 @@ export default function ClientScheme() {
     }
 
     const handleDrop = async (data: any) => {
-        const payload = { current_stage: data?.stage }
+        const payload = {
+            status: {
+                scheme_id: data?.row?.scheme_ref?.[0]?._id,
+                stage_id: data?.row?.current_stage?.[0]?.stage_id,
+                status_id: data?.status_id,
+                remarks: "DRAG AND DROP"
+            },
+            stage: {
+                scheme_id: data?.row?.scheme_ref?.[0]?._id,
+                stage_id: data?.row?.current_stage?.[0]?.stage_id,
+            }
+        }
         // Move card locally
         setAllClientSubsidy(prev =>
-            prev.map(item =>
-                item._id === data.row.id
-                    ? { ...item, current_stage: data.stage }
-                    : item
-            )
+            prev.map(item => {
+                if (item._id !== data.row.id) return item;
+                const activeStatus = getCurrentStatus(item?.current_status, item?.current_stage, data?.row?.scheme_ref?.[0]?._id);
+                return {
+                    ...item,
+                    current_status: item?.current_status?.map((status: any) => status?._id === activeStatus?._id ? { ...status, status_id: data.status_id } : status),
+                };
+            })
         );
-        //update total count
-        setDefaultSubsidyCount((prev: any) => ({
-            ...prev,
-            statusCounts: prev.statusCounts.map((item: any) => ({
-                ...item,
-                totalCount:
-                    item.stageId === data.row.current_stage
-                        ? item.totalCount - 1
-                        : item.stageId === data?.stage
-                            ? item.totalCount + 1
-                            : item.totalCount
-            }))
-        }));
+
+        // Update total count for Kanban
+        setDefaultSubsidyCount((prev: any) => {
+            const activeStatus = getCurrentStatus(data.row.current_status, data.row.current_stage, data.row.scheme_ref?.[0]?._id);
+            return {
+                ...prev,
+                statusCounts: prev?.statusCounts?.map((item: any) => ({
+                    ...item,
+                    totalCount: item?.statusId == activeStatus?.status_id
+                        ? item?.totalCount - 1
+                        : item?.statusId == data?.status_id
+                            ? item?.totalCount + 1
+                            : item?.totalCount,
+                })),
+            };
+        });
 
         await updateMutation.mutateAsync({ id: data?.row?.id, payload });
     }
@@ -1054,11 +1088,15 @@ export default function ClientScheme() {
                 formSysName={SYSTEM_FORM_NAMES.CASE}
                 onSubmit={handleFormSubmit}
                 initialValues={(formMode === 'edit' || formMode === 'view') && selectedClientSubsidy ? (() => {
-                    const { createdAt, updatedAt,
-                        assigned_executive_ref: { name: executiveName } = {},
-                        client: { _id: clientId } = {},
-                        ...clientSubsidy } = selectedClientSubsidy;
-                    return { ...clientSubsidy, assigned_executive_ref: executiveName, client: clientId, current_stage: selectedClientSubsidy.current_stage?.[0]?.stage_id, };
+                    return {
+                        client: selectedClientSubsidy?.client?._id,
+                        scheme: selectedClientSubsidy?.scheme,
+                        assigned_executive: selectedClientSubsidy?.assigned_executive,
+                        status: getCurrentStatus(selectedClientSubsidy?.current_status, selectedClientSubsidy?.current_stage)?.status_id,
+                        current_stage: selectedClientSubsidy?.current_stage?.[0]?.stage_id,
+                        expireOn: selectedClientSubsidy?.expireOn,
+                        remarks: selectedClientSubsidy?.remarks
+                    };
                 })() : undefined}
                 title={formMode === 'edit' ? "Edit Case" : formMode === 'view' ? "View Case" : 'Add Case'}
                 mode={formMode}
@@ -1137,8 +1175,7 @@ export default function ClientScheme() {
                             <TableBody>
                                 {caseDetails?.scheme_ref?.map((scheme: any) => {
                                     const stage = caseDetails.current_stage?.find((s: any) => s?.scheme_id === scheme?._id);
-                                    const status = caseDetails.current_status?.find((s: any) => s?.scheme_id == scheme?._id && s?.stage_id == stage?.stage_id);
-
+                                    const status = getCurrentStatus(caseDetails.current_status, caseDetails.current_stage, scheme._id);
                                     return (
                                         <TableRow key={scheme?._id}>
                                             <TableCell>{scheme?.scheme_name}</TableCell>
@@ -1149,9 +1186,7 @@ export default function ClientScheme() {
                                                 <Chip
                                                     size="small"
                                                     label={status?.ref_status?.label || "-"}
-                                                    sx={{
-                                                        bgcolor: status?.ref_status?.bgColor,
-                                                    }}
+                                                    sx={{ bgcolor: status?.ref_status?.bgColor }}
                                                 />
                                             </TableCell>
                                             <TableCell>

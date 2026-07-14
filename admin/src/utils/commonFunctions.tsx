@@ -54,14 +54,17 @@ const matchesFilter = (itemValue: any, selectedValue: any[] = [], isFilterEmpty:
 };
 
 // Returns true if the case has the given active status
-export const hasCurrentStatus = (item: any, statusId: string | undefined) => {
-
-    return item?.current_status?.some((status: any) =>
-        status?.status_id?.toString() === statusId?.toString() &&
-        item?.current_stage?.some(
+export const getCurrentStatus = (
+    currentStatus: any[] = [],
+    currentStage: any[] = [],
+    schemeId: string | null = null,
+) => {
+    return currentStatus.find((status: any) =>
+        currentStage.some(
             (stage: any) =>
-                stage?.scheme_id?.toString() == status?.scheme_id?.toString() &&
-                stage?.stage_id?.toString() == status?.stage_id?.toString()
+                stage?.scheme_id?.toString() === status?.scheme_id?.toString() &&
+                stage?.stage_id?.toString() === status?.stage_id?.toString() &&
+                (!schemeId || stage?.scheme_id?.toString() === schemeId?.toString())
         )
     );
 };

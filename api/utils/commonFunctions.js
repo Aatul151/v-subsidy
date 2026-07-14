@@ -202,43 +202,39 @@ export const saveCaseStatusProgress = async ({
     reqUser = null,
 }) => {
     try {
-        // Check if this status already exists
-        const existingProgress = await CaseStatusProgress.findOne({
-            case_id,
-            scheme_id,
-            stage_id,
-            status_id,
-        });
+        const progresses = await CaseStatusProgress.find({ case_id, scheme_id, stage_id }).sort({ submitted_date: 1 });
+        const selectedIndex = progresses.findIndex(p => p.status_id.toString() === status_id.toString());
 
-        // Status already exists -> Update remark only
-        if (existingProgress) {
-            existingProgress.remarks = remarks;
-            existingProgress.updatedAt = new Date();
-            existingProgress.updatedBy = reqUser?._id;
+        // User selected an existing(old) status
+        if (selectedIndex !== -1) {
+            for (let i = 0; i < progresses?.length; i++) {
+                const progress = progresses[i];
+                progress.remarks = progress?.status_id?.toString() == status_id.toString() ? remarks : progress.remarks;
+                progress.updatedAt = new Date();
+                progress.updatedBy = reqUser?._id;
 
-            await existingProgress.save();
-            return existingProgress;
+                if (i < selectedIndex) {
+                    if (!progress.completed_date) { progress.completed_date = new Date(); } // Previous statuses stay completed
+                } else if (i === selectedIndex) {
+                    progress.completed_date = null;  // Selected becomes active
+                } else {
+                    progress.completed_date = new Date();  // Later statuses become inactive
+                }
+                await progress.save();
+            }
+
+            return progresses[selectedIndex];
         }
 
-        // Find current active status
-        const activeProgress = await CaseStatusProgress.findOne({
-            case_id,
-            scheme_id,
-            stage_id,
-            completed_date: null,
-        });
+        // New status
+        await CaseStatusProgress.updateMany(
+            { case_id, scheme_id, stage_id, completed_date: null, },
+            {
+                $set: { completed_date: new Date(), updatedAt: new Date(), updatedBy: reqUser?._id },
+            }
+        );
 
-        // Close current active status
-        if (activeProgress) {
-            activeProgress.completed_date = new Date();
-            activeProgress.updatedAt = new Date();
-            activeProgress.updatedBy = reqUser?._id;
-
-            await activeProgress.save();
-        }
-
-        // Create new status
-        const newProgress = await CaseStatusProgress.create({
+        return await CaseStatusProgress.create({
             case_id,
             scheme_id,
             stage_id,
@@ -250,7 +246,6 @@ export const saveCaseStatusProgress = async ({
             updatedBy: reqUser?._id,
         });
 
-        return newProgress;
     } catch (error) {
         console.error("Error saving case status progress:", error);
         throw error;
@@ -326,6 +321,21 @@ export const saveCaseStageProgress = async ({
 };
 //#endregion
 
+//#region  
+export const saveDefaultStageStatus = async ({ case_id, scheme_id, stage_id, default_status_id, reqUser }) => {
+    // Already has an active status for this stage
+    const activeStatus = await CaseStatusProgress.findOne({ case_id, scheme_id, stage_id, completed_date: null });
+    if (activeStatus) return activeStatus;
+    return await saveCaseStatusProgress({
+        case_id,
+        scheme_id,
+        stage_id,
+        status_id: default_status_id,
+        remarks: "",
+        reqUser,
+    });
+};
+//#endregion
 
 // Calculates Kanban pagination details for each status.
 export const buildKanbanPagination = ({

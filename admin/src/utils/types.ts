@@ -16,9 +16,3 @@ export interface FieldConfig {
   };
 }
 
-export const STATUS_LIST = [
-  { value: "active", label: "Active" },
-  { value: "inactive", label: "Inactive" },
-  { value: "completed", label: "Completed" },
-  { value: "closed", label: "Closed" },
-]
