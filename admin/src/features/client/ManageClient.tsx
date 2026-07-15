@@ -1,6 +1,6 @@
 import { PageHeader } from "@/components/common/PageHeader";
-import { Alert, Avatar, Box, Button, ButtonGroup, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Divider, IconButton, Stack, Tooltip, Typography } from "@mui/material";
-import { ArrowOutward, FormatListBulleted as FormatListBulletedIcon, NotificationsActive } from '@mui/icons-material';
+import { Alert, Avatar, Box, Button, ButtonGroup, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, Tooltip, Typography } from "@mui/material";
+import { FormatListBulleted as FormatListBulletedIcon, Notifications, NotificationsActive } from '@mui/icons-material';
 import { Add as AddIcon, Edit as EditIcon, Visibility as ViewIcon, Refresh as RefreshIcon } from '@mui/icons-material';
 import { PageContent } from "@/components/common/PageContent";
 import { AppDataTable } from "@/components/common/AppDataTable";
@@ -15,15 +15,13 @@ import { FormField, FormSection } from "@aatulwork/customform-renderer";
 import { useAppAlert } from "@/components/common/AppAlert";
 import { UpdateRolePayload } from "@/api/roles";
 import { getAvatarColor } from "@/utils/iconMap";
-import { useNavigate } from "react-router-dom";
 import ClientDetailDrawer from "@/components/common/ClientDetailDrawer";
+import ClientAlertList from "@/components/common/ClientAlertList";
 
 
 export default function ManageClient() {
     const queryClient = useQueryClient();
     const { showAlert, AlertComponent } = useAppAlert();
-    const navigate = useNavigate();
-
     const [formDrawerOpen, setFormDrawerOpen] = useState(false);
     const [formMode, setFormMode] = useState<'add' | 'edit' | 'view'>('add');
     const [selectedClient, setSelectedClient] = useState<Clients | null>(null);
@@ -172,7 +170,7 @@ export default function ManageClient() {
                     field: field.name,
                     headerName: field.label,
                     width: 150,
-                    order: orderMap.name,
+                    order: 2,
                     renderCell: (params: any) => {
                         const clientName = params?.row?.name;
                         const colorCode = getAvatarColor(clientName);
@@ -218,6 +216,26 @@ export default function ManageClient() {
         // Add metadata columns
         columns.push(
             {
+                field: 'alert',
+                headerName: 'Alert',
+                width: 70,
+                order: 1,
+                renderCell: (params: any) => {
+                    const hasAlerts = params?.row?.case_todos?.length > 0;
+                    return (
+                        <IconButton
+                            title="View Alerts"
+                            size="small"
+                            color={hasAlerts ? "warning" : "default"}
+                            disabled={!hasAlerts}
+                            onClick={() => handleTodoModal(params.row.case_todos)}
+                        >
+                            {hasAlerts ? (<NotificationsActive />) : (<Notifications color="disabled" />)}
+                        </IconButton>
+                    );
+                },
+            },
+            {
                 field: 'clientNo',
                 headerName: 'Client Number',
                 width: 150,
@@ -246,16 +264,6 @@ export default function ManageClient() {
                         label="Edit"
                         onClick={() => handleActions(true, params.row, 'edit')}
                     />,
-                    ...(params?.row.case_todos?.length > 0
-                        ? [
-                            <GridActionsCellItem
-                                key="client_alerts"
-                                icon={<NotificationsActive color="warning" />}
-                                label="client_alerts"
-                                onClick={() => handleTodoModal(params.row.case_todos)}
-                                showInMenu={false}
-                            />,
-                        ] : []),
                     // <GridActionsCellItem
                     //     key="delete"
                     //     icon={<DeleteIcon color="error" />}
@@ -456,88 +464,12 @@ export default function ManageClient() {
             </Dialog>
 
             {/* Displat TODO alerts */}
-            <Dialog
+            <ClientAlertList
+                openInDialog
                 open={openTodoModal}
                 onClose={() => setOpenTodoModal(false)}
-                fullWidth
-                maxWidth="sm"
-            >
-                <DialogTitle>Case Alerts</DialogTitle>
-
-                <DialogContent dividers sx={{ p: 1 }}>
-                    <Stack spacing={1}>
-                        {todoList.map((todo: any, index: number) => (
-                            <Box
-                                key={todo._id || index}
-                                sx={{
-                                    py: 0.5,
-                                    px: 1,
-                                    borderRadius: 1,
-                                    "&:hover": { bgcolor: "action.hover" },
-                                }}
-                            >
-                                <Stack
-                                    direction="row"
-                                    justifyContent="space-between"
-                                    alignItems="center"
-                                >
-                                    <Stack direction="row" spacing={1.5} alignItems="center" sx={{ flex: 1, minWidth: 0 }}>
-                                        <Avatar sx={{ width: 35, height: 35, bgcolor: "warning.light" }}>
-                                            {todo.ref_scheme?.scheme_name?.charAt(0)}
-                                        </Avatar>
-
-                                        <Box sx={{ minWidth: 0 }}>
-                                            <Typography fontWeight={600} fontSize={14} noWrap>
-                                                {todo.ref_scheme?.scheme_name}{" "}
-                                                <Box
-                                                    component="code"
-                                                    sx={{
-                                                        fontSize: 13,
-                                                        bgcolor: "grey.100",
-                                                        px: 0.5,
-                                                        py: 0.2,
-                                                        borderRadius: 0.5,
-                                                        fontFamily: "monospace",
-                                                        color: "text.secondary",
-                                                    }}
-                                                >
-                                                    {todo.ref_case?.case_number}
-                                                </Box>
-                                            </Typography>
-
-                                            {todo.remark && (
-                                                <Typography
-                                                    variant="caption"
-                                                    color="text.secondary"
-                                                    sx={{ display: "block", mt: 0.3 }}
-                                                >
-                                                    {todo.remark}
-                                                </Typography>
-                                            )}
-                                        </Box>
-                                    </Stack>
-
-                                    <IconButton
-                                        size="small"
-                                        color="primary"
-                                        onClick={() => navigate(`/client-case/${todo?.case_id}/${todo?.scheme_id}`)}
-                                    >
-                                        <ArrowOutward fontSize="small" />
-                                    </IconButton>
-                                </Stack>
-
-                                {index !== todoList.length - 1 && <Divider sx={{ mt: 1 }} />}
-                            </Box>
-                        ))}
-                    </Stack>
-                </DialogContent>
-
-                <DialogActions>
-                    <Button variant="outlined" onClick={() => setOpenTodoModal(false)}>
-                        Close
-                    </Button>
-                </DialogActions>
-            </Dialog>
+                alerts={todoList}
+            />
 
             {clientId &&
                 <ClientDetailDrawer

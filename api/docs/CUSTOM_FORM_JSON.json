@@ -1,7 +1,214 @@
 {
-  "exportedAt": "2026-07-15T04:02:53.722Z",
-  "count": 4,
+  "exportedAt": "2026-07-15T07:41:13.835Z",
+  "count": 6,
   "forms": [
+    {
+      "_id": "6a34de9b85e924ffc5fb0b53",
+      "title": "Clients",
+      "name": "clients",
+      "module": {
+        "_id": "6a3f5cf6fa62ec3661a0330f",
+        "name": "master",
+        "description": "",
+        "isActive": true
+      },
+      "sections": [
+        {
+          "title": "Basic Information",
+          "fields": [
+            {
+              "type": "text",
+              "label": "Name",
+              "name": "name",
+              "required": true,
+              "allowFilter": true,
+              "placeholder": "Enter client full name"
+            },
+            {
+              "type": "text",
+              "label": "Company Name",
+              "name": "company_name",
+              "required": true,
+              "allowFilter": true,
+              "placeholder": "Enter company name"
+            },
+            {
+              "type": "number",
+              "label": "Mobile Number",
+              "name": "mobile_number",
+              "required": true,
+              "allowFilter": true,
+              "placeholder": "Enter client mobile number"
+            },
+            {
+              "type": "email",
+              "label": "Email Address",
+              "name": "email",
+              "required": false,
+              "allowFilter": true,
+              "placeholder": "Enter client email address"
+            },
+            {
+              "type": "text",
+              "label": "Alternate Contact Person Name",
+              "name": "alternate_contact_person_name",
+              "required": false,
+              "placeholder": "Enter alternate contact person fullname"
+            },
+            {
+              "type": "number",
+              "label": "Alternate Contact Person Number",
+              "name": "alternate_contact_person_number",
+              "required": false,
+              "placeholder": "Enter alternate contact person phone number"
+            },
+            {
+              "type": "text",
+              "label": "GST Number",
+              "name": "gst_number",
+              "required": false,
+              "allowFilter": true,
+              "placeholder": "Enter GST number"
+            },
+            {
+              "type": "text",
+              "label": "PAN Number",
+              "name": "pan_number",
+              "required": false,
+              "allowFilter": true,
+              "placeholder": "Enter PAN number"
+            },
+            {
+              "type": "text",
+              "label": "Address",
+              "name": "address",
+              "required": false,
+              "allowFilter": true,
+              "placeholder": "Enter client full address",
+              "multiline": true
+            },
+            {
+              "type": "text",
+              "label": "Remarks",
+              "name": "remarks",
+              "required": false,
+              "allowFilter": false,
+              "multiline": true,
+              "placeholder": "Enter remark"
+            }
+          ],
+          "id": "section_1781849734282"
+        }
+      ],
+      "formType": "custom",
+      "settings": {
+        "formIcon": "",
+        "isPublic": false,
+        "isSingleRecordForm": false,
+        "allowManageFromEntryPage": false,
+        "fieldsPerRow": 2,
+        "sectionDisplayMode": "panel"
+      }
+    },
+    {
+      "_id": "6a34f57543b4e72a812acaac",
+      "title": "Cases",
+      "name": "cases",
+      "collectionName": "client_subsidies",
+      "module": {
+        "_id": "6a3f5cf6fa62ec3661a0330f",
+        "name": "master",
+        "description": "",
+        "isActive": true
+      },
+      "sections": [
+        {
+          "title": "Basic Information",
+          "fields": [
+            {
+              "type": "apiReference",
+              "label": "Client",
+              "name": "client",
+              "required": true,
+              "apiEndpoint": "/clients",
+              "referenceModel": "Clients",
+              "apiLabelField": "name",
+              "apiValueField": "_id",
+              "allowFilter": true,
+              "placeholder": "Select client"
+            },
+            {
+              "type": "formReference",
+              "label": "Assign Scheme",
+              "name": "scheme",
+              "required": true,
+              "allowMultiple": true,
+              "referenceFormName": "scheme",
+              "referenceFieldName": "scheme_name",
+              "allowFilter": true,
+              "placeholder": "Select scheme"
+            },
+            {
+              "type": "apiReference",
+              "label": "Assigned Executive",
+              "name": "assigned_executive",
+              "required": true,
+              "apiEndpoint": "/users",
+              "referenceModel": "User",
+              "apiLabelField": "name",
+              "apiValueField": "_id",
+              "allowFilter": true,
+              "placeholder": "Select assigned executive"
+            },
+            {
+              "type": "formReference",
+              "label": "Current stage",
+              "name": "current_stage",
+              "required": true,
+              "referenceFormName": "stage",
+              "referenceFieldName": "name",
+              "allowMultiple": false,
+              "allowFilter": true,
+              "placeholder": "Select current stage"
+            },
+            {
+              "type": "formReference",
+              "label": "Status",
+              "name": "status",
+              "required": true,
+              "referenceFormName": "status",
+              "referenceFieldName": "label",
+              "placeholder": "Select status"
+            },
+            {
+              "type": "datepicker",
+              "label": "Expire On",
+              "name": "expireOn",
+              "required": true,
+              "placeholder": "Select date"
+            },
+            {
+              "type": "text",
+              "label": "Remark",
+              "name": "remarks",
+              "required": false,
+              "multiline": true,
+              "placeholder": "Enter remark"
+            }
+          ],
+          "id": "section_1781855420962"
+        }
+      ],
+      "formType": "custom",
+      "settings": {
+        "formIcon": "",
+        "isPublic": false,
+        "isSingleRecordForm": false,
+        "allowManageFromEntryPage": false,
+        "fieldsPerRow": 2,
+        "sectionDisplayMode": "panel"
+      }
+    },
     {
       "_id": "6a34ef4443b4e72a812ac427",
       "title": "Status",
@@ -31,18 +238,18 @@
               "allowFilter": true
             },
             {
-              "type": "text",
-              "label": "Decription",
-              "name": "description",
-              "required": false,
-              "placeholder": "",
-              "multiline": true
-            },
-            {
               "type": "number",
               "label": "Order Index",
               "name": "order_index",
-              "required": false
+              "required": true
+            },
+            {
+              "type": "text",
+              "label": "Description",
+              "name": "description",
+              "required": false,
+              "placeholder": "Enter description",
+              "multiline": true
             },
             {
               "type": "color",
@@ -89,24 +296,10 @@
             },
             {
               "type": "text",
-              "label": "Description",
-              "name": "description",
-              "required": false,
-              "multiline": true
-            },
-            {
-              "type": "text",
               "label": "Government Department",
               "name": "government_department",
               "required": false,
               "allowFilter": true
-            },
-            {
-              "type": "text",
-              "label": "Eligibility Notes",
-              "name": "eligibility_notes",
-              "required": false,
-              "multiline": true
             },
             {
               "type": "formReference",
@@ -116,7 +309,24 @@
               "allowMultiple": true,
               "referenceFormName": "all_documents",
               "referenceFieldName": "doc_name",
-              "allowFilter": true
+              "allowFilter": true,
+              "placeholder": "Select documents"
+            },
+            {
+              "type": "text",
+              "label": "Eligibility Notes",
+              "name": "eligibility_notes",
+              "required": false,
+              "multiline": true,
+              "placeholder": "Enter notes"
+            },
+            {
+              "type": "text",
+              "label": "Description",
+              "name": "description",
+              "required": false,
+              "multiline": true,
+              "placeholder": "Enter description"
             }
           ],
           "id": "section_1781853648172"
@@ -192,7 +402,8 @@
               "label": "Description",
               "name": "description",
               "required": false,
-              "multiline": true
+              "multiline": true,
+              "placeholder": "Enter description"
             }
           ],
           "id": "section_1783161518655"

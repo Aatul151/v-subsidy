@@ -8,7 +8,7 @@ const ClientAlertList = ({
     cardView = false,
     open = false,
     onClose,
-    title = "Client Case Alerts"
+    title = "Alerts"
 }: any) => {
     const navigate = useNavigate();
 

@@ -34,12 +34,12 @@ const clientSchema = new mongoose.Schema(
       ],
     },
 
-    contact_person_name: {
+    alternate_contact_person_name: {
       type: String,
       trim: true,
     },
 
-    contact_person_number: {
+    alternate_contact_person_number: {
       type: String,
       trim: true,
     },
