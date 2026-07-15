@@ -1,6 +1,6 @@
 import { Theme } from "@emotion/react";
 import { Box, Card, Typography, Button, Chip, SxProps, IconButton } from "@mui/material";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Refresh as RefreshIcon, FolderOpenOutlined as FolderOpenOutlinedIcon, Person as PersonIcon, AccessTime as AccessTimeIcon, DescriptionOutlined as DescriptionOutlinedIcon } from '@mui/icons-material';
 import dayjs from "dayjs";
 import { AppDrawer } from "../common/AppDrawer";
@@ -113,7 +113,18 @@ function KanbanItem({
     const { hasNextPage, totalCount } = pagination;
     const [subsidyId, setSubsidyId] = useState<any>(false);
     const [clientId, setClientId] = useState<any>(false);
+    const scrollRef = useRef<HTMLDivElement>(null);
+    const [hasScroll, setHasScroll] = useState(false);
 
+    useEffect(() => {
+        const el = scrollRef.current;
+        if (!el) return;
+        const checkScroll = () => { setHasScroll(el.scrollHeight > el.clientHeight);};
+        checkScroll();
+        const resizeObserver = new ResizeObserver(checkScroll);
+        resizeObserver.observe(el);
+        return () => resizeObserver.disconnect();
+    }, [data]);
 
 
     return (
@@ -124,7 +135,7 @@ function KanbanItem({
                 sx={{
                     width: "100%",
                     minWidth: "250px",
-                    height: "calc(100vh - 30vh)",
+                    height: "calc(100vh - 300px)",
                     maxHeight: "calc(100vh - 20vh)",
                     display: "flex",
                     flexDirection: "column",
@@ -148,7 +159,7 @@ function KanbanItem({
                         borderBottom: "1px solid #F1F5F9",
                     }}
                 >
-                    <Typography sx={{ fontWeight: 700 }} > {label}</Typography>
+                    <Typography sx={{ fontWeight: 700 }}>{label}</Typography>
                     <Box
                         sx={{
                             display: "flex",
@@ -164,6 +175,7 @@ function KanbanItem({
                 </Box>
 
                 <Box
+                    ref={scrollRef}
                     sx={{
                         flex: 1,
                         minHeight: 0,
@@ -172,8 +184,8 @@ function KanbanItem({
                         display: "flex",
                         flexDirection: "column",
                         gap: 1,
-                        pr: 1,
-                        "&::-webkit-scrollbar": { width: 6 },
+                        pr: hasScroll ? 1 : 0,
+                        "&::-webkit-scrollbar": { width: 3 },
                         "&::-webkit-scrollbar-thumb": { background: "#D1D5DB", borderRadius: 20 },
                     }}
                 >
@@ -185,6 +197,7 @@ function KanbanItem({
                             sx={{
                                 p: 1,
                                 borderRadius: 1,
+                                flexShrink: 0,
                                 border: "1px solid #E5E7EB",
                                 cursor: "grab",
                                 "&:hover": {

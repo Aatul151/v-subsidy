@@ -4,7 +4,6 @@ import {
     Autocomplete,
     Box,
     Button,
-    ButtonGroup,
     Card,
     Checkbox,
     Chip,
@@ -324,7 +323,7 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
             <Tooltip title="Go Back" placement="bottom" arrow>
                 <Button
                     size="small"
-                    onClick={() => { navigate(-1) }}
+                    onClick={() => { navigate(`/client-case`) }}
                     variant={'contained'}
                     color="primary"
                 >

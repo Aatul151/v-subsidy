@@ -1,5 +1,5 @@
-import { Grid, Avatar, Box, Chip, Divider, Typography, Stack, Card, CardHeader, List, ListItem, ListItemText, IconButton, Tooltip, } from "@mui/material";
-import { Business as BusinessIcon, LocationOn as LocationOnIcon, Email as EmailIcon, Phone as PhoneIcon, Receipt as ReceiptIcon, Badge as BadgeIcon, Notes as NotesIcon, WhatsApp as WhatsAppIcon, NotificationsActiveOutlined, LaunchOutlined } from '@mui/icons-material';
+import { Grid, Avatar, Box, Chip, Divider, Typography, Card, Tooltip, } from "@mui/material";
+import { Business as BusinessIcon, LocationOn as LocationOnIcon, Email as EmailIcon, Phone as PhoneIcon, Receipt as ReceiptIcon, Badge as BadgeIcon, Notes as NotesIcon, WhatsApp as WhatsAppIcon } from '@mui/icons-material';
 import { AppDrawer } from "./AppDrawer";
 import { getAvatarColor } from "@/utils/iconMap";
 import { useQuery } from "@tanstack/react-query";
@@ -126,7 +126,7 @@ const ClientDetailDrawer = ({ open, onClose, clientId, width = 1200 }: any) => {
             </Card>
 
             {/* Alerts */}
-            {clientDetail?.case_todos?.length && (
+            {clientDetail?.case_todos?.length > 0 && (
                 <ClientAlertList alerts={clientDetail?.case_todos} cardView={true} />
             )}
         </AppDrawer>
