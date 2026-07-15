@@ -1,36 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { ArrowBack, Assignment, DescriptionOutlined, TrendingUp, Visibility, Close as CloseIcon, DescriptionOutlined as DescriptionOutlinedIcon, CheckCircle, SearchOff, InfoOutlined, NotificationsActiveOutlined } from "@mui/icons-material";
-import {
-    Autocomplete,
-    Box,
-    Button,
-    Card,
-    Checkbox,
-    Chip,
-    CircularProgress,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    Divider,
-    FormControl,
-    IconButton,
-    InputLabel,
-    MenuItem,
-    Paper,
-    Select,
-    Stack,
-    Step,
-    StepContent,
-    StepLabel,
-    Stepper,
-    Tab,
-    Tabs,
-    TextField,
-    Tooltip,
-    Typography,
-} from "@mui/material";
-
+import { Box, Button, Card, Checkbox, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Divider, IconButton, LinearProgress, Paper, Stack, Step, StepContent, StepLabel, Stepper, Tab, Tabs, TextField, Tooltip, Typography } from "@mui/material";
 import Grid from "@mui/material/Grid2";
 import { PageHeader } from "../../components/common/PageHeader";
 import { useNavigate, useParams } from "react-router-dom";
@@ -50,9 +20,9 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { clientsAPI } from "@/api/manageClient";
 import { findSubmittedDocCount, getCurrentStatus } from "@/utils/commonFunctions";
 import ClientDetailDrawer from "@/components/common/ClientDetailDrawer";
+import { SearchableSelect } from "@/components/common/SearchableSelect";
 
 dayjs.extend(utc);
-
 export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId }: any) {
     const navigate = useNavigate();
     const { showAlert, AlertComponent } = useAppAlert();
@@ -90,6 +60,7 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
             stageForm: {
                 stage: "",
                 end_date: null as Dayjs | null,
+                start_date: null as Dayjs | null,
                 remark: ""
             },
             todoForm: {
@@ -203,8 +174,7 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
         stageProgress: stepperInfo?.stageHistory?.find((item: any) => item?.stage_id == stage?._id && item?.scheme_id == selectedSchemeId),
     }));
 
-    const activeStatusIndex = formattedStatusList.findIndex((item: any) => !item.statusProgress?.completed_date);
-
+    const activeStatusIndex = formattedStatusList.findIndex((item: any) => !item.statusProgress?.completed_date && item?._id == currentStatus?.status_id);
 
     useEffect(() => {
         setActiveStep(activeStatusIndex);
@@ -244,6 +214,7 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
             stageForm: {
                 stage: currentStage?.stage_id || "",
                 end_date: currentStage?.end_date ? dayjs(currentStage.end_date) : null,
+                start_date: currentStage?.start_date ? dayjs(currentStage.start_date) : null,
                 remark: currentStage?.remarks || "",
             }
         });
@@ -295,29 +266,22 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
         },
     ];
 
+    const formateSchemeOption = clientScheme?.map((s: any) => { return { label: `${s?.ref_scheme?.scheme_name} - ${s?.case_number}`, value: s?._id } })
     const actionButton = (
-        <>
+        <Box sx={{ display: "flex", alignItems: "center", gap: "10px" }}>
             {clientScheme?.length > 1 && (
-                <Controller
-                    name="selectedSchemeId"
-                    control={control}
-                    render={({ field }) => (
-                        <Autocomplete
-                            size="small"
-                            sx={{ width: 250 }}
-                            options={clientScheme || []}
-                            value={clientScheme?.find((item: any) => item?._id === id) || null}
-                            getOptionLabel={(option: any) => `${option?.ref_scheme?.scheme_name} - ${option?.case_number} ` || ""}
-                            isOptionEqualToValue={(option, value) => option?._id == value?._id}
-                            onChange={(_, value) => {
-                                if (value?._id) {
-                                    field.onChange(value._id);
-                                    navigate(`/client-case/${value._id}`);
-                                }
-                            }}
-                            renderInput={(params) => (<TextField  {...params} label="Scheme" placeholder="Search Scheme" size="small" />)}
-                        />
-                    )}
+                <SearchableSelect
+                    label="Select Scheme"
+                    value={formateSchemeOption?.find((item: any) => item?.value == id)?.value || null}
+                    onChange={(value: any) => {
+                        if (value) {
+                            // field.onChange(value);
+                            navigate(`/client-case/${value}`);
+                        }
+                    }}
+                    options={formateSchemeOption}
+                    emptyText="No fields available"
+                    placeholder="Search scheme..."
                 />
             )}
 
@@ -328,10 +292,10 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
                     variant={'contained'}
                     color="primary"
                 >
-                    <ArrowBack fontSize="small" />
+                    <ArrowBack />
                 </Button>
             </Tooltip>
-        </>
+        </Box>
     );
 
     const getColor = (item: any) => {
@@ -383,9 +347,13 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
 
         setValue("stageForm.remark", fieldValue?.remarks || "");
         setValue("stageForm.end_date", fieldValue?.end_date ? dayjs(fieldValue?.end_date) : null);
+        setValue("stageForm.start_date", fieldValue?.start_date ? dayjs(fieldValue?.start_date) : null);
     };
 
     const renderTabContent = () => {
+        const formateStageList = stageList?.map((stg) => { return { value: stg?._id, label: stg?.payload?.name } })
+        const formateStatusList = statusList?.map((stg) => { return { value: stg?._id, label: stg?.payload?.label } })
+
         switch (tab) {
             case "loan_form_tab":
                 const formFields = [
@@ -396,15 +364,16 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
                     { name: "disbursement_amount", label: "Disbursement Amount", type: "number" },
                     { name: "sanction_amount", label: "Sanction Amount", type: "number" }
                 ];
+                const values = getValues().sectionForm;
+                const hasValue = Object.values(values)?.some((value) => value !== null && value !== undefined && value !== "");
 
                 return (
-                    <>
+                    <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                         <Box
                             sx={{
                                 display: "grid",
-                                gridTemplateColumns: "repeat(1, 1fr)",
+                                gridTemplateColumns: "repeat(2, 1fr)",
                                 gap: 2,
-
                             }}
                         >
                             <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -444,54 +413,51 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
                                 ))}
                             </LocalizationProvider>
                         </Box>
-                    </>
+                        <Box sx={{ display: "flex", justifyContent: "start" }}>
+                            <Button type="button" variant="contained" disabled={!hasValue} onClick={() => { handleSave(); }} >
+                                Save
+                            </Button>
+                        </Box>
+                    </Box>
                 );
 
             case "manage_status_tab":
                 const statusFormField = [
-                    { name: "stage", label: "Stage", type: "dropdown", options: stageList, disabled: true },
-                    { name: "status", label: "Status", type: "dropdown", options: statusList, disabled_order: true, onChange: (value: string) => handleStatusChange(value) },
+                    { name: "stage", label: "Stage", type: "dropdown", options: formateStageList, disabled: true },
+                    { name: "status", label: "Status", type: "dropdown", options: formateStatusList, onChange: (value: string) => handleStatusChange(value) },
                     { name: "remark", label: "Remark", type: "text", multiline: true, rows: 4 },
-
                 ];
-                return <>
+                const status_formValues = getValues().statusForm;
+                const hasStatusValue = Object.values(status_formValues).some((value) => value !== null && value !== undefined && value !== "");
+
+                return <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                     <Box
                         sx={{
                             display: "grid",
-                            gridTemplateColumns: "repeat(1, 1fr)",
-                            gap: 2,
+                            gridTemplateColumns: "repeat(2, 1fr)",
+                            gap: 2
                         }}
                     >
-                        {statusFormField?.map(({ name, label, type, options, disabled = false, multiline, rows, disabled_order, onChange }: any) => (
+                        {statusFormField?.map(({ name, label, type, options, disabled = false, multiline, rows, onChange }: any) => (
                             <Controller
                                 key={name}
                                 name={`statusForm.${name}` as any}
                                 control={control}
                                 render={({ field }) =>
                                     type === "dropdown" ? (
-                                        <FormControl size="small" fullWidth>
-                                            <InputLabel id="client-label">{label}</InputLabel>
-                                            <Select
-                                                {...field}
-                                                onChange={(e) => {
-                                                    field.onChange(e.target.value);
-                                                    onChange?.(e.target.value);
-                                                }}
-                                                labelId="stage-label"
-                                                label="stage"
-                                                disabled={disabled}
-                                            >
-                                                {options?.map((val: any) => (
-                                                    <MenuItem
-                                                        key={val?._id}
-                                                        value={val?._id}
-                                                        disabled={disabled_order ? val.payload.order_index > activeStatusIndex + 2 : false}
-                                                    >
-                                                        {val?.payload?.name || val?.payload?.label}
-                                                    </MenuItem>
-                                                ))}
-                                            </Select>
-                                        </FormControl>
+                                        <SearchableSelect
+                                            label={label}
+                                            multiple={false}
+                                            value={field.value}
+                                            options={options}
+                                            disabled={disabled}
+                                            placeholder={`Search ${label}...`}
+                                            emptyText="No results found"
+                                            onChange={(value: any) => {
+                                                field.onChange(value);
+                                                onChange?.(value)
+                                            }}
+                                        />
                                     ) : (
                                         <TextField
                                             {...field}
@@ -509,19 +475,29 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
                             />
                         ))}
                     </Box>
-                </>;
+
+                    <Box sx={{ display: "flex", justifyContent: "start" }}>
+                        <Button type="button" variant="contained" disabled={!hasStatusValue} onClick={() => { handleSave(); }}>
+                            Save
+                        </Button>
+                    </Box>
+                </Box>
             case "manage_stage_tab":
                 const stageFormField = [
-                    { name: "stage", label: "Stage", type: "dropdown", options: stageList, onChange: (value: string) => handleStageChange(value) },
-                    { name: "end_date", label: "End date", type: "date" },
+                    { name: "stage", label: "Stage", type: "dropdown", options: formateStageList, onChange: (value: string) => handleStageChange(value) },
+                    { name: "start_date", label: "Start date", type: "date" },
                     { name: "remark", label: "Remark", type: "text", multiline: true, rows: 4 },
+                    { name: "end_date", label: "End date", type: "date" },
 
                 ];
-                return <>
+                const stage_formValues = getValues().stageForm;
+                const hasStageValue = Object.values(stage_formValues).some((value) => value !== null && value !== undefined && value !== "");
+
+                return <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                     <Box
                         sx={{
                             display: "grid",
-                            gridTemplateColumns: "repeat(1, 1fr)",
+                            gridTemplateColumns: "repeat(2, 1fr)",
                             gap: 2,
                         }}
                     >
@@ -533,21 +509,19 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
                                     control={control}
                                     render={({ field }) =>
                                         type === "dropdown" ? (
-                                            <FormControl size="small" fullWidth>
-                                                <InputLabel id="client-label">{label}</InputLabel>
-                                                <Select
-                                                    {...field}
-                                                    onChange={(e) => {
-                                                        field.onChange(e.target.value);
-                                                        onChange?.(e.target.value);
-                                                    }}
-                                                    labelId="stage-label"
-                                                    label="stage"
-                                                    disabled={disabled}
-                                                >
-                                                    {options?.map((val: any) => (<MenuItem key={val?._id} value={val?._id}>{val?.payload?.name || val?.payload?.label}</MenuItem>))}
-                                                </Select>
-                                            </FormControl>
+                                            <SearchableSelect
+                                                label={label}
+                                                multiple={false}
+                                                value={field.value}
+                                                options={options}
+                                                disabled={disabled}
+                                                placeholder={`Search ${label}...`}
+                                                emptyText="No results found"
+                                                onChange={(value: any) => {
+                                                    field.onChange(value);
+                                                    onChange?.(value)
+                                                }}
+                                            />
                                         ) : type === "date" ? (
                                             <DatePicker
                                                 label={label}
@@ -580,45 +554,76 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
                         </LocalizationProvider>
 
                     </Box>
-                </>;
+                    <Box sx={{ display: "flex", justifyContent: "start" }}>
+                        <Button type="button" variant="contained" disabled={!hasStageValue} onClick={() => { handleSave(); }}>
+                            Save
+                        </Button>
+                    </Box>
+                </Box>
             case "manage_todo_tab":
                 const todoFormField = [
                     { name: "remark", label: "Alert remark", placeholder: "Enter alert message", type: "text", multiline: true, rows: 4 },
                 ];
 
-                return <Box
-                    sx={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(1, 1fr)",
-                        gap: 2,
-                    }}
-                >
-                    {todoFormField?.map(({ name, label, type, multiline, rows, placeholder }: any) => (
-                        <Controller
-                            key={name}
-                            name={`todoForm.${name}` as any}
-                            control={control}
-                            render={({ field }) => (
-                                <TextField
-                                    {...field}
-                                    label={label}
-                                    placeholder={placeholder}
-                                    type={type}
-                                    size="small"
-                                    fullWidth
-                                    multiline={multiline}
-                                    rows={rows}
-                                    value={field.value ?? ""}
-                                    onChange={(e) => field.onChange(e.target.value)}
-                                />
-                            )}
-                        />
-                    ))}
-                    <Box display="flex" alignItems="center" gap={0.5} mb={1}>
-                        <InfoOutlined fontSize="small" color="action" />
-                        <Typography variant="caption" color="text.secondary">
-                            This alert will be displayed in the client list.
-                        </Typography>
+                const todoValues = getValues().todoForm;
+                return <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                    <Box
+                        sx={{
+                            display: "grid",
+                            gridTemplateColumns: "repeat(1, 1fr)",
+                            gap: 2,
+                        }}
+                    >
+                        {todoFormField?.map(({ name, label, type, multiline, rows, placeholder }: any) => (
+                            <Controller
+                                key={name}
+                                name={`todoForm.${name}` as any}
+                                control={control}
+                                render={({ field }) => (
+                                    <TextField
+                                        {...field}
+                                        label={label}
+                                        placeholder={placeholder}
+                                        type={type}
+                                        size="small"
+                                        fullWidth
+                                        multiline={multiline}
+                                        rows={rows}
+                                        value={field.value ?? ""}
+                                        onChange={(e) => field.onChange(e.target.value)}
+                                    />
+                                )}
+                            />
+                        ))}
+                        <Box display="flex" alignItems="center" gap={0.5} mb={1}>
+                            <InfoOutlined fontSize="small" color="action" />
+                            <Typography variant="caption" color="text.secondary">
+                                This alert will be displayed in the client list.
+                            </Typography>
+                        </Box>
+                    </Box>
+                    <Box sx={{ display: "flex", justifyContent: "start", gap: "4px" }}>
+                        <Button
+                            type="button"
+                            variant="contained"
+                            disabled={updateTodoMutation.isPending}
+                            onClick={() => { handleSave({ taskCompleted: todoValues.remark ? false : true }); }}
+                        >
+                            Save
+                        </Button>
+                        {clientTodoRemark && (
+                            <Tooltip title="Mark as complete">
+                                <Button
+                                    type="button"
+                                    variant="contained"
+                                    color="success"
+                                    startIcon={<CheckCircle />}
+                                    onClick={() => handleSave({ taskCompleted: true })}
+                                >
+                                    Complete
+                                </Button>
+                            </Tooltip>
+                        )}
                     </Box>
                 </Box>
 
@@ -663,6 +668,7 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
                             scheme_id: selectedSchemeId,
                             stage_id: stageValues?.stage,
                             end_date: stageValues?.end_date,
+                            start_date: stageValues?.start_date,
                             remarks: stageValues?.remark,
                             default_status_id: statusList?.find((s) => s?.payload?.order_index == 1)?._id // Default status for new stage
                         }
@@ -699,7 +705,7 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
     //#region
 
     // loader while API is loading for fetch case details
-    if (isLoading || isFetching) {
+    if (isLoading) {
         return (
             <Box sx={{ minHeight: "70vh", display: "flex", justifyContent: "center", alignItems: "center", bgcolor: "background.default" }}>
                 <Paper
@@ -746,6 +752,7 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
     return (
         <>
             <Box>
+                {(isFetching || updateTodoMutation.isPending) && (<LinearProgress sx={{ position: "sticky", top: 0 }} />)}
                 {AlertComponent}
                 <Stack spacing={3}>
                     {!propId && (
@@ -969,36 +976,9 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
                                 </Box>
 
                                 <Divider sx={{ mb: 1 }} />
-                                <Box component="form" sx={{ width: "500px" }}>
-                                    <Box sx={{ marginTop: "20px", marginBottom: "10px", display: "flex", gap: 3, flexDirection: "column" }}>
+                                <Box component="form">
+                                    <Box sx={{ marginTop: "20px", marginBottom: "10px", display: "flex", gap: 1, flexDirection: "column" }}>
                                         {renderTabContent()}
-                                    </Box>
-                                    <Box sx={{ display: "flex", justifyContent: "end", gap: "4px" }}>
-                                        <Button
-                                            type="button"
-                                            variant="contained"
-                                            onClick={() =>
-                                                tab === "manage_todo_tab"
-                                                    ? handleSave({ taskCompleted: false })
-                                                    : handleSave()
-                                            }
-                                        >
-                                            Save
-                                        </Button>
-                                        {tab === "manage_todo_tab" && clientTodoRemark && (
-                                            <Tooltip title="Remove alert from client">
-                                                <Button
-                                                    type="button"
-                                                    variant="contained"
-                                                    color="success"
-                                                    startIcon={<CheckCircle />}
-                                                    onClick={() => handleSave({ taskCompleted: true })}
-                                                >
-                                                    Completed
-                                                </Button>
-                                            </Tooltip>
-                                        )}
-
                                     </Box>
                                 </Box>
                             </Paper>

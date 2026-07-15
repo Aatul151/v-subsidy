@@ -145,7 +145,7 @@ export const getCaseProgressData = async (caseIds = [], {
 
 //#region MANAGE CURRNET STATUS/STAGE FIELD
 // UDPATE Current Stage
-export const updateCurrentStage = (currentStage, schemeId, stageId, end_date, remarks) => {
+export const updateCurrentStage = (currentStage, schemeId, stageId, end_date, start_date, remarks) => {
     const index = currentStage.findIndex(
         item => item.scheme_id.toString() === schemeId.toString()
     );
@@ -153,12 +153,14 @@ export const updateCurrentStage = (currentStage, schemeId, stageId, end_date, re
     if (index > -1) {
         currentStage[index].stage_id = stageId;
         currentStage[index].end_date = end_date;
+        currentStage[index].start_date = start_date;
         currentStage[index].remarks = remarks;
     } else {
         currentStage.push({
             scheme_id: schemeId,
             stage_id: stageId,
             end_date,
+            start_date,
             remarks
         });
     }
@@ -210,7 +212,7 @@ export const saveCaseStatusProgress = async ({
     reqUser = null,
 }) => {
     try {
-        const progresses = await CaseStatusProgress.find({ case_id, scheme_id, stage_id }).sort({ submitted_date: 1 });
+        const progresses = await CaseStatusProgress.find({ case_id, scheme_id, stage_id })//.sort({ submitted_date: 1 });
         const selectedIndex = progresses.findIndex(p => p.status_id.toString() === status_id.toString());
 
         // User selected an existing(old) status
@@ -226,7 +228,9 @@ export const saveCaseStatusProgress = async ({
                 } else if (i === selectedIndex) {
                     progress.completed_date = null;  // Selected becomes active
                 } else {
-                    progress.completed_date = new Date();  // Later statuses become inactive
+                    // Later statuses become inactive
+                    progress.completed_date = null
+                    progress.remarks = null
                 }
                 await progress.save();
             }
@@ -266,6 +270,7 @@ export const saveCaseStageProgress = async ({
     scheme_id,
     stage_id,
     end_date = null,
+    start_date = null,
     date = null,
     remarks = "",
     reqUser = null,
@@ -282,6 +287,7 @@ export const saveCaseStageProgress = async ({
             );
 
             existingProgress.end_date = end_date;
+            existingProgress.start_date = start_date;
             existingProgress.date = date;
             existingProgress.remarks = remarks;
             existingProgress.updatedAt = new Date();
@@ -315,6 +321,7 @@ export const saveCaseStageProgress = async ({
             stage_id,
             start_date: new Date(),
             end_date,
+            start_date,
             date,
             remarks,
             is_active: true,

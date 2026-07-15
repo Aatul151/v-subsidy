@@ -69,6 +69,10 @@ const clientCasesSchema = new mongoose.Schema(
         type: mongoose.Schema.Types.ObjectId,
         // ref: "Stage"
       },
+      start_date: {
+        type: Date,
+        default: null,
+      },
       end_date: {
         type: Date,
         default: null,

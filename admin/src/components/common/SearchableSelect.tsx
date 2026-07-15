@@ -14,8 +14,8 @@ import { filterOptions } from '@/utils/selectSearchUtils';
 
 interface SearchableSelectProps {
   label: string;
-  value: string;
-  onChange: (value: string) => void;
+  value: string | string[];
+  onChange: (value: string | string[]) => void;
   options: OptionItem[];
   disabled?: boolean;
   helperText?: string;
@@ -25,6 +25,7 @@ interface SearchableSelectProps {
   emptyText?: string;
   margin?: 'none' | 'dense' | 'normal';
   fullWidth?: boolean;
+  multiple?: boolean;
   size?: 'small' | 'medium';
 }
 
@@ -46,6 +47,7 @@ export const SearchableSelect = ({
   margin = 'none',
   fullWidth = true,
   size = 'small',
+  multiple = false
 }: SearchableSelectProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectOpen, setSelectOpen] = useState(false);
@@ -59,14 +61,15 @@ export const SearchableSelect = ({
       label={label}
       fullWidth={fullWidth}
       size={size}
-      value={value || ''}
+      value={value ?? (multiple ? [] : "")}
       onChange={(e) => {
-        onChange(e.target.value as string);
+        onChange(e.target.value);
       }}
       margin={margin}
       disabled={disabled}
       helperText={helperText}
       SelectProps={{
+        multiple,
         open: selectOpen,
         onOpen: () => setSelectOpen(true),
         onClose: () => {
@@ -80,6 +83,15 @@ export const SearchableSelect = ({
             },
           },
           disableAutoFocusItem: true,
+        },
+        renderValue: (selected) => {
+          if (multiple) {
+            return (selected as string[])
+              .map((id) => options.find((o) => o.value == id)?.label || id)
+              .join(", ");
+          }
+
+          return options?.find((o) => o.value == selected)?.label || "";
         },
       }}
     >

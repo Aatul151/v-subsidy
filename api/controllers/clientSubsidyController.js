@@ -85,7 +85,7 @@ export const createClientCase = async (req, res) => {
                         case_id: clientCase._id,
                         scheme_id: schemeId,
                         stage_id,
-                        start_date: new Date(),
+                        start_date: null,
                         end_date: null,
                         date: null,
                         remarks,
@@ -424,6 +424,7 @@ export const updateClientCase = async (req, res) => {
                     scheme_id: stage.scheme_id,
                     stage_id: stage.stage_id,
                     end_date: stage.end_date ?? null,
+                    start_date: stage.start_date ?? null,
                     date: null,
                     remarks: stage.remarks ?? "",
                     reqUser,
@@ -457,6 +458,7 @@ export const updateClientCase = async (req, res) => {
                     stageProgress.scheme_id,
                     stageProgress.stage_id,
                     stageProgress.end_date,
+                    stageProgress.start_date,
                     stageProgress.remarks
                 );
             }

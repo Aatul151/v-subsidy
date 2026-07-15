@@ -1,12 +1,9 @@
-import { Alert, Avatar, Box, Button, ButtonGroup, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControl, IconButton, InputLabel, MenuItem, Select, Table, TableBody, TableCell, TableHead, TableRow, Tooltip, Typography } from "@mui/material";
+import { Alert, Avatar, Box, Button, ButtonGroup, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Tooltip, Typography } from "@mui/material";
 import { ArrowOutward, FormatListBulleted as FormatListBulletedIcon } from '@mui/icons-material';
 import { GridActionsCellItem, GridColDef } from "@mui/x-data-grid";
 import CloseIcon from "@mui/icons-material/Close";
-import { LocalizationProvider } from "@mui/x-date-pickers";
-import { DatePicker } from "@mui/x-date-pickers/DatePicker";
-import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs, { Dayjs } from "dayjs";
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Add as AddIcon, GridView as GridViewIcon, Edit as EditIcon, Refresh as RefreshIcon, Visibility as ViewIcon, Delete as DeleteIcon, } from '@mui/icons-material';
 import { useEffect, useState } from "react";
@@ -26,7 +23,7 @@ import { usersAPI } from "@/api/users";
 import utc from "dayjs/plugin/utc";
 import { getAvatarColor } from "@/utils/iconMap";
 import { useMasterData } from "@/context/MasterData";
-import { findSubmittedDocCount, getCurrentStatus, isMatchingFilter } from "@/utils/commonFunctions";
+import { FilterBar, findSubmittedDocCount, getCurrentStatus, isMatchingFilter, useDebounce } from "@/utils/commonFunctions";
 
 dayjs.extend(utc);
 
@@ -51,7 +48,6 @@ export default function ClientScheme() {
     const [defaultSubsidyCount, setDefaultSubsidyCount] = useState<any>(null);
     const [filterStatus, setFilterStatus] = useState(null);
     const [isExpanded, setIsExpanded] = useState(false);
-    const [caseDetails, setCaseDetails] = useState<any>(null);
 
     const { statusList, stageList } = useMasterData();
     const { control, watch, reset } = useForm({
@@ -123,13 +119,13 @@ export default function ClientScheme() {
 
     const { data: clientList } = useQuery({
         queryKey: ['manage-clients'],
-        queryFn: async () => { return await clientsAPI.getAll(1, 10) },
+        queryFn: async () => { return await clientsAPI.getAll(1, 100) },
         placeholderData: (previousData) => previousData,
     });
 
     const { data: userList, } = useQuery({
         queryKey: ['users'],
-        queryFn: async () => { return await usersAPI.getAll(1, 10); },
+        queryFn: async () => { return await usersAPI.getAll(1, 100); },
         placeholderData: (previousData) => previousData,
     });
 
@@ -139,7 +135,7 @@ export default function ClientScheme() {
             const response = await formEntriesAPI.getAll({
                 formName: SYSTEM_FORM_NAMES.SCHEME,
                 page: 1,
-                limit: 10,
+                limit: 100,
             });
 
             return response.data || [];
@@ -167,6 +163,7 @@ export default function ClientScheme() {
         isArchived: OpenArchiveTable || undefined,
         ...dateRange,
     };
+    const debouncedFilters = useDebounce(filters, 500);
 
     const currentPage = isKanbanBoard && isExpanded ? pages : page + 1;
     const currentLimit = isKanbanBoard ? 100 : pageSize;
@@ -180,13 +177,13 @@ export default function ClientScheme() {
             isKanbanBoard ? 'kanban' : 'table',
             currentPage,
             currentLimit,
-            filters,
+            debouncedFilters,
         ],
         queryFn: async () => {
             return await clientSubsidyAPI.getAll({
                 page: currentPage,
                 limit: currentLimit,
-                filters,
+                filters: debouncedFilters,
             });
         },
         placeholderData: (previousData) => previousData, // Keep previous data while fetching new page
@@ -442,11 +439,6 @@ export default function ClientScheme() {
 
                         return (
                             <Box
-                                onClick={(e) => {
-                                    if (!isClickable) return;
-                                    e.stopPropagation();
-                                    setCaseDetails(params.row);
-                                }}
                                 sx={{
                                     display: "flex",
                                     alignItems: "center",
@@ -479,11 +471,7 @@ export default function ClientScheme() {
                     width: 200,
                     order: orderMap.expireOn,
                     renderCell: (params: any) => {
-                        const expireDate = new Date(params?.row?.expireOn);
-                        const today = new Date();
-                        expireDate.setUTCHours(0, 0, 0, 0);
-                        today.setUTCHours(0, 0, 0, 0);
-                        const isExpired = expireDate.getTime() < today.getTime();
+                        const isExpired = dayjs(params?.row?.expireOn).startOf("day").isBefore(dayjs().startOf("day"))
                         return (
                             <Box sx={{ color: isExpired ? "#e71d3b" : "", width: "100%", textAlign: "center" }}  >
                                 {formatDateTime(params?.row?.expireOn, { datePickerMode: 'date' })}
@@ -819,204 +807,34 @@ export default function ClientScheme() {
 
             <PageContent>
                 <Box sx={{ position: "relative" }}>
-                    {!OpenArchiveTable &&
-                        <Box
-                            sx={{
-                                position: "absolute",
-                                top: 0,
-                                display: "flex",
-                                gap: 1,
-                                flexWrap: "wrap",
-                                alignItems: "center",
-                                width: { xs: isKanbanBoard ? "100%" : "20%", sm: isKanbanBoard ? "100%" : "60%", md: isKanbanBoard ? "100%" : "70%" },
-                                justifyContent: { xs: "flex-start", sm: "flex-end", md: "flex-start" },
-                            }}
-                        >
-                            <Controller
-                                name="client"
-                                control={control}
-                                render={({ field }) => (
-                                    <FormControl sx={{ width: 200 }} size="small">
-                                        <InputLabel id="client-label">Client </InputLabel>
-                                        <Select
-                                            {...field}
-                                            onChange={(e) => {
-                                                field.onChange(e);
-                                                if (isKanbanBoard) { setPages(1); }
-                                                setIsExpanded(false);
-                                            }}
-                                            multiple={true}
-                                            labelId="client-label"
-                                            label="Client"
-                                        >
-                                            {[...new Map(clientList?.data?.map((r: any) => [r?._id, { label: r?.name, id: r?._id }])).values()]
-                                                .map((stage: any) => (<MenuItem key={stage?.id} value={stage?.id} > {stage?.label}  </MenuItem>))}
-                                        </Select>
-                                    </FormControl>
-                                )}
-                            />
-                            <Controller
-                                name="scheme"
-                                control={control}
-                                render={({ field }) => (
-                                    <FormControl sx={{ width: 200 }} size="small">
-                                        <InputLabel id="client-label">Scheme</InputLabel>
-                                        <Select
-                                            {...field}
-                                            onChange={(e) => {
-                                                field.onChange(e);
-                                                if (isKanbanBoard) { setPages(1); }
-                                                setIsExpanded(false);
-                                            }}
-                                            multiple={true}
-                                            labelId="scheme-label"
-                                            label="scheme"
-                                        >
-                                            {schemeList?.map((val: any) => (<MenuItem key={val?._id} value={val?._id}>{val?.payload?.scheme_name}</MenuItem>))}
-                                        </Select>
-                                    </FormControl>
-                                )}
-                            />
-                            <Controller
-                                name="stage"
-                                control={control}
-                                render={({ field }) => (
-                                    <FormControl sx={{ width: 200 }} size="small">
-                                        <InputLabel id="client-label">Stage </InputLabel>
-                                        <Select
-                                            {...field}
-                                            onChange={(e) => {
-                                                field.onChange(e);
-                                                if (isKanbanBoard) { setPages(1); }
-                                                setIsExpanded(false);
-                                            }}
-                                            multiple={true}
-                                            labelId="stage-label"
-                                            label="stage"
-                                        >
-                                            {stageList?.map((val: any) => (<MenuItem key={val?._id} value={val?._id}>{val?.payload?.name}</MenuItem>))}
-                                        </Select>
-                                    </FormControl>
-                                )}
-                            />
-                            {!isKanbanBoard && <Controller
-                                name="status"
-                                control={control}
-                                render={({ field }) => (
-                                    <FormControl sx={{ width: 200 }} size="small">
-                                        <InputLabel id="status-label">  Status  </InputLabel>
-                                        <Select
-                                            {...field}
-                                            onChange={(e) => {
-                                                field.onChange(e);
-                                                if (isKanbanBoard) { setPages(1); }
-                                                setIsExpanded(false);
-                                                setFilterStatus(null);
-                                            }}
-                                            multiple={true}
-                                            labelId="status-label"
-                                            label="status"
-                                        >
-                                            {statusList
-                                                ?.sort((a: any, b: any) => a?.payload?.order_index - b?.payload?.order_index)
-                                                ?.map((stage: any) => (
-                                                    <MenuItem key={stage?._id} value={stage?._id}>
-                                                        {stage?.payload?.label}
-                                                    </MenuItem>
-                                                ))}
-                                        </Select>
-                                    </FormControl>
-                                )}
-                            />}
-                            <Controller
-                                name="assigned_executive"
-                                control={control}
-                                render={({ field }) => (
-                                    <FormControl sx={{ width: 200 }} size="small">
-                                        <InputLabel id="client-label">Assign Executive </InputLabel>
-                                        <Select
-                                            {...field}
-                                            onChange={(e) => {
-                                                field.onChange(e);
-                                                if (isKanbanBoard) { setPages(1); }
-                                                setIsExpanded(false);
-                                            }}
-                                            multiple={true}
-                                            labelId="assigned_executive-label"
-                                            label="assigned_executive"
-                                        >
-                                            {[...new Map(userList?.data?.map((r: any) => [r?._id, { label: r?.name, id: r?._id }])).values()]
-                                                .map((stage: any) => (<MenuItem key={stage?.id} value={stage?.id} > {stage?.label}  </MenuItem>))}
-                                        </Select>
-                                    </FormControl>
-                                )}
-                            />
-                            <Controller
-                                name="date"
-                                control={control}
-                                render={({ field }) => (
-                                    <FormControl sx={{ width: 200 }} size="small">
-                                        <InputLabel id="date-label"> Expire On</InputLabel>
-                                        <Select
-                                            {...field}
-                                            onChange={(e) => {
-                                                field.onChange(e);
-                                                if (isKanbanBoard) { setPages(1); }
-                                                setIsExpanded(false);
-                                            }}
-                                            labelId="date-label"
-                                            label="Date"
-                                        >
-                                            <MenuItem value=""><em>None</em></MenuItem>
-                                            <MenuItem value="expired"> Expired </MenuItem>
-                                            <MenuItem value="today"> Today </MenuItem>
-                                            <MenuItem value="week">This Week</MenuItem>
-                                            <MenuItem value="month"> This Month</MenuItem>
-                                            <MenuItem value="custom">Custom</MenuItem>
-                                        </Select>
-                                    </FormControl>
-                                )}
-                            />
-                            {date === "custom" && (
-                                <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                    <Controller
-                                        name="startDate"
-                                        control={control}
-                                        render={({ field }) => (
-                                            <DatePicker
-                                                label="Start Date"
-                                                value={field.value}
-                                                onChange={field.onChange}
-                                                slotProps={{ textField: { size: "small" } }}
-                                                format="DD/MM/YYYY"
-                                            />
-                                        )}
-                                    />
-                                    <Controller
-                                        name="endDate"
-                                        control={control}
-                                        render={({ field }) => (
-                                            <DatePicker
-                                                label="End Date"
-                                                value={field.value}
-                                                onChange={field.onChange}
-                                                minDate={startDate}
-                                                slotProps={{ textField: { size: "small" } }}
-                                                format="DD/MM/YYYY"
-                                            />
-                                        )}
-                                    />
+                    {!OpenArchiveTable && (
+                        <FilterBar
+                            control={control}
+                            isKanbanBoard={isKanbanBoard}
+                            setPages={setPages}
+                            setIsExpanded={setIsExpanded}
+                            setFilterStatus={setFilterStatus}
 
-                                </LocalizationProvider>
-                            )}
-                            {(client?.length > 0 || (!isKanbanBoard && stage?.length > 0) || date !== '' || assigned_executive?.length > 0 || status?.length > 0 || scheme?.length > 0) && <IconButton
-                                sx={{ fontSize: "20px", width: 26, height: 26 }}
-                                onClick={handleClose}
-                            >
-                                <CloseIcon sx={{ fontSize: 20 }} />
-                            </IconButton>}
-                        </Box>}
+                            // Data sources mapping
+                            clientList={clientList}
+                            schemeList={schemeList}
+                            stageList={stageList}
+                            statusList={statusList}
+                            userList={userList}
 
+                            // Watching states explicitly for logic checks inside FilterBar
+                            date={date}
+                            startDate={startDate}
+                            client={client}
+                            stage={stage}
+                            assigned_executive={assigned_executive}
+                            status={status}
+                            scheme={scheme}
+
+                            // Close action trigger
+                            handleClose={handleClose}
+                        />
+                    )}
                     {!OpenArchiveTable && (isKanbanBoard ?
                         <KanbanBoard boards={boardData} sx={{
                             mt: date === "custom" ? 12 : 6,
@@ -1119,68 +937,6 @@ export default function ClientScheme() {
                     </Button>
                 </DialogActions>
             </Dialog>
-
-            {caseDetails && (
-                <Dialog
-                    open={caseDetails?._id}
-                    onClose={() => setCaseDetails(null)}
-                    maxWidth="md"
-                    fullWidth
-                >
-                    <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", pr: 1 }}>
-                        <Typography variant="h6">
-                            {caseDetails?.client?.name} • Case Summary
-                        </Typography>
-
-                        <IconButton size="small" onClick={() => setCaseDetails(null)} sx={{ mr: 3 }}>
-                            <CloseIcon fontSize="small" />
-                        </IconButton>
-                    </DialogTitle>
-                    <DialogContent dividers>
-                        <Table size="small">
-                            <TableHead>
-                                <TableRow>
-                                    <TableCell><b>Scheme</b></TableCell>
-                                    <TableCell><b>Stage</b></TableCell>
-                                    <TableCell><b>Status</b></TableCell>
-                                    <TableCell></TableCell>
-                                </TableRow>
-                            </TableHead>
-
-                            <TableBody>
-                                {caseDetails?.scheme_ref?.map((scheme: any) => {
-                                    const stage = caseDetails.current_stage?.find((s: any) => s?.scheme_id === scheme?._id);
-                                    const status = getCurrentStatus(caseDetails.current_status, caseDetails.current_stage, scheme._id);
-                                    return (
-                                        <TableRow key={scheme?._id}>
-                                            <TableCell>{scheme?.scheme_name}</TableCell>
-                                            <TableCell>
-                                                {stage?.ref_stage?.name || "-"}
-                                            </TableCell>
-                                            <TableCell>
-                                                <Chip
-                                                    size="small"
-                                                    label={status?.ref_status?.label || "-"}
-                                                    sx={{ bgcolor: status?.ref_status?.bgColor }}
-                                                />
-                                            </TableCell>
-                                            <TableCell>
-                                                <IconButton
-                                                    size="small"
-                                                    color="primary"
-                                                    onClick={() => navigate(`/client-case/${caseDetails?._id}/${scheme?._id}`)}
-                                                >
-                                                    <ArrowOutward fontSize="small" />
-                                                </IconButton>
-                                            </TableCell>
-                                        </TableRow>
-                                    );
-                                })}
-                            </TableBody>
-                        </Table>
-                    </DialogContent>
-                </Dialog>
-            )}
         </Box >
     </>)
 }
