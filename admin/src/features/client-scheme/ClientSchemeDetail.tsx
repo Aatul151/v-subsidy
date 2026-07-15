@@ -7,6 +7,7 @@ import {
     Card,
     Checkbox,
     Chip,
+    CircularProgress,
     Dialog,
     DialogActions,
     DialogContent,
@@ -147,7 +148,7 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
         },
     });
 
-    const { data: clientSubsidydetail } = useQuery({
+    const { data: clientSubsidydetail, isLoading, isFetching } = useQuery({
         queryKey: ["client_subsidy", id],
         queryFn: () => clientSubsidyAPI.getById(id),
         enabled: !!id,
@@ -695,7 +696,30 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
         }
     }
 
-    //#region No case found
+    //#region
+
+    // loader while API is loading for fetch case details
+    if (isLoading || isFetching) {
+        return (
+            <Box sx={{ minHeight: "70vh", display: "flex", justifyContent: "center", alignItems: "center", bgcolor: "background.default" }}>
+                <Paper
+                    elevation={0}
+                    sx={{ px: 5, py: 4, textAlign: "center", borderRadius: 3, border: "1px solid", borderColor: "divider", bgcolor: "background.paper", minWidth: 280 }}
+                >
+                    <CircularProgress size={36} thickness={4} />
+                    <Typography variant="h6" fontWeight={600} sx={{ mt: 2 }}>
+                        Loading Case Details
+                    </Typography>
+
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                        Please wait while we fetch the latest information...
+                    </Typography>
+                </Paper>
+            </Box>
+        );
+    }
+
+    // No case found
     if (!caseDetail || !caseDetail?._id) {
         return (
             <Box sx={{ minHeight: "70vh", display: "flex", justifyContent: "center", alignItems: "center", p: 3 }}>
