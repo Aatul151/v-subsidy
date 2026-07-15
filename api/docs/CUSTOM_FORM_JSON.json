@@ -1,19 +1,20 @@
 {
-  "exportedAt": "2026-06-27T05:34:00.536Z",
+  "exportedAt": "2026-07-15T04:02:53.722Z",
   "count": 4,
   "forms": [
     {
       "_id": "6a34ef4443b4e72a812ac427",
-      "title": "Stages",
-      "name": "applicable_stages",
+      "title": "Status",
+      "name": "status",
       "module": {
         "_id": "6a3f5cf6fa62ec3661a0330f",
         "name": "master",
+        "description": "",
         "isActive": true
       },
       "sections": [
         {
-          "title": "Stage Information",
+          "title": "Basic Information",
           "fields": [
             {
               "type": "text",
@@ -34,7 +35,8 @@
               "label": "Decription",
               "name": "description",
               "required": false,
-              "placeholder": ""
+              "placeholder": "",
+              "multiline": true
             },
             {
               "type": "number",
@@ -48,12 +50,6 @@
               "name": "bgColor",
               "required": true,
               "allowFilter": true
-            },
-            {
-              "type": "toggle",
-              "label": "isActive",
-              "name": "isActive",
-              "required": false
             }
           ],
           "id": "section_1781853972922"
@@ -71,50 +67,56 @@
     },
     {
       "_id": "6a34ee4d43b4e72a812ac2d6",
-      "title": "Manage Subsidy",
-      "name": "manage_subsidy",
+      "title": "Scheme",
+      "name": "scheme",
       "collectionName": "subsidy",
       "module": {
         "_id": "6a3f5cf6fa62ec3661a0330f",
         "name": "master",
+        "description": "",
         "isActive": true
       },
       "sections": [
         {
-          "title": "Subsidy Detail",
+          "title": "Basic Information",
           "fields": [
             {
               "type": "text",
-              "label": "Subsidy Name",
-              "name": "subsidy_name",
-              "required": false
+              "label": "Scheme Name",
+              "name": "scheme_name",
+              "required": false,
+              "allowFilter": true
             },
             {
               "type": "text",
               "label": "Description",
               "name": "description",
-              "required": false
+              "required": false,
+              "multiline": true
             },
             {
               "type": "text",
               "label": "Government Department",
               "name": "government_department",
-              "required": false
+              "required": false,
+              "allowFilter": true
             },
             {
               "type": "text",
               "label": "Eligibility Notes",
               "name": "eligibility_notes",
-              "required": false
+              "required": false,
+              "multiline": true
             },
             {
               "type": "formReference",
               "label": "Requird Docs",
               "name": "requird_docs",
-              "required": true,
+              "required": false,
               "allowMultiple": true,
-              "referenceFormName": "document_master",
-              "referenceFieldName": "doc_name"
+              "referenceFormName": "all_documents",
+              "referenceFieldName": "doc_name",
+              "allowFilter": true
             }
           ],
           "id": "section_1781853648172"
@@ -132,16 +134,17 @@
     },
     {
       "_id": "6a34e18a85e924ffc5fb0df8",
-      "title": "Document master",
-      "name": "document_master",
+      "title": "All Documents",
+      "name": "all_documents",
       "module": {
         "_id": "6a3f5cf6fa62ec3661a0330f",
         "name": "master",
+        "description": "",
         "isActive": true
       },
       "sections": [
         {
-          "title": "Document Detail",
+          "title": "Basic Information",
           "fields": [
             {
               "type": "text",
@@ -149,12 +152,6 @@
               "name": "doc_name",
               "required": true,
               "allowFilter": true
-            },
-            {
-              "type": "toggle",
-              "label": "Multi select doc",
-              "name": "isMaltiSelect",
-              "required": false
             }
           ],
           "id": "section_1781850429406"
@@ -171,42 +168,34 @@
       }
     },
     {
-      "_id": "6a34df3485e924ffc5fb0c13",
-      "title": "Document Templates",
-      "name": "document_templates",
-      "collectionName": "document_template",
+      "_id": "6a48e2de9c89a71328a33b46",
+      "title": "Stage",
+      "name": "stage",
       "module": {
         "_id": "6a3f5cf6fa62ec3661a0330f",
         "name": "master",
+        "description": "",
         "isActive": true
       },
       "sections": [
         {
-          "title": "Template Details",
+          "title": "Basic Information",
           "fields": [
             {
               "type": "text",
-              "label": "Template Name",
+              "label": "Name",
               "name": "name",
               "required": true
             },
             {
               "type": "text",
-              "label": "Details",
-              "name": "details",
-              "required": false
-            },
-            {
-              "type": "formReference",
-              "label": "Attach Doc",
-              "name": "attach_doc",
-              "required": true,
-              "referenceFormName": "document_master",
-              "referenceFieldName": "doc_name",
-              "allowMultiple": true
+              "label": "Description",
+              "name": "description",
+              "required": false,
+              "multiline": true
             }
           ],
-          "id": "section_1781849873546"
+          "id": "section_1783161518655"
         }
       ],
       "formType": "custom",
