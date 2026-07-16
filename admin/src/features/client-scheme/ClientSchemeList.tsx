@@ -1,5 +1,5 @@
 import { Alert, Avatar, Box, Button, ButtonGroup, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Tooltip, Typography } from "@mui/material";
-import { ArrowOutward, FormatListBulleted as FormatListBulletedIcon } from '@mui/icons-material';
+import { FormatListBulleted as FormatListBulletedIcon } from '@mui/icons-material';
 import { GridActionsCellItem, GridColDef } from "@mui/x-data-grid";
 import CloseIcon from "@mui/icons-material/Close";
 import dayjs, { Dayjs } from "dayjs";
@@ -34,6 +34,7 @@ export default function ClientScheme() {
     const [searchParams, setSearchParams] = useSearchParams();
 
     const statusParam = searchParams.get('status');
+    const stageParam = searchParams.get('stage');
     const expiredParam = searchParams.get('expired');
 
     const [formDrawerOpen, setFormDrawerOpen] = useState(false);
@@ -53,7 +54,7 @@ export default function ClientScheme() {
     const { control, watch, reset } = useForm({
         defaultValues: {
             client: [],
-            stage: [],
+            stage: stageParam ? [stageParam] : [],
             assigned_executive: [],
             status: statusParam ? [statusParam] : [],
             scheme: [],
@@ -772,7 +773,7 @@ export default function ClientScheme() {
         setSearchParams({});
         reset({
             client: [],
-            // stage: [],
+            stage: [],
             assigned_executive: [],
             status: [],
             date: "",

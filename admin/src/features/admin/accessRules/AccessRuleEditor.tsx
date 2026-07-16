@@ -312,7 +312,7 @@ export const AccessRuleEditor = ({ open, onClose, module, isCreateMode = false }
                     <SearchableSelect
                       label="Module"
                       value={selectedModule}
-                      onChange={(value) => {
+                      onChange={(value: any) => {
                         setSelectedModule(value);
                         setErrors((prev) => ({ ...prev, module: '' }));
                       }}

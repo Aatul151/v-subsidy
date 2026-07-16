@@ -217,7 +217,7 @@ export const saveCaseStatusProgress = async ({
         const refStatus = await populateFormReference(status_id, { referenceFormName: FORM.STATUS_FORM });
         const newOrder = refStatus.order_index;
         let progresses = await CaseStatusProgress.find({ case_id, scheme_id, stage_id });
-        const active = progresses.find(p => p.completed_date === null && p.stage_id == stage_id && !p.is_skipped);
+        const active = progresses?.sort((a, b) => a.status_order_index - b.status_order_index)?.find(p => p.completed_date === null && p.stage_id == stage_id && !p.is_skipped);
         const currentOrder = active?.status_order_index || 0;
 
         if (newOrder > currentOrder) {
@@ -229,7 +229,7 @@ export const saveCaseStatusProgress = async ({
 
             // skipped steps
             await CaseStatusProgress.updateMany(
-                { case_id, scheme_id, stage_id, status_order_index: { $gt: currentOrder, $lt: newOrder } },
+                { case_id, scheme_id, stage_id, is_skipped: false, status_order_index: { $gt: currentOrder, $lt: newOrder } },
                 {
                     $set: {
                         is_skipped: true,

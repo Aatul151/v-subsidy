@@ -92,13 +92,13 @@ export const FieldConfigDrawer = ({
     }
   };
 
-  const handleFormSelect = async (formName: string) => {
+  const handleFormSelect = async (formName: any) => {
     handleChange('referenceFormName', formName);
     handleChange('referenceFieldName', ''); // Reset field selection
     await loadFormSchema(formName);
   };
 
-  const handleApiEndpointChange = (endpoint: string) => {
+  const handleApiEndpointChange = (endpoint: any) => {
     handleChange('apiEndpoint', endpoint);
     const referenceModel = availableEndpoints.find(e => e.value === endpoint)?.referenceModel;
     handleChange('referenceModel', referenceModel);

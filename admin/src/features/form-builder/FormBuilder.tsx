@@ -20,7 +20,7 @@ import { SYSTEM_FORM_NAMES } from '@/utils/formUtils';
 import { getIconSelectOptions } from '@/utils/iconMap';
 import { AppSearchableSelect } from '@/components/common/AppSearchableSelect';
 import { SearchableSelect } from '@/components/common/SearchableSelect';
-import { useAuthStore, selectUserAndRoles   } from '@/store/authStore';
+import { useAuthStore, selectUserAndRoles } from '@/store/authStore';
 import { OptionItem } from '@/api/forms';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PageContent } from '@/components/common/PageContent';
@@ -145,7 +145,7 @@ export const FormBuilder = () => {
         };
       })
       .filter((item): item is OptionItem => item !== null);
-    
+
     // Add "None" option at the beginning
     return options;
   }, [collections]);
@@ -426,348 +426,348 @@ export const FormBuilder = () => {
 
         {/* Form Basic Details */}
         <Paper sx={{ p: 1.5, mb: 1.5, flexShrink: 0 }}>
-        <Typography variant="caption" sx={{ mb: 1, display: 'block', fontWeight: 600, color: 'text.secondary' }}>
-          Form Basic Details
-        </Typography>
-        <Grid container spacing={1.5}>
-          <Grid item xs={12} sm={3}>
-            <TextField
-              label="Form Title"
-              fullWidth
-              size="small"
-              value={formDetails.title}
-              onChange={(e) => handleFormTitleChange(e.target.value)}
-              required
-            />
+          <Typography variant="caption" sx={{ mb: 1, display: 'block', fontWeight: 600, color: 'text.secondary' }}>
+            Form Basic Details
+          </Typography>
+          <Grid container spacing={1.5}>
+            <Grid item xs={12} sm={3}>
+              <TextField
+                label="Form Title"
+                fullWidth
+                size="small"
+                value={formDetails.title}
+                onChange={(e) => handleFormTitleChange(e.target.value)}
+                required
+              />
+            </Grid>
+            <Grid item xs={12} sm={3}>
+              <TextField
+                label="Form Name"
+                fullWidth
+                size="small"
+                value={formDetails.name}
+                onChange={(e) => {
+                  const value = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
+                  setFormDetails((prev) => ({ ...prev, name: value }));
+                }}
+                helperText="Unique identifier (lowercase)"
+                required
+              />
+            </Grid>
+            <Grid item xs={12} sm={2}>
+              <TextField
+                select
+                label="Form Type"
+                fullWidth
+                size="small"
+                value={formDetails.formType}
+                onChange={(e) => setFormDetails((prev) => ({ ...prev, formType: e.target.value as 'system' | 'custom' }))}
+                helperText="System forms won't appear in sidebar menu"
+                disabled={!isSuperAdmin}
+              >
+                <MenuItem value="custom">Custom</MenuItem>
+                {isSuperAdmin && <MenuItem value="system">System</MenuItem>}
+              </TextField>
+            </Grid>
+            <Grid item xs={12} sm={2}>
+              <SearchableSelect
+                label="Module"
+                value={formDetails.module}
+                onChange={(value: any) => setFormDetails((prev) => ({ ...prev, module: value }))}
+                options={moduleOptions}
+                disabled={modulesLoading}
+                loading={modulesLoading}
+                loadingText="Loading modules..."
+                emptyText="No modules available"
+                placeholder="Search modules..."
+                helperText={saveError && !formDetails.module ? 'Module is required' : 'Select a module'}
+              />
+            </Grid>
+            <Grid item xs={12} sm={2}>
+              <SearchableSelect
+                label="Collection"
+                value={formDetails.collectionName}
+                onChange={(value: any) => setFormDetails((prev) => ({ ...prev, collectionName: value }))}
+                options={collectionOptions}
+                disabled={collectionsLoading}
+                loading={collectionsLoading}
+                loadingText="Loading collections..."
+                emptyText="No collections available"
+                placeholder="Search collections..."
+                helperText="Database collection (optional)"
+              />
+            </Grid>
           </Grid>
-          <Grid item xs={12} sm={3}>
-            <TextField
-              label="Form Name"
-              fullWidth
-              size="small"
-              value={formDetails.name}
-              onChange={(e) => {
-                const value = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
-                setFormDetails((prev) => ({ ...prev, name: value }));
-              }}
-              helperText="Unique identifier (lowercase)"
-              required
-            />
-          </Grid>
-          <Grid item xs={12} sm={2}>
-            <TextField
-              select
-              label="Form Type"
-              fullWidth
-              size="small"
-              value={formDetails.formType}
-              onChange={(e) => setFormDetails((prev) => ({ ...prev, formType: e.target.value as 'system' | 'custom' }))}
-              helperText="System forms won't appear in sidebar menu"
-              disabled={!isSuperAdmin}
-            >
-              <MenuItem value="custom">Custom</MenuItem>
-              {isSuperAdmin && <MenuItem value="system">System</MenuItem>}
-            </TextField>
-          </Grid>
-          <Grid item xs={12} sm={2}>
-            <SearchableSelect
-              label="Module"
-              value={formDetails.module}
-              onChange={(value) => setFormDetails((prev) => ({ ...prev, module: value }))}
-              options={moduleOptions}
-              disabled={modulesLoading}
-              loading={modulesLoading}
-              loadingText="Loading modules..."
-              emptyText="No modules available"
-              placeholder="Search modules..."
-              helperText={saveError && !formDetails.module ? 'Module is required' : 'Select a module'}
-            />
-          </Grid>
-          <Grid item xs={12} sm={2}>
-            <SearchableSelect
-              label="Collection"
-              value={formDetails.collectionName}
-              onChange={(value) => setFormDetails((prev) => ({ ...prev, collectionName: value }))}
-              options={collectionOptions}
-              disabled={collectionsLoading}
-              loading={collectionsLoading}
-              loadingText="Loading collections..."
-              emptyText="No collections available"
-              placeholder="Search collections..."
-              helperText="Database collection (optional)"
-            />
-          </Grid>
-        </Grid>
-      </Paper>
-
-      {/* Main Content Area - Tabbed content */}
-      <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden', mt: 1.5 }}>
-        <Paper sx={{ flexShrink: 0 }}>
-          <Tabs
-            value={activeTab}
-            onChange={(_, newValue) => setActiveTab(newValue)}
-            sx={{
-              minHeight: 40,
-              '& .MuiTab-root': {
-                minHeight: 40,
-                padding: '6px 12px',
-                fontSize: '0.8125rem',
-              },
-            }}
-          >
-            <Tab icon={<BuildIcon />} iconPosition="start" label="Form Canvas" />
-            <Tab icon={<SettingsIcon />} iconPosition="start" label="Settings" />
-            <Tab icon={<PreviewIcon />} iconPosition="start" label="Preview" />
-          </Tabs>
         </Paper>
 
-        {/* Tab Content */}
-        <Box sx={{ flexGrow: 1, overflow: 'hidden', mt: 1.5, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-          {activeTab === 0 && (
-            <Box sx={{ display: 'flex', gap: 1.5, flexGrow: 1, minHeight: 0, overflow: 'hidden', height: '100%' }}>
-              {/* Left Sidebar - Add Section & Field Types - Fixed */}
-              <Paper
-                sx={{
-                  width: 240,
-                  flexShrink: 0,
-                  p: 1.5,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  overflow: 'hidden',
-                  height: '100%',
-                  position: 'relative'
-                }}
-              >
-                <Button
-                  variant="outlined"
-                  fullWidth
-                  size="small"
-                  startIcon={<AddIcon />}
-                  onClick={handleAddSection}
-                  sx={{ mb: 1.5, flexShrink: 0 }}
+        {/* Main Content Area - Tabbed content */}
+        <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden', mt: 1.5 }}>
+          <Paper sx={{ flexShrink: 0 }}>
+            <Tabs
+              value={activeTab}
+              onChange={(_, newValue) => setActiveTab(newValue)}
+              sx={{
+                minHeight: 40,
+                '& .MuiTab-root': {
+                  minHeight: 40,
+                  padding: '6px 12px',
+                  fontSize: '0.8125rem',
+                },
+              }}
+            >
+              <Tab icon={<BuildIcon />} iconPosition="start" label="Form Canvas" />
+              <Tab icon={<SettingsIcon />} iconPosition="start" label="Settings" />
+              <Tab icon={<PreviewIcon />} iconPosition="start" label="Preview" />
+            </Tabs>
+          </Paper>
+
+          {/* Tab Content */}
+          <Box sx={{ flexGrow: 1, overflow: 'hidden', mt: 1.5, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+            {activeTab === 0 && (
+              <Box sx={{ display: 'flex', gap: 1.5, flexGrow: 1, minHeight: 0, overflow: 'hidden', height: '100%' }}>
+                {/* Left Sidebar - Add Section & Field Types - Fixed */}
+                <Paper
+                  sx={{
+                    width: 240,
+                    flexShrink: 0,
+                    p: 1.5,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    overflow: 'hidden',
+                    height: '100%',
+                    position: 'relative'
+                  }}
                 >
-                  Add Section
-                </Button>
-                <Box sx={{ flexGrow: 1, overflow: 'auto', pt: 1.5, borderTop: 1, borderColor: 'divider', minHeight: 0 }}>
+                  <Button
+                    variant="outlined"
+                    fullWidth
+                    size="small"
+                    startIcon={<AddIcon />}
+                    onClick={handleAddSection}
+                    sx={{ mb: 1.5, flexShrink: 0 }}
+                  >
+                    Add Section
+                  </Button>
+                  <Box sx={{ flexGrow: 1, overflow: 'auto', pt: 1.5, borderTop: 1, borderColor: 'divider', minHeight: 0 }}>
+                    <Typography variant="caption" sx={{ mb: 1, display: 'block', fontWeight: 600, color: 'text.secondary' }}>
+                      Field Types
+                    </Typography>
+                    <FieldTypePanel
+                      fieldTypes={regularFieldTypes}
+                      onAddField={handleAddField}
+                      disabled={sections.length === 0 || !hasExpandedSection}
+                    />
+                  </Box>
+                </Paper>
+
+                {/* Middle - Form Canvas - Scrollable */}
+                <Box
+                  sx={{
+                    flexGrow: 1,
+                    minWidth: 0,
+                    overflow: 'auto',
+                    height: '100%',
+                    position: 'relative'
+                  }}
+                >
+                  <FormCanvas
+                    sections={sections}
+                    onFieldSelect={handleFieldSelect}
+                    onFieldDelete={handleFieldDelete}
+                    onFieldReorder={reorderFields}
+                    selectedField={selectedField}
+                    selectedSectionId={selectedSectionId}
+                    onSectionSelect={setSelectedSectionId}
+                    onSectionEdit={handleSectionEdit}
+                    onSectionDelete={(sectionId) => {
+                      removeSection(sectionId);
+                    }}
+                    onExpandedSectionsChange={setHasExpandedSection}
+                  />
+                </Box>
+
+                {/* Right Sidebar - Reference Types - Fixed */}
+                <Paper
+                  sx={{
+                    width: 200,
+                    flexShrink: 0,
+                    p: 1.5,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    overflow: 'hidden',
+                    height: '100%',
+                    position: 'relative',
+                    borderLeft: 1,
+                    borderColor: 'divider',
+                  }}
+                >
                   <Typography variant="caption" sx={{ mb: 1, display: 'block', fontWeight: 600, color: 'text.secondary' }}>
-                    Field Types
+                    Reference Types
                   </Typography>
                   <FieldTypePanel
-                    fieldTypes={regularFieldTypes}
+                    fieldTypes={referenceFieldTypes}
                     onAddField={handleAddField}
                     disabled={sections.length === 0 || !hasExpandedSection}
                   />
-                </Box>
-              </Paper>
-
-              {/* Middle - Form Canvas - Scrollable */}
-              <Box
-                sx={{
-                  flexGrow: 1,
-                  minWidth: 0,
-                  overflow: 'auto',
-                  height: '100%',
-                  position: 'relative'
-                }}
-              >
-                <FormCanvas
-                  sections={sections}
-                  onFieldSelect={handleFieldSelect}
-                  onFieldDelete={handleFieldDelete}
-                  onFieldReorder={reorderFields}
-                  selectedField={selectedField}
-                  selectedSectionId={selectedSectionId}
-                  onSectionSelect={setSelectedSectionId}
-                  onSectionEdit={handleSectionEdit}
-                  onSectionDelete={(sectionId) => {
-                    removeSection(sectionId);
-                  }}
-                  onExpandedSectionsChange={setHasExpandedSection}
-                />
+                </Paper>
               </Box>
+            )}
 
-              {/* Right Sidebar - Reference Types - Fixed */}
-              <Paper
-                sx={{
-                  width: 200,
-                  flexShrink: 0,
-                  p: 1.5,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  overflow: 'hidden',
-                  height: '100%',
-                  position: 'relative',
-                  borderLeft: 1,
-                  borderColor: 'divider',
-                }}
-              >
-                <Typography variant="caption" sx={{ mb: 1, display: 'block', fontWeight: 600, color: 'text.secondary' }}>
-                  Reference Types
+            {activeTab === 1 && (
+              <Paper sx={{ p: 2, overflow: 'auto', maxHeight: '100%' }}>
+                <Typography variant="caption" sx={{ mb: 2, display: 'block', fontWeight: 600, color: 'text.secondary' }}>
+                  Form Settings
                 </Typography>
-                <FieldTypePanel
-                  fieldTypes={referenceFieldTypes}
-                  onAddField={handleAddField}
-                  disabled={sections.length === 0 || !hasExpandedSection}
-                />
-              </Paper>
-            </Box>
-          )}
-
-          {activeTab === 1 && (
-            <Paper sx={{ p: 2, overflow: 'auto', maxHeight: '100%' }}>
-              <Typography variant="caption" sx={{ mb: 2, display: 'block', fontWeight: 600, color: 'text.secondary' }}>
-                Form Settings
-              </Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6} md={4}>
-                  <AppSearchableSelect
-                    label="Form Icon"
-                    value={formSettings.formIcon || ''}
-                    onChange={(value) => {
-                      setFormSettings((prev) => ({
-                        ...prev,
-                        formIcon: value,
-                      }));
-                    }}
-                    options={iconSelectOptions}
-                    placeholder=""
-                    helperText="Search and select an icon for the form"
-                    fullWidth
-                    size="small"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6} md={4}>
-                  <TextField
-                    select
-                    label="Fields Per Row"
-                    value={formSettings.fieldsPerRow || 1}
-                    onChange={(e) => {
-                      setFormSettings((prev) => ({
-                        ...prev,
-                        fieldsPerRow: parseInt(e.target.value, 10),
-                      }));
-                    }}
-                    fullWidth
-                    size="small"
-                    helperText="Number of fields to display per row (1-3)"
-                    SelectProps={{
-                      native: true,
-                    }}
-                  >
-                    <option value={1}>1 Field</option>
-                    <option value={2}>2 Fields</option>
-                    <option value={3}>3 Fields</option>
-                  </TextField>
-                </Grid>
-                <Grid item xs={12} sm={6} md={4}>
-                  <FormControl component="fieldset" fullWidth>
-                    <RadioGroup
-                      row
-                      value={formSettings.sectionDisplayMode || 'panel'}
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6} md={4}>
+                    <AppSearchableSelect
+                      label="Form Icon"
+                      value={formSettings.formIcon || ''}
+                      onChange={(value) => {
+                        setFormSettings((prev) => ({
+                          ...prev,
+                          formIcon: value,
+                        }));
+                      }}
+                      options={iconSelectOptions}
+                      placeholder=""
+                      helperText="Search and select an icon for the form"
+                      fullWidth
+                      size="small"
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={4}>
+                    <TextField
+                      select
+                      label="Fields Per Row"
+                      value={formSettings.fieldsPerRow || 1}
                       onChange={(e) => {
                         setFormSettings((prev) => ({
                           ...prev,
-                          sectionDisplayMode: e.target.value,
+                          fieldsPerRow: parseInt(e.target.value, 10),
                         }));
                       }}
+                      fullWidth
+                      size="small"
+                      helperText="Number of fields to display per row (1-3)"
+                      SelectProps={{
+                        native: true,
+                      }}
                     >
-                      <FormControlLabel value="panel" control={<Radio size="small" />} label="Panel" />
-                      <FormControlLabel value="stepper" control={<Radio size="small" />} label="Stepper" />
-                    </RadioGroup>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-                      Choose how sections are displayed: Panel (accordion) or Stepper (step-by-step)
-                    </Typography>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12}>
-                  <Box sx={{ display: 'flex', flexDirection: 'row', gap: 4, flexWrap: 'wrap' }}>
-                    <Box sx={{ flex: '1 1 0', minWidth: 280 }}>
-                      <FormControlLabel
-                        control={
-                          <Switch
-                            checked={formSettings.isPublic || false}
-                            onChange={(e) => {
-                              setFormSettings((prev) => ({
-                                ...prev,
-                                isPublic: e.target.checked,
-                              }));
-                            }}
-                          />
-                        }
-                        label="Public Form"
-                      />
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5, ml: 4 }}>
-                        When enabled, this form can be accessed publicly without authentication
-                      </Typography>
-                    </Box>
-                    <Box sx={{ flex: '1 1 0', minWidth: 280 }}>
-                      <FormControlLabel
-                        control={
-                          <Switch
-                            checked={formSettings.isSingleRecordForm || false}
-                            onChange={(e) => {
-                              setFormSettings((prev) => ({
-                                ...prev,
-                                isSingleRecordForm: e.target.checked,
-                              }));
-                            }}
-                          />
-                        }
-                        label="Is Single Record Form"
-                      />
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5, ml: 4 }}>
-                        When enabled, the form entries page will open directly in edit mode instead of showing the datatable
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Grid>
-                <Grid item xs={12}>
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={formSettings.allowManageFromEntryPage || false}
+                      <option value={1}>1 Field</option>
+                      <option value={2}>2 Fields</option>
+                      <option value={3}>3 Fields</option>
+                    </TextField>
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={4}>
+                    <FormControl component="fieldset" fullWidth>
+                      <RadioGroup
+                        row
+                        value={formSettings.sectionDisplayMode || 'panel'}
                         onChange={(e) => {
                           setFormSettings((prev) => ({
                             ...prev,
-                            allowManageFromEntryPage: e.target.checked,
+                            sectionDisplayMode: e.target.value,
                           }));
                         }}
-                      />
-                    }
-                    label="Allow Manage From Entry Page"
-                  />
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5, ml: 4 }}>
-                    When enabled, the form creator can access the settings icon in the form entries page to edit the form definition
-                  </Typography>
+                      >
+                        <FormControlLabel value="panel" control={<Radio size="small" />} label="Panel" />
+                        <FormControlLabel value="stepper" control={<Radio size="small" />} label="Stepper" />
+                      </RadioGroup>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                        Choose how sections are displayed: Panel (accordion) or Stepper (step-by-step)
+                      </Typography>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Box sx={{ display: 'flex', flexDirection: 'row', gap: 4, flexWrap: 'wrap' }}>
+                      <Box sx={{ flex: '1 1 0', minWidth: 280 }}>
+                        <FormControlLabel
+                          control={
+                            <Switch
+                              checked={formSettings.isPublic || false}
+                              onChange={(e) => {
+                                setFormSettings((prev) => ({
+                                  ...prev,
+                                  isPublic: e.target.checked,
+                                }));
+                              }}
+                            />
+                          }
+                          label="Public Form"
+                        />
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5, ml: 4 }}>
+                          When enabled, this form can be accessed publicly without authentication
+                        </Typography>
+                      </Box>
+                      <Box sx={{ flex: '1 1 0', minWidth: 280 }}>
+                        <FormControlLabel
+                          control={
+                            <Switch
+                              checked={formSettings.isSingleRecordForm || false}
+                              onChange={(e) => {
+                                setFormSettings((prev) => ({
+                                  ...prev,
+                                  isSingleRecordForm: e.target.checked,
+                                }));
+                              }}
+                            />
+                          }
+                          label="Is Single Record Form"
+                        />
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5, ml: 4 }}>
+                          When enabled, the form entries page will open directly in edit mode instead of showing the datatable
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Grid>
+                  <Grid item xs={12}>
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={formSettings.allowManageFromEntryPage || false}
+                          onChange={(e) => {
+                            setFormSettings((prev) => ({
+                              ...prev,
+                              allowManageFromEntryPage: e.target.checked,
+                            }));
+                          }}
+                        />
+                      }
+                      label="Allow Manage From Entry Page"
+                    />
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5, ml: 4 }}>
+                      When enabled, the form creator can access the settings icon in the form entries page to edit the form definition
+                    </Typography>
+                  </Grid>
                 </Grid>
-              </Grid>
-            </Paper>
-          )}
+              </Paper>
+            )}
 
-          {activeTab === 2 && (
-            <Paper sx={{ p: 1.5, overflow: 'auto', maxHeight: '100%' }}>
-              {sections.some(s => s.fields.length > 0) ? (
-                <FormContainer
-                  formSchema={{
-                    title: formDetails.title,
-                    name: formDetails.name,
-                    sections,
-                  } as FormSchema}
-                  variant="plain"
-                  onSubmit={() => { return Promise.resolve(); }}
-                  isLoading={false}
-                  onSuccess={() => { return Promise.resolve(); }}
-                  mode="view"
-                />
-              ) : (
-                <Typography color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
-                  No fields added yet. Add fields to see the preview.
-                </Typography>
-              )}
-            </Paper>
-          )}
+            {activeTab === 2 && (
+              <Paper sx={{ p: 1.5, overflow: 'auto', maxHeight: '100%' }}>
+                {sections.some(s => s.fields.length > 0) ? (
+                  <FormContainer
+                    formSchema={{
+                      title: formDetails.title,
+                      name: formDetails.name,
+                      sections,
+                    } as FormSchema}
+                    variant="plain"
+                    onSubmit={() => { return Promise.resolve(); }}
+                    isLoading={false}
+                    onSuccess={() => { return Promise.resolve(); }}
+                    mode="view"
+                  />
+                ) : (
+                  <Typography color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+                    No fields added yet. Add fields to see the preview.
+                  </Typography>
+                )}
+              </Paper>
+            )}
+          </Box>
         </Box>
-      </Box>
       </PageContent>
 
       <FieldConfigDrawer

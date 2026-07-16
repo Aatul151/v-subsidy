@@ -154,12 +154,12 @@ export const Dashboard = () => {
       color: theme.palette.error.main,
       OnCardClick: () => { navigate('/client-case?expired=true') }
     },
-    ...(dashboardCounts?.data?.statusCount?.map((status: any) => ({
+    ...(dashboardCounts?.data?.stageCount?.map((status: any) => ({
       title: status?.label,
       value: status?.totalCount ?? 0,
       icon: <TaskAltIcon />,
-      color: status?.bgColor,
-      OnCardClick: () => { navigate(`/client-case?status=${status?._id}`) }
+      color: status?.bgColor || `#bde1f4`,
+      OnCardClick: () => { navigate(`/client-case?stage=${status?._id}`) }
     })) ?? [])
   ];
 

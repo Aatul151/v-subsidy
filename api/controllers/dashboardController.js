@@ -13,7 +13,7 @@ export const getCount = async (req, res) => {
     const endOfDay = new Date(today);
     endOfDay.setHours(23, 59, 59, 999);
 
-    const [totalClients, totalCases, expiryCounts, totalStatusCount] = await Promise.all([
+    const [totalClients, totalCases, expiryCounts, totalStatusCount, totalStageCount] = await Promise.all([
       Client.countDocuments(),
       ClientCases.countDocuments({ isArchived: false }),
       ClientCases.aggregate([
@@ -61,6 +61,18 @@ export const getCount = async (req, res) => {
             count: { $sum: 1 },
           },
         },
+      ]),
+      await ClientCases.aggregate([
+        { $match: { isArchived: false } },
+        {
+          $unwind: "$current_stage",
+        },
+        {
+          $group: {
+            _id: "$current_stage.stage_id",
+            count: { $sum: 1 },
+          },
+        },
       ])
     ]);
 
@@ -97,6 +109,23 @@ export const getCount = async (req, res) => {
       bgColor: status?.payload?.bgColor,
     }));
     //#endregion
+    //#region Stage Count 
+    const stageCountMap = new Map(
+      totalStageCount?.map(item => [item?._id.toString(), item?.count])
+    );
+
+    const stageForm = await FormDefinition.findOne({ name: FORM.STAGE_FORM }).populate('module');
+    if (!stageForm) { return res.status(404).json({ success: false, message: 'Stage Form definition not found' }); }
+
+    const stageEntryModel = getFormEntryModel(stageForm);
+    const stages = await stageEntryModel.find({ formId: stageForm?._id })
+
+    const stageCount = stages?.map(stage => ({
+      _id: stage._id,
+      totalCount: stageCountMap?.get(stage?._id?.toString()) || 0,
+      label: stage?.payload?.name,
+    }));
+    //#endregion
 
     return res.status(200).json({
       success: true,
@@ -105,7 +134,8 @@ export const getCount = async (req, res) => {
         totalCases: totalCases,
         totalExpiredCase: expired,
         todayExpiryCase: todayExpiry,
-        statusCount
+        statusCount,
+        stageCount
       },
     });
   } catch (error) {
