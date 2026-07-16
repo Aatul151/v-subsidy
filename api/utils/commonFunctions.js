@@ -2,6 +2,8 @@ import mongoose from "mongoose";
 import Settings from "../models/Settings.js";
 import CaseStageProgress from "../models/case/StageProgress.js";
 import CaseStatusProgress from "../models/case/StatusProgress.js";
+import { populateFormReference } from "./populateReferences.js";
+import { FORM } from "./codes.js";
 
 export const generateUniqueNo = async (key, prefix, includeYear = false, padding = 3,) => {
 
@@ -212,48 +214,73 @@ export const saveCaseStatusProgress = async ({
     reqUser = null,
 }) => {
     try {
-        const progresses = await CaseStatusProgress.find({ case_id, scheme_id, stage_id })//.sort({ submitted_date: 1 });
-        const selectedIndex = progresses.findIndex(p => p.status_id.toString() === status_id.toString());
+        const refStatus = await populateFormReference(status_id, { referenceFormName: FORM.STATUS_FORM });
+        const newOrder = refStatus.order_index;
+        let progresses = await CaseStatusProgress.find({ case_id, scheme_id, stage_id });
+        const active = progresses.find(p => p.completed_date === null && p.stage_id == stage_id && !p.is_skipped);
+        const currentOrder = active?.status_order_index || 0;
 
-        // User selected an existing(old) status
-        if (selectedIndex !== -1) {
-            for (let i = 0; i < progresses?.length; i++) {
-                const progress = progresses[i];
-                progress.remarks = progress?.status_id?.toString() == status_id.toString() ? remarks : progress.remarks;
-                progress.updatedAt = new Date();
-                progress.updatedBy = reqUser?._id;
-
-                if (i < selectedIndex) {
-                    if (!progress.completed_date) { progress.completed_date = new Date(); } // Previous statuses stay completed
-                } else if (i === selectedIndex) {
-                    progress.completed_date = null;  // Selected becomes active
-                } else {
-                    // Later statuses become inactive
-                    progress.completed_date = null
-                    progress.remarks = null
-                }
-                await progress.save();
+        if (newOrder > currentOrder) {
+            // complete only current active
+            if (active) {
+                active.completed_date = new Date();
+                await active.save();
             }
 
-            return progresses[selectedIndex];
+            // skipped steps
+            await CaseStatusProgress.updateMany(
+                { case_id, scheme_id, stage_id, status_order_index: { $gt: currentOrder, $lt: newOrder } },
+                {
+                    $set: {
+                        is_skipped: true,
+                        completed_date: null,
+                        updatedAt: new Date(),
+                        updatedBy: reqUser?._id,
+                    },
+                }
+            );
         }
 
-        // New status
-        await CaseStatusProgress.updateMany(
-            { case_id, scheme_id, stage_id, completed_date: null, },
-            {
-                $set: { completed_date: new Date(), updatedAt: new Date(), updatedBy: reqUser?._id },
-            }
-        );
+        /* ---------------- Going Back ---------------- */
+        if (newOrder < currentOrder) {
+            await CaseStatusProgress.updateMany(
+                { case_id, scheme_id, stage_id, status_order_index: { $gt: newOrder } },
+                {
+                    $set: {
+                        completed_date: null,
+                        is_skipped: false,
+                        remarks: null,
+                        updatedAt: new Date(),
+                        updatedBy: reqUser?._id,
+                    },
+                }
+            );
+        }
+
+        progresses = await CaseStatusProgress.find({ case_id, scheme_id, stage_id, });
+        let current = progresses.find(p => p.status_order_index === newOrder && p.stage_id == stage_id);
+
+        if (current) {
+            current.completed_date = null;
+            current.is_skipped = false;
+            current.remarks = remarks;
+            current.updatedAt = new Date();
+            current.updatedBy = reqUser?._id;
+
+            await current.save();
+            return current;
+        }
 
         return await CaseStatusProgress.create({
             case_id,
             scheme_id,
             stage_id,
             status_id,
+            status_order_index: newOrder,
             submitted_date: new Date(),
             completed_date: null,
             remarks,
+            is_skipped: false,
             createdBy: reqUser?._id,
             updatedBy: reqUser?._id,
         });
@@ -339,7 +366,7 @@ export const saveCaseStageProgress = async ({
 //#region  
 export const saveDefaultStageStatus = async ({ case_id, scheme_id, stage_id, default_status_id, reqUser }) => {
     // Already has an active status for this stage
-    const activeStatus = await CaseStatusProgress.findOne({ case_id, scheme_id, stage_id, completed_date: null });
+    const activeStatus = await CaseStatusProgress.findOne({ case_id, scheme_id, stage_id, completed_date: null, is_skipped: false });
     if (activeStatus) return activeStatus;
     return await saveCaseStatusProgress({
         case_id,

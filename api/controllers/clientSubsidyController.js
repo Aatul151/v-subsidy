@@ -53,6 +53,7 @@ export const createClientCase = async (req, res) => {
                     schemeId,
                     stage_id,
                     null,
+                    null,
                     remarks ?? ""
                 );
             }
@@ -442,7 +443,7 @@ export const updateClientCase = async (req, res) => {
                     reqUser,
                 });
             }
-
+            
             if (statusProgress?.completed_date === null) {
                 updateFields.current_status = updateCurrentStatus(
                     resScheme.current_status || [],

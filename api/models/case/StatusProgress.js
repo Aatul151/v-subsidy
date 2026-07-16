@@ -32,6 +32,15 @@ const CaseStatusProgressSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    status_order_index: {
+      type: Number,
+      default: 0,
+    },
+
+     is_skipped : {
+      type: Boolean,
+      default: false,
+    },
     remarks: {
       type: String,
       trim: true,

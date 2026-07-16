@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowBack, Assignment, DescriptionOutlined, TrendingUp, Visibility, Close as CloseIcon, DescriptionOutlined as DescriptionOutlinedIcon, CheckCircle, SearchOff, InfoOutlined, NotificationsActiveOutlined } from "@mui/icons-material";
-import { Box, Button, Card, Checkbox, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Divider, IconButton, LinearProgress, Paper, Stack, Step, StepContent, StepLabel, Stepper, Tab, Tabs, TextField, Tooltip, Typography } from "@mui/material";
+import { ArrowBack, Assignment, DescriptionOutlined, TrendingUp, Visibility, Close as CloseIcon, DescriptionOutlined as DescriptionOutlinedIcon, CheckCircle, SearchOff, InfoOutlined, NotificationsActiveOutlined, CancelOutlined } from "@mui/icons-material";
+import { Box, Button, Card, Checkbox, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Divider, IconButton, LinearProgress, Paper, Stack, Step, StepContent, StepIcon, StepLabel, Stepper, Tab, Tabs, TextField, Tooltip, Typography } from "@mui/material";
 import Grid from "@mui/material/Grid2";
 import { PageHeader } from "../../components/common/PageHeader";
 import { useNavigate, useParams } from "react-router-dom";
@@ -174,7 +174,7 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
         stageProgress: stepperInfo?.stageHistory?.find((item: any) => item?.stage_id == stage?._id && item?.scheme_id == selectedSchemeId),
     }));
 
-    const activeStatusIndex = formattedStatusList.findIndex((item: any) => !item.statusProgress?.completed_date && item?._id == currentStatus?.status_id);
+    const activeStatusIndex = formattedStatusList.findIndex((item: any) => !item.statusProgress?.is_skipped && item?._id == currentStatus?.status_id);
 
     useEffect(() => {
         setActiveStep(activeStatusIndex);
@@ -423,8 +423,8 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
 
             case "manage_status_tab":
                 const statusFormField = [
-                    { name: "stage", label: "Stage", type: "dropdown", options: formateStageList, disabled: true },
                     { name: "status", label: "Status", type: "dropdown", options: formateStatusList, onChange: (value: string) => handleStatusChange(value) },
+                    { name: "stage", label: "Stage", type: "dropdown", options: formateStageList, disabled: true },
                     { name: "remark", label: "Remark", type: "text", multiline: true, rows: 4 },
                 ];
                 const status_formValues = getValues().statusForm;
@@ -908,32 +908,43 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
                                 </Typography>
 
                                 <Stepper activeStep={activeStep} orientation="vertical">
-                                    {formattedStatusList.map((status: any, idx) => (
-                                        <Step key={status._id}>
-                                            <StepLabel
-                                                onClick={idx <= activeStatusIndex ? () => setActiveStep(idx) : undefined} sx={{
-                                                    cursor: idx <= activeStatusIndex ? "pointer" : "not-allowed",
-                                                    opacity: idx <= activeStatusIndex ? 1 : 0.5,
-                                                }}
-                                            >
-                                                <Typography fontWeight={600}>
-                                                    {status.payload.label}
-                                                </Typography>
+                                    {formattedStatusList.map((status: any, idx) => {
+                                        const progress = status?.statusProgress;
+                                        const isExplicitSkipped = progress && progress.is_skipped === true && progress.completed_date === null;
+                                        const isMissingProgressPastActive = !progress && idx < activeStep;
+                                        const showCrossIcon = isExplicitSkipped || isMissingProgressPastActive;
+                                        return (
+                                            <Step key={status._id}>
+                                                <StepLabel
+                                                    StepIconComponent={(props) => {
+                                                        if (showCrossIcon) { return <CancelOutlined color="error" /> }
+                                                        return <StepIcon {...props} />;
+                                                    }}
 
-                                                {status.statusProgress?.completed_date && (
-                                                    <Typography variant="body2" mt={1}>
-                                                        {formatDateTime(status.statusProgress.completed_date)}
+                                                    onClick={idx <= activeStatusIndex ? () => setActiveStep(idx) : undefined} sx={{
+                                                        cursor: idx <= activeStatusIndex ? "pointer" : "not-allowed",
+                                                        opacity: idx <= activeStatusIndex ? 1 : 0.5,
+                                                    }}
+                                                >
+                                                    <Typography fontWeight={600}>
+                                                        {status.payload.label}
                                                     </Typography>
-                                                )}
-                                            </StepLabel>
 
-                                            <StepContent>
-                                                <Typography variant="body2">
-                                                    {status.statusProgress?.remarks}
-                                                </Typography>
-                                            </StepContent>
-                                        </Step>
-                                    ))}
+                                                    {status.statusProgress?.completed_date && (
+                                                        <Typography variant="body2" mt={1}>
+                                                            {formatDateTime(status.statusProgress.completed_date)}
+                                                        </Typography>
+                                                    )}
+                                                </StepLabel>
+
+                                                <StepContent>
+                                                    <Typography variant="body2">
+                                                        {status.statusProgress?.remarks}
+                                                    </Typography>
+                                                </StepContent>
+                                            </Step>
+                                        )
+                                    })}
                                 </Stepper>
                             </Paper>
                         </Grid>
