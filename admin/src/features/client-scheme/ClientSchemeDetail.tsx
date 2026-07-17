@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowBack, Assignment, DescriptionOutlined, TrendingUp, Visibility, Close as CloseIcon, DescriptionOutlined as DescriptionOutlinedIcon, CheckCircle, SearchOff, InfoOutlined, NotificationsActiveOutlined, CancelOutlined } from "@mui/icons-material";
-import { Box, Button, Card, Checkbox, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Divider, IconButton, LinearProgress, Paper, Stack, Step, StepContent, StepIcon, StepLabel, Stepper, Tab, Tabs, TextField, Tooltip, Typography } from "@mui/material";
+import { ArrowBack, Assignment, DescriptionOutlined, TrendingUp, Visibility, Close as CloseIcon, DescriptionOutlined as DescriptionOutlinedIcon, CheckCircle, SearchOff, InfoOutlined, NotificationsActiveOutlined, CancelOutlined, NotificationsNone } from "@mui/icons-material";
+import { Box, Button, Card, Checkbox, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Divider, IconButton, LinearProgress, Paper, Stack, Step, StepIcon, StepLabel, Stepper, Tab, Tabs, TextField, Tooltip, Typography } from "@mui/material";
 import Grid from "@mui/material/Grid2";
 import { PageHeader } from "../../components/common/PageHeader";
 import { useNavigate, useParams } from "react-router-dom";
@@ -140,7 +140,7 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
             const response = await clientSubsidyAPI.getClientScheme(clientId);
             return response || [];
         },
-        enabled: !!clientId,
+        enabled: !!clientId && !caseDetail?.isArchived,
     });
 
 
@@ -188,17 +188,7 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
         if (caseDetail) {
             reset({
                 selectedSchemeId: defaultSchemeId || caseDetail?.scheme_ref?.[0]?._id || "",
-                sectionForm: {
-                    loan_sanction_date: caseDetail?.loan_sanction_date ? dayjs(caseDetail.loan_sanction_date) : null,
-                    first_disbursement_date: caseDetail?.first_disbursement_date ? dayjs(caseDetail.first_disbursement_date) : null,
-                    first_sale_bill_amount: caseDetail?.first_sale_bill_amount || "",
-                    loan_amount: caseDetail?.loan_amount || "",
-                    disbursement_amount: caseDetail?.disbursement_amount || "",
-                    sanction_amount: caseDetail?.sanction_amount || "",
-                },
-                todoForm: {
-                    remark: clientTodoRemark || "",
-                }
+                ...getFormValues(),
             });
         }
     }, [caseDetail, reset, selectedSchemeId]);
@@ -206,19 +196,37 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
     useEffect(() => {
         reset({
             ...getValues(),
-            statusForm: {
-                stage: currentStage?.stage_id || "",
-                status: currentStatus?.status_id || "",
-                remark: currentStatus?.remarks || "",
-            },
-            stageForm: {
-                stage: currentStage?.stage_id || "",
-                end_date: currentStage?.end_date ? dayjs(currentStage.end_date) : null,
-                start_date: currentStage?.start_date ? dayjs(currentStage.start_date) : null,
-                remark: currentStage?.remarks || "",
-            }
+            ...getFormValues()
         });
     }, [currentStage, currentStatus, caseDetail]);
+
+    const getFormValues = () => ({
+        sectionForm: {
+            loan_sanction_date: caseDetail?.loan_sanction_date ? dayjs(caseDetail.loan_sanction_date) : null,
+            first_disbursement_date: caseDetail?.first_disbursement_date ? dayjs(caseDetail.first_disbursement_date) : null,
+            first_sale_bill_amount: caseDetail?.first_sale_bill_amount || "",
+            loan_amount: caseDetail?.loan_amount || "",
+            disbursement_amount: caseDetail?.disbursement_amount || "",
+            sanction_amount: caseDetail?.sanction_amount || "",
+        },
+
+        statusForm: {
+            stage: currentStage?.stage_id || "",
+            status: currentStatus?.status_id || "",
+            remark: currentStatus?.remarks || "",
+        },
+
+        stageForm: {
+            stage: currentStage?.stage_id || "",
+            start_date: currentStage?.start_date ? dayjs(currentStage.start_date) : null,
+            end_date: currentStage?.end_date ? dayjs(currentStage.end_date) : null,
+            remark: currentStage?.remarks || "",
+        },
+
+        todoForm: {
+            remark: clientTodoRemark || "",
+        },
+    });
 
     const headerFields = [
         {
@@ -269,7 +277,7 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
     const formateSchemeOption = clientScheme?.map((s: any) => { return { label: `${s?.ref_scheme?.scheme_name} - ${s?.case_number}`, value: s?._id } })
     const actionButton = (
         <Box sx={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            {clientScheme?.length > 1 && (
+            {!caseDetail?.isArchived && clientScheme?.length > 1 && (
                 <SearchableSelect
                     label="Select Scheme"
                     value={formateSchemeOption?.find((item: any) => item?.value == id)?.value || null}
@@ -350,6 +358,33 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
         setValue("stageForm.start_date", fieldValue?.start_date ? dayjs(fieldValue?.start_date) : null);
     };
 
+    const resetCurrentTab = (tab: string) => {
+        const values = getFormValues();
+
+        switch (tab) {
+            case "loan_form_tab":
+                setValue("sectionForm", values.sectionForm);
+                break;
+
+            case "manage_status_tab":
+                setValue("statusForm", values.statusForm);
+                break;
+
+            case "manage_stage_tab":
+                setValue("stageForm", values.stageForm);
+                break;
+
+            case "manage_todo_tab":
+                setValue("todoForm", values.todoForm);
+                break;
+        }
+    };
+
+    const handleTabChange = (_: any, newTab: string) => {
+        resetCurrentTab(tab);
+        setTab(newTab);
+    };
+
     const renderTabContent = () => {
         const formateStageList = stageList?.map((stg) => { return { value: stg?._id, label: stg?.payload?.name } })
         const formateStatusList = statusList?.map((stg) => { return { value: stg?._id, label: stg?.payload?.label } })
@@ -414,7 +449,7 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
                             </LocalizationProvider>
                         </Box>
                         <Box sx={{ display: "flex", justifyContent: "start" }}>
-                            <Button type="button" variant="contained" disabled={!hasValue} onClick={() => { handleSave(); }} >
+                            <Button type="button" variant="contained" disabled={caseDetail?.isArchived || !hasValue} onClick={() => { handleSave(); }} >
                                 Save
                             </Button>
                         </Box>
@@ -469,6 +504,11 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
                                             rows={rows}
                                             value={field.value ?? ""}
                                             onChange={(e) => field.onChange(e.target.value)}
+                                            sx={{
+                                                "& .MuiInputBase-inputMultiline": {
+                                                    resize: "vertical",
+                                                },
+                                            }}
                                         />
                                     )
                                 }
@@ -477,7 +517,7 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
                     </Box>
 
                     <Box sx={{ display: "flex", justifyContent: "start" }}>
-                        <Button type="button" variant="contained" disabled={!hasStatusValue} onClick={() => { handleSave(); }}>
+                        <Button type="button" variant="contained" disabled={caseDetail?.isArchived || !hasStatusValue} onClick={() => { handleSave(); }}>
                             Save
                         </Button>
                     </Box>
@@ -492,6 +532,9 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
                 ];
                 const stage_formValues = getValues().stageForm;
                 const hasStageValue = Object.values(stage_formValues).some((value) => value !== null && value !== undefined && value !== "");
+
+                const startDate = watch("stageForm.start_date");
+                const endDate = watch("stageForm.end_date");
 
                 return <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                     <Box
@@ -527,6 +570,8 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
                                                 label={label}
                                                 value={field.value}
                                                 format="DD/MM/YYYY"
+                                                minDate={name === "end_date" ? startDate : undefined}
+                                                maxDate={name === "start_date" ? endDate : undefined}
                                                 slotProps={{
                                                     textField: {
                                                         size: "small",
@@ -545,6 +590,11 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
                                                 multiline={multiline}
                                                 rows={rows}
                                                 value={field.value ?? ""}
+                                                sx={{
+                                                    "& .MuiInputBase-inputMultiline": {
+                                                        resize: "vertical",
+                                                    },
+                                                }}
                                                 onChange={(e) => field.onChange(e.target.value)}
                                             />
                                         )
@@ -555,7 +605,7 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
 
                     </Box>
                     <Box sx={{ display: "flex", justifyContent: "start" }}>
-                        <Button type="button" variant="contained" disabled={!hasStageValue} onClick={() => { handleSave(); }}>
+                        <Button type="button" variant="contained" disabled={caseDetail?.isArchived || !hasStageValue} onClick={() => { handleSave(); }}>
                             Save
                         </Button>
                     </Box>
@@ -591,6 +641,11 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
                                         rows={rows}
                                         value={field.value ?? ""}
                                         onChange={(e) => field.onChange(e.target.value)}
+                                        sx={{
+                                            "& .MuiInputBase-inputMultiline": {
+                                                resize: "vertical",
+                                            },
+                                        }}
                                     />
                                 )}
                             />
@@ -606,7 +661,7 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
                         <Button
                             type="button"
                             variant="contained"
-                            disabled={updateTodoMutation.isPending}
+                            disabled={caseDetail?.isArchived || !todoValues?.remark?.trim() || updateTodoMutation.isPending}
                             onClick={() => { handleSave({ taskCompleted: todoValues.remark ? false : true }); }}
                         >
                             Save
@@ -696,7 +751,7 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
 
             if (Object.keys(payload)?.length > 0) { await updateMutation.mutateAsync({ id, payload }) }
             queryClient.invalidateQueries({ queryKey: ['client_subsidy'] })
-            if (tab === 'manage_status_tab') queryClient.invalidateQueries({ queryKey: ['client_status'] })
+            if (tab === 'manage_status_tab' || tab === "manage_stage_tab") queryClient.invalidateQueries({ queryKey: ['client_status'] })
         } catch (error) {
             console.error(error);
         }
@@ -921,10 +976,6 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
                                                         return <StepIcon {...props} />;
                                                     }}
 
-                                                    onClick={idx <= activeStatusIndex ? () => setActiveStep(idx) : undefined} sx={{
-                                                        cursor: idx <= activeStatusIndex ? "pointer" : "not-allowed",
-                                                        opacity: idx <= activeStatusIndex ? 1 : 0.5,
-                                                    }}
                                                 >
                                                     <Typography fontWeight={600}>
                                                         {status.payload.label}
@@ -935,13 +986,18 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
                                                             {formatDateTime(status.statusProgress.completed_date)}
                                                         </Typography>
                                                     )}
-                                                </StepLabel>
 
-                                                <StepContent>
-                                                    <Typography variant="body2">
-                                                        {status.statusProgress?.remarks}
-                                                    </Typography>
-                                                </StepContent>
+                                                    {/* Always show remarks */}
+                                                    {progress?.remarks && (
+                                                        <Typography
+                                                            variant="body2"
+                                                            color="text.secondary"
+                                                            mt={0.5}
+                                                        >
+                                                            {progress.remarks}
+                                                        </Typography>
+                                                    )}
+                                                </StepLabel>
                                             </Step>
                                         )
                                     })}
@@ -969,7 +1025,8 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
                                 >
                                     <Tabs
                                         value={tab}
-                                        onChange={(_, newValue) => setTab(newValue)}
+                                        // onChange={(_, newValue) => setTab(newValue)}
+                                        onChange={handleTabChange}
                                         sx={{ width: "100%" }}
                                     >
                                         <Tab value="loan_form_tab" label="Loan Section" sx={{ textTransform: "none" }} />
@@ -978,9 +1035,10 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
                                         <Box sx={{ flexGrow: 1 }} />
                                         <Tab
                                             value="manage_todo_tab"
-                                            icon={<NotificationsActiveOutlined fontSize="small" />}
+                                            icon={clientTodoRemark ? <NotificationsActiveOutlined fontSize="small" /> : <NotificationsNone fontSize="small" />}
                                             iconPosition="start"
-                                            label="Client Alerts"
+                                            color="warning"
+                                            label="Client Alert"
                                             sx={{ textTransform: "none", minHeight: 48 }}
                                         />
                                     </Tabs>
@@ -1065,7 +1123,7 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
                             Cancel
                         </Button>
 
-                        <Button variant="contained" color="primary" onClick={() => handleSaveDocuments()}>
+                        <Button disabled={caseDetail?.isArchived} variant="contained" color="primary" onClick={() => handleSaveDocuments()}>
                             Save
                         </Button>
                     </DialogActions>

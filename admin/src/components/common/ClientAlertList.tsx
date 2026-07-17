@@ -89,7 +89,7 @@ const ClientAlertList = ({
                             <IconButton
                                 size="small"
                                 color="primary"
-                                onClick={() => navigate(`/client-case/${todo?.case_id}/${todo?.scheme_id}`)}
+                                onClick={() => { navigate(`/client-case/${todo?.case_id}/${todo?.scheme_id}`), onClose() }}
                             >
                                 <ArrowOutward fontSize="small" />
                             </IconButton>

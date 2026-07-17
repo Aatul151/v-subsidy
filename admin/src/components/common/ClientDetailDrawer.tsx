@@ -127,7 +127,7 @@ const ClientDetailDrawer = ({ open, onClose, clientId, width = 1200 }: any) => {
 
             {/* Alerts */}
             {clientDetail?.case_todos?.length > 0 && (
-                <ClientAlertList alerts={clientDetail?.case_todos} cardView={true} />
+                <ClientAlertList alerts={clientDetail?.case_todos} cardView={true} onClose={onClose}/>
             )}
         </AppDrawer>
     );

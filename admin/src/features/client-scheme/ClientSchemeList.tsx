@@ -1,4 +1,4 @@
-import { Alert, Avatar, Box, Button, ButtonGroup, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Tooltip, Typography } from "@mui/material";
+import { Alert, Avatar, Box, Button, ButtonGroup, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, LinearProgress, Tooltip, Typography } from "@mui/material";
 import { FormatListBulleted as FormatListBulletedIcon } from '@mui/icons-material';
 import { GridActionsCellItem, GridColDef } from "@mui/x-data-grid";
 import CloseIcon from "@mui/icons-material/Close";
@@ -172,6 +172,7 @@ export default function ClientScheme() {
     const {
         data: clientSubsidyList,
         isLoading: clientLoading,
+        isFetching,
     } = useQuery({
         queryKey: [
             'client_subsidy',
@@ -796,6 +797,8 @@ export default function ClientScheme() {
                 overflow: 'hidden',
             }}
         >
+            {(isFetching || updateMutation.isPending) && (<LinearProgress sx={{ position: "sticky", top: 0 }} />)}
+
             <PageHeader
                 title={OpenArchiveTable ? "Archive Data" : "Cases"}
                 icon="FormatListBulleted"
