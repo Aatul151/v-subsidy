@@ -346,14 +346,12 @@ export const saveCaseStageProgress = async ({
             case_id,
             scheme_id,
             stage_id,
-            start_date: new Date(),
             end_date,
             start_date,
             date,
             remarks,
             is_active: true,
             createdBy: reqUser?._id,
-            // updatedBy: reqUser?._id
         });
 
     } catch (error) {
