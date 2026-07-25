@@ -90,7 +90,7 @@ const clientCasesSchema = new mongoose.Schema(
 
     loan_sanction_date: { type: Date, default: null },
     first_disbursement_date: { type: Date, default: null },
-    first_sale_bill_amount: { type: Number, default: null },
+    first_sale_bill_amount_date: { type: Date, default: null },
     loan_amount: { type: Number, default: null },
     disbursement_amount: { type: Number, default: null },
     sanction_amount: { type: Number, default: null },

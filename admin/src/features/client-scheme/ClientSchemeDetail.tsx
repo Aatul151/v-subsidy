@@ -47,7 +47,7 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
             sectionForm: {
                 loan_sanction_date: null as Dayjs | null,
                 first_disbursement_date: null as Dayjs | null,
-                first_sale_bill_amount: '',
+                first_sale_bill_amount_date: null as Dayjs | null,
                 loan_amount: '',
                 disbursement_amount: '',
                 sanction_amount: '',
@@ -204,7 +204,7 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
         sectionForm: {
             loan_sanction_date: caseDetail?.loan_sanction_date ? dayjs(caseDetail.loan_sanction_date) : null,
             first_disbursement_date: caseDetail?.first_disbursement_date ? dayjs(caseDetail.first_disbursement_date) : null,
-            first_sale_bill_amount: caseDetail?.first_sale_bill_amount || "",
+            first_sale_bill_amount_date: caseDetail?.first_sale_bill_amount_date ? dayjs(caseDetail.first_sale_bill_amount_date) : null,
             loan_amount: caseDetail?.loan_amount || "",
             disbursement_amount: caseDetail?.disbursement_amount || "",
             sanction_amount: caseDetail?.sanction_amount || "",
@@ -394,7 +394,7 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
                 const formFields = [
                     { name: "loan_sanction_date", label: "Loan Sanction Date", type: "date" },
                     { name: "first_disbursement_date", label: "First Disbursement Date", type: "date" },
-                    { name: "first_sale_bill_amount", label: "First Sale Bill Amount", type: "number" },
+                    { name: "first_sale_bill_amount_date", label: "First Sale Bill Amount Date", type: "date" },
                     { name: "loan_amount", label: "Loan Amount", type: "number" },
                     { name: "disbursement_amount", label: "Disbursement Amount", type: "number" },
                     { name: "sanction_amount", label: "Sanction Amount", type: "number" }
@@ -697,7 +697,7 @@ export default function ClientSchemeDetail({ id: propId, schemeId: propsSchemeId
                     payload = {
                         loan_sanction_date: formValues.loan_sanction_date ? dayjs(formValues.loan_sanction_date).format("YYYY-MM-DD") : null,
                         first_disbursement_date: formValues.first_disbursement_date ? dayjs(formValues.first_disbursement_date).format("YYYY-MM-DD") : null,
-                        first_sale_bill_amount: formValues.first_sale_bill_amount,
+                        first_sale_bill_amount_date: formValues.first_sale_bill_amount_date ? dayjs(formValues.first_sale_bill_amount_date).format("YYYY-MM-DD") : null,
                         loan_amount: formValues.loan_amount,
                         disbursement_amount: formValues.disbursement_amount,
                         sanction_amount: formValues.sanction_amount,
